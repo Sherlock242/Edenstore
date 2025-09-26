@@ -28,13 +28,13 @@ export default async function ProductPage({ params }: { params: { id: string } }
   return (
     <div className="container mx-auto max-w-7xl px-4 py-8 md:py-12">
       <div className="grid gap-8 md:grid-cols-2 md:gap-12">
-        <div className="flex items-center justify-center">
+        <div className="flex items-start justify-center">
             <Image
                 src={product.images[0].url}
                 alt={product.name}
                 width={500}
                 height={625}
-                className="rounded-lg object-cover shadow-2xl"
+                className="h-auto w-full max-w-md rounded-lg object-cover shadow-2xl"
                 data-ai-hint={product.images[0].hint}
             />
         </div>
@@ -42,7 +42,7 @@ export default async function ProductPage({ params }: { params: { id: string } }
           <h1 className="font-headline text-3xl font-bold tracking-tighter md:text-4xl">
             {product.name}
           </h1>
-          <div className="flex items-center gap-4">
+          <div className="flex flex-wrap items-center gap-4">
             <Badge>{product.category}</Badge>
             <div className="flex items-center gap-1">
               {[...Array(5)].map((_, i) => (

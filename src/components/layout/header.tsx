@@ -104,52 +104,63 @@ export function Header() {
             </nav>
           </SheetContent>
         </Sheet>
-
-        <div className="flex flex-1 items-center justify-end space-x-2">
-          <form className="hidden w-full max-w-sm items-center md:flex">
-            <Input type="search" placeholder="Search shirts..." className="h-9" />
-            <Button variant="ghost" size="icon" type="submit" aria-label="Search">
-              <Search className="h-4 w-4" />
-            </Button>
-          </form>
+        
+        <div className="flex flex-1 items-center justify-end md:justify-between">
+            <div className="flex-1 md:flex md:justify-center">
+                 <Link href="/" className="flex items-center space-x-2 md:hidden">
+                    <Shirt className="h-6 w-6 text-primary" />
+                    <span className="font-bold font-headline text-lg text-primary">
+                    EdenStore
+                    </span>
+                </Link>
+            </div>
           
-          <div className="hidden md:flex items-center">
-            {adminLinks.map(link => (
-                 <Button variant="ghost" size="sm" asChild key={link.href}>
-                    <Link href={link.href} className="flex items-center gap-1">
-                        <link.icon className="h-4 w-4" />
-                        {link.label}
-                    </Link>
+            <div className="flex items-center justify-end space-x-2">
+            <form className="hidden w-full max-w-sm items-center md:flex">
+                <Input type="search" placeholder="Search shirts..." className="h-9" />
+                <Button variant="ghost" size="icon" type="submit" aria-label="Search">
+                <Search className="h-4 w-4" />
                 </Button>
-            ))}
-          </div>
+            </form>
+            
+            <div className="hidden md:flex items-center">
+                {adminLinks.map(link => (
+                    <Button variant="ghost" size="sm" asChild key={link.href}>
+                        <Link href={link.href} className="flex items-center gap-1">
+                            <link.icon className="h-4 w-4" />
+                            {link.label}
+                        </Link>
+                    </Button>
+                ))}
+            </div>
 
-          <Button variant="ghost" size="icon" asChild>
-            <Link href="/wishlist">
-              <Heart className="h-5 w-5" />
-              <span className="sr-only">Wishlist</span>
-            </Link>
-          </Button>
+            <Button variant="ghost" size="icon" asChild>
+                <Link href="/wishlist">
+                <Heart className="h-5 w-5" />
+                <span className="sr-only">Wishlist</span>
+                </Link>
+            </Button>
 
-          <Sheet>
-            <SheetTrigger asChild>
-              <Button variant="ghost" size="icon" className="relative">
-                <ShoppingBag className="h-5 w-5" />
-                {cartItemCount > 0 && (
-                  <span className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-xs text-primary-foreground">
-                    {cartItemCount}
-                  </span>
-                )}
-                <span className="sr-only">Shopping Cart</span>
-              </Button>
-            </SheetTrigger>
-            <CartSheetContent />
-          </Sheet>
+            <Sheet>
+                <SheetTrigger asChild>
+                <Button variant="ghost" size="icon" className="relative">
+                    <ShoppingBag className="h-5 w-5" />
+                    {cartItemCount > 0 && (
+                    <span className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-xs text-primary-foreground">
+                        {cartItemCount}
+                    </span>
+                    )}
+                    <span className="sr-only">Shopping Cart</span>
+                </Button>
+                </SheetTrigger>
+                <CartSheetContent />
+            </Sheet>
 
-          <Button variant="ghost" size="icon">
-            <User className="h-5 w-5" />
-            <span className="sr-only">User Profile</span>
-          </Button>
+            <Button variant="ghost" size="icon">
+                <User className="h-5 w-5" />
+                <span className="sr-only">User Profile</span>
+            </Button>
+            </div>
         </div>
       </div>
     </header>
