@@ -2,6 +2,7 @@
 "use client";
 
 import Link from "next/link";
+import { useState, useTransition } from "react";
 import {
   Heart,
   Menu,
@@ -12,6 +13,7 @@ import {
   PlusCircle,
   LogOut,
   LogIn,
+  Trash2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -28,6 +30,16 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useCart } from "@/contexts/cart-context";
 import { useAuth } from "@/contexts/auth-context";
@@ -35,6 +47,8 @@ import { CartSheetContent } from "../cart-sheet";
 import { usePathname } from 'next/navigation';
 import { cn } from "@/lib/utils";
 import md5 from "md5";
+import { deleteUserAccount } from "@/app/actions";
+import { useToast } from "@/hooks/use-toast";
 
 const navLinks = [
   { href: "/products", label: "T-Shirts" },
@@ -50,6 +64,10 @@ export function Header() {
   const { state: cartState } = useCart();
   const { user, userProfile, loading, logout, isadmin } = useAuth();
   const pathname = usePathname();
+  const { toast } = useToast();
+  const [isDeleteAlertOpen, setIsDeleteAlertOpen] = useState(false);
+  const [isPending, startTransition] = useTransition();
+
   const cartItemCount = cartState.items.reduce((acc, item) => acc + item.quantity, 0);
   
   const getAvatarFallback = (email: string | null | undefined) => {
@@ -62,6 +80,26 @@ export function Header() {
     const hash = md5(email.trim().toLowerCase());
     return `https://www.gravatar.com/avatar/${hash}?d=mp`;
   }
+  
+  const handleDeleteAccount = async () => {
+    startTransition(async () => {
+      const result = await deleteUserAccount();
+      if (result.success) {
+        toast({
+          title: "Account Deleted",
+          description: "Your account has been permanently deleted.",
+        });
+        // The onAuthStateChange listener in AuthProvider will handle the redirect/UI update.
+      } else {
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: result.message || "Could not delete your account.",
+        });
+      }
+      setIsDeleteAlertOpen(false);
+    });
+  };
 
 
   return (
@@ -210,6 +248,14 @@ export function Header() {
                             <LogOut className="mr-2 h-4 w-4" />
                             <span>Log out</span>
                         </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem
+                            className="text-red-500 focus:bg-red-500/10 focus:text-red-600"
+                            onClick={() => setIsDeleteAlertOpen(true)}
+                        >
+                            <Trash2 className="mr-2 h-4 w-4" />
+                            <span>Delete Account</span>
+                        </DropdownMenuItem>
                     </DropdownMenuContent>
                 </DropdownMenu>
             ) : (
@@ -220,6 +266,27 @@ export function Header() {
             </div>
         </div>
       </div>
+      <AlertDialog open={isDeleteAlertOpen} onOpenChange={setIsDeleteAlertOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete your
+              account and remove your data from our servers.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={handleDeleteAccount}
+              disabled={isPending}
+            >
+              {isPending ? "Deleting..." : "Yes, delete my account"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </header>
   );
 }

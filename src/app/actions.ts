@@ -3,6 +3,7 @@
 
 import { revalidatePath } from 'next/cache';
 import { createClient } from '@supabase/supabase-js';
+import { supabase as supabaseClient } from '@/lib/supabase-client';
 
 // Create a new Supabase client with admin privileges for server-side operations
 // This uses the service role key, which has full admin privileges.
@@ -379,4 +380,30 @@ export async function deleteProduct(productId: string): Promise<ServerResponse> 
   revalidatePath('/');
 
   return { success: true, message: 'Product deleted successfully.' };
+}
+
+
+export async function deleteUserAccount(): Promise<ServerResponse> {
+    // We need the user's ID. To do this securely, we get the session on the server.
+    const { data: { user } } = await supabaseClient.auth.getUser();
+
+    if (!user) {
+        return { success: false, message: "User not found or not authenticated." };
+    }
+
+    // Use the admin client to delete the user from the auth schema.
+    const { error: deleteAuthUserError } = await supabaseAdmin.auth.admin.deleteUser(user.id);
+
+    if (deleteAuthUserError) {
+        console.error('Error deleting user from auth:', deleteAuthUserError);
+        return { success: false, message: 'Failed to delete user account.', error: { message: deleteAuthUserError.message } };
+    }
+
+    // The trigger in the database should have already deleted the user from the public.users table.
+    // We can now sign the user out on the client, although they are effectively logged out anyway.
+    await supabaseClient.auth.signOut();
+    
+    revalidatePath('/');
+
+    return { success: true, message: 'Account deleted successfully.' };
 }
