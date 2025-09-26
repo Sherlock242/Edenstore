@@ -1,3 +1,82 @@
 {
-  "placeholderImages": []
+  "placeholderImages": [
+    {
+      "id": "hero-1",
+      "description": "A vibrant and dynamic anime-style city street at night, with neon signs.",
+      "imageUrl": "https://images.unsplash.com/photo-1758496679785-257271f05454?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw1fHxhbmltZSUyMGNpdHlzY2FwZXxlbnwwfHx8fDE3NTg5MDMzNDd8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "anime cityscape"
+    },
+    {
+      "id": "product-1",
+      "description": "Gojo's Infinity Tee",
+      "imageUrl": "https://images.unsplash.com/photo-1630710478039-9c680b99f800?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwyfHxhbmltZSUyMGNoYXJhY3RlcnxlbnwwfHx8fDE3NTg5MDY2OTd8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "anime character"
+    },
+    {
+      "id": "product-2",
+      "description": "Titan Slayer Hoodie",
+      "imageUrl": "https://images.unsplash.com/photo-1635921479440-f7a2c10d2d54?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxfHxmYW50YXN5JTIwd2FycmlvcnxlbnwwfHx8fDE3NTg4NDAzMTh8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "fantasy warrior"
+    },
+    {
+      "id": "product-3",
+      "description": "Pirate King's Crew Shirt",
+      "imageUrl": "https://images.unsplash.com/photo-1633555442524-533869f78371?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwzfHxwaXJhdGUlMjBzaGlwfGVufDB8fHx8MTc1ODg3Njk5M3ww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "pirate ship"
+    },
+    {
+      "id": "product-4",
+      "description": "Z Warrior's Spirit Tee",
+      "imageUrl": "https://images.unsplash.com/photo-1746470320824-6491a582096d?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw3fHxlbmVyZ3klMjBibGFzdHxlbnwwfHx8fDE3NTg5MDY2OTh8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "energy blast"
+    },
+    {
+      "id": "product-5",
+      "description": "Leaf Village Legend Tee",
+      "imageUrl": "https://images.unsplash.com/photo-1677143051370-da2e52baa771?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw5fHxuaW5qYSUyMGNoYXJhY3RlcnxlbnwwfHx8fDE3NTg4NzEwMjZ8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "ninja character"
+    },
+    {
+      "id": "product-6",
+      "description": "Alchemist's Mark Hoodie",
+      "imageUrl": "https://images.unsplash.com/photo-1551602174-f5c71dbceb83?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwyfHxhbGNoZW15JTIwc3ltYm9sfGVufDB8fHx8MTc1ODkwNjY5OHww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "alchemy symbol"
+    },
+    {
+      "id": "product-7",
+      "description": "Hunter's License Shirt",
+      "imageUrl": "https://images.unsplash.com/photo-1573145984254-d63c10037882?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw3fHxhZHZlbnR1cmVyJTIwYmFkZ2V8ZW58MHx8fHwxNzU4OTA2Njk3fDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "adventurer badge"
+    },
+    {
+      "id": "product-8",
+      "description": "Demon Corp Uniform Tee",
+      "imageUrl": "https://images.unsplash.com/photo-1705932461994-6fb2b07f27dd?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw0fHxkZW1vbiUyMHNsYXllcnxlbnwwfHx8fDE3NTg5MDY2OTh8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "demon slayer"
+    },
+    {
+      "id": "product-9",
+      "description": "Sailor Guardian Bow Tee",
+      "imageUrl": "https://images.unsplash.com/photo-1541971868625-37ae36051aaa?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw1fHxtYWdpY2FsJTIwZ2lybHxlbnwwfHx8fDE3NTg3OTMyNDB8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "magical girl"
+    },
+    {
+      "id": "product-10",
+      "description": "Pro Hero Academia Hoodie",
+      "imageUrl": "https://images.unsplash.com/photo-1598472237441-b5422956195e?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxfHxzdXBlcmhlcm8lMjBzY2hvb2x8ZW58MHx8fHwxNzU4OTA2Njk4fDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "superhero school"
+    },
+    {
+      "id": "product-11",
+      "description": "EVA Unit-01 Shirt",
+      "imageUrl": "https://images.unsplash.com/photo-1619697097549-595050e9eab7?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw2fHxnaWFudCUyMHJvYm90fGVufDB8fHx8MTc1ODg1MTM2OHww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "giant robot"
+    },
+    {
+      "id": "product-12",
+      "description": "Cyberpunk Edgerunner Tee",
+      "imageUrl": "https://images.unsplash.com/photo-1534270804882-6b5048b1c1fc?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw3fHxjeWJlcnB1bmslMjBjaXR5fGVufDB8fHx8MTc1ODg3NTc2OHww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "cyberpunk city"
+    }
+  ]
 }
