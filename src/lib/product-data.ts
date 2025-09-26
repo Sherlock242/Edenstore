@@ -1,3 +1,4 @@
+// src/lib/product-data.ts
 
 import { PlaceHolderImages } from "./placeholder-images";
 

@@ -1,5 +1,5 @@
 
-import { products } from "@/lib/placeholder-data";
+import { getProducts } from "@/app/actions";
 import Image from "next/image";
 import { notFound } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
@@ -13,7 +13,8 @@ import { Star } from "lucide-react";
 import { ProductDetailsClient } from "@/components/product-details-client";
 import { ProductCard } from "@/components/product-card";
 
-export default function ProductPage({ params }: { params: { id: string } }) {
+export default async function ProductPage({ params }: { params: { id: string } }) {
+  const products = await getProducts();
   const product = products.find((p) => p.id === params.id);
 
   if (!product) {
@@ -86,6 +87,7 @@ export default function ProductPage({ params }: { params: { id: string } }) {
 }
 
 export async function generateStaticParams() {
+    const products = await getProducts();
     return products.map((product) => ({
       id: product.id,
     }));

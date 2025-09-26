@@ -9,6 +9,7 @@ import {
   ShoppingBag,
   Shirt,
   User,
+  PlusCircle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -27,6 +28,10 @@ const navLinks = [
   { href: "/wishlist", label: "Wishlist" },
   { href: "/track", label: "Track Order" },
 ];
+
+const adminLinks = [
+    { href: "/admin/add-product", label: "Add Product", icon: PlusCircle },
+]
 
 export function Header() {
   const { state: cartState } = useCart();
@@ -84,6 +89,18 @@ export function Header() {
                   {link.label}
                 </Link>
               ))}
+               <div className="pt-4 mt-4 border-t">
+                {adminLinks.map(link => (
+                    <Link
+                        key={link.href}
+                        href={link.href}
+                        className="flex items-center gap-2 text-foreground/60 transition-colors hover:text-foreground/80"
+                    >
+                        <link.icon className="h-4 w-4" />
+                        {link.label}
+                    </Link>
+                ))}
+                </div>
             </nav>
           </SheetContent>
         </Sheet>
@@ -95,6 +112,17 @@ export function Header() {
               <Search className="h-4 w-4" />
             </Button>
           </form>
+          
+          <div className="hidden md:flex items-center">
+            {adminLinks.map(link => (
+                 <Button variant="ghost" size="sm" asChild key={link.href}>
+                    <Link href={link.href} className="flex items-center gap-1">
+                        <link.icon className="h-4 w-4" />
+                        {link.label}
+                    </Link>
+                </Button>
+            ))}
+          </div>
 
           <Button variant="ghost" size="icon" asChild>
             <Link href="/wishlist">

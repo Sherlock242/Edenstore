@@ -1,4 +1,5 @@
-import { products } from '@/lib/placeholder-data';
+
+import { getProducts } from '@/app/actions';
 import { ProductCard } from '@/components/product-card';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
@@ -13,7 +14,8 @@ import Image from 'next/image';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { Recommendations } from '@/components/recommendations';
 
-export default function Home() {
+export default async function Home() {
+  const products = await getProducts();
   const newReleases = [...products].sort(
     (a, b) => new Date(b.releaseDate).getTime() - new Date(a.releaseDate).getTime()
   );

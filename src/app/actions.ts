@@ -1,8 +1,8 @@
 
 "use server";
 import { generatePersonalizedRecommendations } from "@/ai/flows/personalized-recommendations";
-import { products } from "@/lib/placeholder-data";
-import type { Product } from "@/lib/placeholder-data";
+import { products } from "@/lib/product-data";
+import type { Product } from "@/lib/product-data";
 
 // Mock user data for demonstration purposes
 const MOCK_USER_DATA = {
@@ -42,4 +42,8 @@ export async function getAiRecommendations(): Promise<Product[]> {
     // Return a random set of products as a fallback
     return products.sort(() => 0.5 - Math.random()).slice(0, 4);
   }
+}
+
+export async function getProducts() {
+    return Promise.resolve(products);
 }
