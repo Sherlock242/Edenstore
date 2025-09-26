@@ -85,6 +85,7 @@ export type UpdateProductFormValues = {
   description: string;
   price: number;
   category: string;
+  image?: File | null;
 };
 
 
@@ -218,9 +219,63 @@ export async function addProduct(data: ProductFormValues): Promise<ServerRespons
 
 
 export async function updateProduct(data: UpdateProductFormValues): Promise<ServerResponse> {
-  const { id, ...productData } = data;
+  const { id, image, ...productData } = data;
 
-  const { data: updatedProductData, error: productUpdateError } = await supabaseAdmin
+  // Handle image update if a new image is provided
+  if (image) {
+    // 1. Fetch old image URL to delete it
+    const { data: oldImageData, error: fetchError } = await supabaseAdmin
+      .from('product_images')
+      .select('url')
+      .eq('product_id', id)
+      .single();
+
+    if (fetchError) {
+      console.error('Error fetching old image for deletion:', fetchError);
+      return { success: false, message: 'Could not find old image to replace.' };
+    }
+
+    // 2. Delete old image from storage
+    if (oldImageData?.url) {
+      const oldImagePath = new URL(oldImageData.url).pathname.split('/product-images/').pop();
+      if(oldImagePath) {
+        await supabaseAdmin.storage.from('product-images').remove([`product-images/${oldImagePath}`]);
+      }
+    }
+
+    // 3. Upload new image
+    const fileExt = image.name.split('.').pop();
+    const fileName = `${Date.now()}.${fileExt}`;
+    const filePath = `product-images/${fileName}`;
+
+    const { error: uploadError } = await supabaseAdmin.storage
+      .from('product-images')
+      .upload(filePath, image);
+
+    if (uploadError) {
+      return { success: false, message: 'Failed to upload new image.', error: { message: uploadError.message } };
+    }
+
+    // 4. Get new public URL
+    const { data: urlData } = supabaseAdmin.storage.from('product-images').getPublicUrl(filePath);
+    if (!urlData) {
+      return { success: false, message: 'Failed to get new image URL.' };
+    }
+    const newImageUrl = urlData.publicUrl;
+
+    // 5. Update product_images table
+    const { error: imageUpdateError } = await supabaseAdmin
+      .from('product_images')
+      .update({ url: newImageUrl, hint: productData.name }) // Update hint as well
+      .eq('product_id', id);
+
+    if (imageUpdateError) {
+      return { success: false, message: 'Failed to update image URL in database.', error: { message: imageUpdateError.message } };
+    }
+  }
+  
+  // Update product details in 'products' table
+  const { error: productUpdateError } = await supabaseAdmin
     .from('products')
     .update({
       name: productData.name,
@@ -228,13 +283,11 @@ export async function updateProduct(data: UpdateProductFormValues): Promise<Serv
       price: Number(productData.price),
       category: productData.category,
     })
-    .eq('id', id)
-    .select()
-    .single();
+    .eq('id', id);
 
   if (productUpdateError) {
     console.error('Error updating product:', productUpdateError);
-    return { success: false, message: 'Failed to update product.', error: { message: productUpdateError.message } };
+    return { success: false, message: 'Failed to update product details.', error: { message: productUpdateError.message } };
   }
 
   revalidatePath('/');

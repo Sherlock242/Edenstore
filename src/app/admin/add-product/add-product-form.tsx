@@ -17,7 +17,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
-import { addProduct, updateProduct, type Product, type ProductFormValues } from '@/app/actions';
+import { addProduct, updateProduct, type Product, type ProductFormValues, type UpdateProductFormValues } from '@/app/actions';
 import { Upload } from 'lucide-react';
 import Image from 'next/image';
 
@@ -77,7 +77,7 @@ export function AddProductForm({ productToEdit, onProductAddedOrUpdated }: AddPr
               description: productToEdit.description,
               price: productToEdit.price,
               category: productToEdit.category,
-              image: undefined,
+              image: undefined, // Clear image input on edit
               imageHint: productToEdit.images[0]?.hint || '',
           });
           setImagePreview(productToEdit.images[0]?.url || null);
@@ -102,15 +102,26 @@ export function AddProductForm({ productToEdit, onProductAddedOrUpdated }: AddPr
     let result;
 
     if (isEditMode && values.id) {
-        // We don't support image updates in this simplified form.
-        const { image, imageHint, ...updateValues } = values;
-        result = await updateProduct(updateValues as {id:string, name:string, description:string, price:number, category:string});
+        const updateValues: UpdateProductFormValues = {
+            id: values.id,
+            name: values.name,
+            description: values.description,
+            price: values.price,
+            category: values.category,
+            image: values.image || null,
+        };
+        result = await updateProduct(updateValues);
     } else {
        if (!values.image) {
             form.setError('image', { type: 'manual', message: 'Image is required for a new product.' });
             return;
        }
-        result = await addProduct(values as ProductFormValues);
+        // Ensure imageHint is present for new products, even though it's optional in the schema for edit mode
+        const addValues = {
+            ...values,
+            imageHint: values.imageHint || values.name,
+        }
+        result = await addProduct(addValues as ProductFormValues);
     }
 
     if (result.success) {
@@ -199,7 +210,7 @@ export function AddProductForm({ productToEdit, onProductAddedOrUpdated }: AddPr
                 <div className="flex w-full items-center justify-center">
                   <label
                     htmlFor="image-upload"
-                    className={`flex h-64 w-full cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-border bg-card ${!isEditMode && 'hover:bg-muted'}`}
+                    className="flex h-64 w-full cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-border bg-card hover:bg-muted"
                   >
                     {imagePreview ? (
                       <Image
@@ -227,7 +238,6 @@ export function AddProductForm({ productToEdit, onProductAddedOrUpdated }: AddPr
                       className="hidden"
                       accept="image/png, image/jpeg, image/webp"
                       {...fieldProps}
-                      disabled={isEditMode}
                       onChange={event => {
                         const file = event.target.files?.[0];
                         if (file) {
@@ -244,7 +254,7 @@ export function AddProductForm({ productToEdit, onProductAddedOrUpdated }: AddPr
                 </div>
               </FormControl>
                {isEditMode && (
-                  <FormDescription>Image updates are not supported in this simplified form.</FormDescription>
+                  <FormDescription>Leave blank to keep the current image. Upload a new file to replace it.</FormDescription>
                 )}
               <FormMessage />
             </FormItem>
