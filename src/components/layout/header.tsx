@@ -34,6 +34,7 @@ import { useAuth } from "@/contexts/auth-context";
 import { CartSheetContent } from "../cart-sheet";
 import { usePathname } from 'next/navigation';
 import { cn } from "@/lib/utils";
+import md5 from "md5";
 
 const navLinks = [
   { href: "/products", label: "T-Shirts" },
@@ -47,7 +48,7 @@ const adminLinks = [
 
 export function Header() {
   const { state: cartState } = useCart();
-  const { user, loading, logout, isadmin } = useAuth();
+  const { user, userProfile, loading, logout, isadmin } = useAuth();
   const pathname = usePathname();
   const cartItemCount = cartState.items.reduce((acc, item) => acc + item.quantity, 0);
   
@@ -55,6 +56,12 @@ export function Header() {
     if (!email) return "U";
     return email[0].toUpperCase();
   };
+
+  const getGravatarUrl = (email: string | null | undefined) => {
+    if (!email) return '';
+    const hash = md5(email.trim().toLowerCase());
+    return `https://www.gravatar.com/avatar/${hash}?d=mp`;
+  }
 
 
   return (
@@ -186,7 +193,7 @@ export function Header() {
                     <DropdownMenuTrigger asChild>
                         <Button variant="ghost" className="relative h-9 w-9 rounded-full">
                             <Avatar className="h-9 w-9">
-                                <AvatarImage src={user.user_metadata?.avatar_url || ''} alt={user.email || 'User'} />
+                                <AvatarImage src={user.user_metadata?.avatar_url || getGravatarUrl(user.email)} alt={user.email || 'User'} />
                                 <AvatarFallback>{getAvatarFallback(user.email)}</AvatarFallback>
                             </Avatar>
                         </Button>
@@ -194,8 +201,8 @@ export function Header() {
                     <DropdownMenuContent className="w-56" align="end" forceMount>
                         <DropdownMenuLabel className="font-normal">
                             <div className="flex flex-col space-y-1">
-                                <p className="text-sm font-medium leading-none">{user.user_metadata?.name || user.email}</p>
-                                {user.user_metadata?.name && <p className="text-xs leading-none text-muted-foreground">{user.email}</p>}
+                                <p className="text-sm font-medium leading-none">{userProfile?.display_name || user.email}</p>
+                                {userProfile?.display_name && <p className="text-xs leading-none text-muted-foreground">{user.email}</p>}
                             </div>
                         </DropdownMenuLabel>
                         <DropdownMenuSeparator />
