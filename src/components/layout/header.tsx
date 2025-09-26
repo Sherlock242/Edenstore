@@ -73,6 +73,7 @@ export function Header() {
   const [isPending, startTransition] = useTransition();
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const cartItemCount = cartState.items.reduce((acc, item) => acc + item.quantity, 0);
   
@@ -122,7 +123,7 @@ export function Header() {
       <div className="grid h-16 w-full grid-cols-3 items-center px-4 sm:px-6 lg:px-8">
         {/* Left Section (Mobile Menu & Desktop Nav) */}
         <div className="flex items-center justify-start">
-           <Sheet>
+           <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
             <SheetTrigger asChild>
               <Button
                 variant="ghost"
@@ -136,7 +137,7 @@ export function Header() {
             <SheetContent side="left" className="flex flex-col">
               <SheetHeader>
                   <SheetTitle>
-                    <Link href="/" className="mb-6 flex items-center space-x-2">
+                    <Link href="/" onClick={() => setIsMobileMenuOpen(false)} className="mb-6 flex items-center space-x-2">
                       <span className="font-bold font-headline text-lg uppercase bg-gradient-to-r from-orange-600 to-yellow-400 bg-clip-text text-transparent">
                         EDENSTORE
                       </span>
@@ -148,12 +149,13 @@ export function Header() {
                   <Link
                     key={link.href}
                     href={link.href}
+                    onClick={() => setIsMobileMenuOpen(false)}
                     className={cn("transition-colors hover:text-foreground/80", pathname === link.href ? "text-foreground" : "text-foreground/60")}
                   >
                     {link.label}
                   </Link>
                 ))}
-                  <Link href="/wishlist" className="transition-colors hover:text-foreground/80 text-foreground/60">Wishlist</Link>
+                  <Link href="/wishlist" onClick={() => setIsMobileMenuOpen(false)} className="transition-colors hover:text-foreground/80 text-foreground/60">Wishlist</Link>
                 {isadmin && (
                   <div className="pt-4 mt-4 border-t">
                   <p className="px-2 py-1 text-xs font-semibold text-muted-foreground">Admin</p>
@@ -161,6 +163,7 @@ export function Header() {
                       <Link
                           key={link.href}
                           href={link.href}
+                          onClick={() => setIsMobileMenuOpen(false)}
                           className="flex items-center gap-2 text-foreground/60 transition-colors hover:text-foreground/80 py-2"
                       >
                           <link.icon className="h-4 w-4" />
@@ -203,7 +206,7 @@ export function Header() {
                           </Button>
                       </div>
                   ) : (
-                      <Button asChild className="w-full">
+                      <Button asChild className="w-full" onClick={() => setIsMobileMenuOpen(false)}>
                           <Link href="/login">
                             <LogIn className="mr-2 h-4 w-4"/>
                             Login
