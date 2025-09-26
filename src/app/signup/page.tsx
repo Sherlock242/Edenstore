@@ -47,23 +47,22 @@ export default function SignupPage() {
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsLoading(true);
-    try {
-      await signUpWithEmail(values.email, values.password);
-      toast({
-        title: 'Account Created!',
-        description: "You've successfully created your account.",
-      });
-      router.push('/');
-    } catch (error: any) {
-      console.error(error);
+    const { error } = await signUpWithEmail(values.email, values.password);
+
+    if (error) {
       toast({
         variant: 'destructive',
         title: 'Signup Failed',
         description: error.message || 'An unexpected error occurred.',
       });
-    } finally {
-      setIsLoading(false);
+    } else {
+      toast({
+        title: 'Account Created!',
+        description: "Please check your email to verify your account.",
+      });
+      router.push('/');
     }
+    setIsLoading(false);
   }
 
   return (

@@ -42,23 +42,22 @@ export default function LoginPage() {
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsLoading(true);
-    try {
-      await signInWithEmail(values.email, values.password);
-      toast({
-        title: 'Success!',
-        description: "You've successfully logged in.",
-      });
-      router.push('/');
-    } catch (error: any) {
-      console.error(error);
+    const { error } = await signInWithEmail(values.email, values.password);
+
+    if (error) {
       toast({
         variant: 'destructive',
         title: 'Login Failed',
         description: error.message || 'An unexpected error occurred.',
       });
-    } finally {
-        setIsLoading(false);
+    } else {
+      toast({
+        title: 'Success!',
+        description: "You've successfully logged in.",
+      });
+      router.push('/');
     }
+    setIsLoading(false);
   }
 
   return (
