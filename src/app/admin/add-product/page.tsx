@@ -130,7 +130,7 @@ export default function AddProductPage() {
                   <FormItem>
                     <FormLabel>Price</FormLabel>
                     <FormControl>
-                      <Input type="number" placeholder="29.99" {...field} />
+                      <Input type="number" placeholder="29.99" {...field} onChange={e => field.onChange(e.target.value === '' ? '' : Number(e.target.value))}/>
                     </FormControl>
                     <FormMessage />
                   </FormItem>
