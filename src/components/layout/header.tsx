@@ -13,6 +13,7 @@ import {
   Trash2,
   Search,
   X,
+  Heart,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -45,7 +46,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useCart } from "@/contexts/cart-context";
 import { useAuth } from "@/contexts/auth-context";
 import { CartSheetContent } from "../cart-sheet";
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { cn } from "@/lib/utils";
 import md5 from "md5";
 import { deleteUserAccount } from "@/app/actions";
@@ -66,10 +67,12 @@ export function Header() {
   const { state: cartState } = useCart();
   const { user, userProfile, loading, logout, isadmin } = useAuth();
   const pathname = usePathname();
+  const router = useRouter();
   const { toast } = useToast();
   const [isDeleteAlertOpen, setIsDeleteAlertOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
   const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
 
   const cartItemCount = cartState.items.reduce((acc, item) => acc + item.quantity, 0);
   
@@ -104,38 +107,21 @@ export function Header() {
     });
   };
 
+  const handleSearchSubmit = (e: React.FormEvent) => {
+      e.preventDefault();
+      if (searchQuery.trim()) {
+          router.push(`/products?q=${encodeURIComponent(searchQuery.trim())}`);
+          setIsSearchOpen(false);
+          setSearchQuery('');
+      }
+  }
+
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="flex h-16 items-center px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-start md:hidden">
-          <Link href="/" className="flex items-center space-x-2">
-              <span className="font-bold font-headline text-lg uppercase bg-gradient-to-r from-orange-500 to-yellow-400 bg-clip-text text-transparent">
-                EDENSTORE
-              </span>
-          </Link>
-        </div>
-
-        <div className="ml-auto flex items-center md:hidden">
-          <Button variant="ghost" size="icon" onClick={() => setIsSearchOpen(!isSearchOpen)}>
-            <Search className="h-5 w-5" />
-            <span className="sr-only">Search</span>
-          </Button>
-          <Sheet>
-              <SheetTrigger asChild>
-              <Button variant="ghost" size="icon" className="relative">
-                  <ShoppingBag className="h-5 w-5" />
-                  {cartItemCount > 0 && (
-                  <span className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-xs text-primary-foreground">
-                      {cartItemCount}
-                  </span>
-                  )}
-                  <span className="sr-only">Shopping Cart</span>
-              </Button>
-              </SheetTrigger>
-              <CartSheetContent />
-          </Sheet>
-            <Sheet>
+           <Sheet>
             <SheetTrigger asChild>
               <Button
                 variant="ghost"
@@ -145,11 +131,11 @@ export function Header() {
                 <Menu className="h-5 w-5" />
               </Button>
             </SheetTrigger>
-            <SheetContent side="right" className="flex flex-col">
+            <SheetContent side="left" className="flex flex-col">
               <SheetHeader>
                   <SheetTitle>
                     <Link href="/" className="mb-6 flex items-center space-x-2">
-                      <span className="font-bold font-headline text-lg uppercase bg-gradient-to-r from-orange-500 to-yellow-400 bg-clip-text text-transparent">
+                      <span className="font-bold font-headline text-lg uppercase bg-gradient-to-r from-orange-600 to-yellow-400 bg-clip-text text-transparent">
                         EDENSTORE
                       </span>
                     </Link>
@@ -227,9 +213,40 @@ export function Header() {
           </Sheet>
         </div>
 
+        <div className="flex w-full items-center justify-center md:justify-start">
+             <Link href="/" className="flex items-center space-x-2">
+              <span className="font-bold font-headline text-lg uppercase bg-gradient-to-r from-orange-600 to-yellow-400 bg-clip-text text-transparent">
+                EDENSTORE
+              </span>
+            </Link>
+        </div>
+
+
+        <div className="ml-auto flex items-center md:hidden">
+          <Button variant="ghost" size="icon" onClick={() => setIsSearchOpen(!isSearchOpen)}>
+            <Search className="h-5 w-5" />
+            <span className="sr-only">Search</span>
+          </Button>
+          <Sheet>
+              <SheetTrigger asChild>
+              <Button variant="ghost" size="icon" className="relative">
+                  <ShoppingBag className="h-5 w-5" />
+                  {cartItemCount > 0 && (
+                  <span className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-xs text-primary-foreground">
+                      {cartItemCount}
+                  </span>
+                  )}
+                  <span className="sr-only">Shopping Cart</span>
+              </Button>
+              </SheetTrigger>
+              <CartSheetContent />
+          </Sheet>
+           
+        </div>
+
         <div className="hidden flex-1 items-center justify-start md:flex">
           <Link href="/" className="mr-6 flex items-center space-x-2">
-            <span className="font-bold font-headline text-lg uppercase bg-gradient-to-r from-orange-500 to-yellow-400 bg-clip-text text-transparent">
+            <span className="font-bold font-headline text-lg uppercase bg-gradient-to-r from-orange-600 to-yellow-400 bg-clip-text text-transparent">
               EDENSTORE
             </span>
           </Link>
@@ -300,14 +317,14 @@ export function Header() {
                                 </div>
                             </DropdownMenuLabel>
                             <DropdownMenuSeparator />
+                            <DropdownMenuItem onClick={() => router.push('/wishlist')}>
+                                <Heart className="mr-2 h-4 w-4" />
+                                <span>Wishlist</span>
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
                             <DropdownMenuItem onClick={() => logout()}>
                                 <LogOut className="mr-2 h-4 w-4" />
                                 <span>Log out</span>
-                            </DropdownMenuItem>
-                            <DropdownMenuSeparator />
-                             <DropdownMenuItem onClick={() => router.push('/wishlist')}>
-                                <Heart className="mr-2 h-4 w-4" />
-                                <span>Wishlist</span>
                             </DropdownMenuItem>
                             <DropdownMenuSeparator />
                             <DropdownMenuItem
@@ -335,14 +352,21 @@ export function Header() {
       >
         <div className="p-4 border-b">
           <div className="container mx-auto max-w-7xl">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-              <Input placeholder="Search for products..." className="pl-10" />
-              <Button variant="ghost" size="icon" className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8" onClick={() => setIsSearchOpen(false)}>
-                <X className="h-5 w-5" />
-                <span className="sr-only">Close search</span>
-              </Button>
-            </div>
+            <form onSubmit={handleSearchSubmit}>
+                <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                <Input 
+                    placeholder="Search for products..." 
+                    className="pl-10"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                />
+                <Button variant="ghost" size="icon" className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8" onClick={() => setIsSearchOpen(false)}>
+                    <X className="h-5 w-5" />
+                    <span className="sr-only">Close search</span>
+                </Button>
+                </div>
+            </form>
           </div>
         </div>
       </div>
@@ -370,5 +394,7 @@ export function Header() {
     </header>
   );
 }
+
+    
 
     
