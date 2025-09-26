@@ -3,7 +3,6 @@
 
 import { revalidatePath } from 'next/cache';
 import { createClient } from '@supabase/supabase-js';
-import { supabase } from '@/lib/supabase-client';
 
 // Create a new Supabase client with admin privileges for server-side operations
 // This uses the service role key, which has full admin privileges.
@@ -35,7 +34,7 @@ export type Product = {
 
 // This function now needs to fetch from Supabase
 export async function getProducts(): Promise<Product[]> {
-    const { data: productsData, error } = await supabase
+    const { data: productsData, error } = await supabaseAdmin
       .from('products')
       .select(`
         id,
@@ -165,7 +164,7 @@ export async function addProduct(data: ProductFormValues): Promise<ServerRespons
     revalidatePath('/admin/add-product');
 
     // Fetch the newly created product to return it
-    const { data: finalProductData, error: finalProductError } = await supabase
+    const { data: finalProductData, error: finalProductError } = await supabaseAdmin
       .from('products')
       .select(`
         id,
