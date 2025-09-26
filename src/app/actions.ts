@@ -2,8 +2,23 @@
 "use server";
 
 import { revalidatePath } from 'next/cache';
+import { createClient } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabase-client';
-import type { PostgrestError } from '@supabase/supabase-js';
+
+// Create a new Supabase client with admin privileges for server-side operations
+// This uses the service role key, which has full admin privileges.
+// NEVER expose this key or use this client in the browser.
+const supabaseAdmin = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!,
+  {
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false,
+    },
+  }
+);
+
 
 export type Product = {
   id: string;
@@ -68,29 +83,29 @@ export type ProductFormValues = {
 type ServerResponse = {
     success: boolean;
     message: string;
-    error?: PostgrestError | { message: string } | null;
+    error?: { message: string } | null;
     product?: Product;
 }
 
 export async function addProduct(data: ProductFormValues): Promise<ServerResponse> {
     const { image, ...productData } = data;
     
-    // 1. Upload image to Supabase Storage
+    // 1. Upload image to Supabase Storage using the admin client
     const fileExt = image.name.split('.').pop();
     const fileName = `${Date.now()}.${fileExt}`;
     const filePath = `product-images/${fileName}`;
 
-    const { error: uploadError } = await supabase.storage
+    const { error: uploadError } = await supabaseAdmin.storage
         .from('product-images')
         .upload(filePath, image);
 
     if (uploadError) {
         console.error('Error uploading image:', uploadError);
-        return { success: false, message: 'Failed to upload image.', error: uploadError };
+        return { success: false, message: 'Failed to upload image.', error: { message: uploadError.message } };
     }
 
     // 2. Get public URL for the uploaded image
-    const { data: urlData } = supabase.storage
+    const { data: urlData } = supabaseAdmin.storage
         .from('product-images')
         .getPublicUrl(filePath);
     
@@ -100,8 +115,8 @@ export async function addProduct(data: ProductFormValues): Promise<ServerRespons
     
     const imageUrl = urlData.publicUrl;
 
-    // 3. Insert product data into the 'products' table
-    const { data: newProductData, error: productInsertError } = await supabase
+    // 3. Insert product data into the 'products' table using the admin client
+    const { data: newProductData, error: productInsertError } = await supabaseAdmin
         .from('products')
         .insert({
             name: productData.name,
@@ -115,13 +130,13 @@ export async function addProduct(data: ProductFormValues): Promise<ServerRespons
 
     if (productInsertError) {
         console.error('Error inserting product:', productInsertError);
-        return { success: false, message: 'Failed to add product to database.', error: productInsertError };
+        return { success: false, message: 'Failed to add product to database.', error: { message: productInsertError.message } };
     }
 
     const productId = newProductData.id;
 
-    // 4. Insert image data into 'product_images' table
-    const { error: imageInsertError } = await supabase
+    // 4. Insert image data into 'product_images' table using the admin client
+    const { error: imageInsertError } = await supabaseAdmin
         .from('product_images')
         .insert({
             product_id: productId,
@@ -132,7 +147,7 @@ export async function addProduct(data: ProductFormValues): Promise<ServerRespons
     if (imageInsertError) {
         console.error('Error inserting product image:', imageInsertError);
         // Optionally, handle cleanup of product or image if this step fails
-        return { success: false, message: 'Failed to save product image.', error: imageInsertError };
+        return { success: false, message: 'Failed to save product image.', error: { message: imageInsertError.message } };
     }
 
     // For simplicity, we'll add some default sizes and colors. In a real app, this would be part of the form.
@@ -142,15 +157,48 @@ export async function addProduct(data: ProductFormValues): Promise<ServerRespons
     const sizesToInsert = defaultSizes.map(size => ({ product_id: productId, size }));
     const colorsToInsert = defaultColors.map(color => ({ product_id: productId, color }));
 
-    await supabase.from('product_sizes').insert(sizesToInsert);
-    await supabase.from('product_colors').insert(colorsToInsert);
+    await supabaseAdmin.from('product_sizes').insert(sizesToInsert);
+    await supabaseAdmin.from('product_colors').insert(colorsToInsert);
 
     revalidatePath('/');
     revalidatePath('/products');
     revalidatePath('/admin/add-product');
 
     // Fetch the newly created product to return it
-    const finalProduct = await getProducts().then(products => products.find(p => p.id === productId.toString()));
+    const { data: finalProductData, error: finalProductError } = await supabase
+      .from('products')
+      .select(`
+        id,
+        name,
+        description,
+        price,
+        category,
+        popularity,
+        release_date,
+        product_images ( id, url, hint ),
+        product_sizes ( size ),
+        product_colors ( color )
+      `)
+      .eq('id', productId)
+      .single();
+
+    if (finalProductError || !finalProductData) {
+        console.error('Error fetching final product:', finalProductError);
+        return { success: true, message: 'Product added, but failed to fetch final details.' };
+    }
+    
+    const finalProduct = {
+        id: finalProductData.id.toString(),
+        name: finalProductData.name,
+        description: finalProductData.description,
+        price: finalProductData.price,
+        category: finalProductData.category,
+        popularity: finalProductData.popularity,
+        releaseDate: finalProductData.release_date,
+        images: finalProductData.product_images.map((img: any) => ({ id: img.id.toString(), url: img.url, hint: img.hint })),
+        sizes: finalProductData.product_sizes.map((s: any) => s.size),
+        colors: finalProductData.product_colors.map((c: any) => c.color),
+    };
 
 
     return {
