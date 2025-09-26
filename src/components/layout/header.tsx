@@ -112,7 +112,7 @@ export function Header() {
         <div className="flex w-full items-center justify-between md:hidden">
           <Link href="/" className="flex items-center space-x-2">
               <Shirt className="h-6 w-6 text-primary" />
-              <span className="font-bold font-headline text-lg uppercase bg-gradient-to-r from-yellow-400 to-orange-600 bg-clip-text text-transparent">
+              <span className="font-bold font-headline text-lg uppercase bg-gradient-to-r from-orange-600 to-yellow-400 bg-clip-text text-transparent">
                 EDENSTORE
               </span>
           </Link>
@@ -152,7 +152,7 @@ export function Header() {
                    <SheetTitle>
                      <Link href="/" className="mb-6 flex items-center space-x-2">
                         <Shirt className="h-6 w-6 text-primary" />
-                        <span className="font-bold font-headline text-lg uppercase bg-gradient-to-r from-yellow-400 to-orange-600 bg-clip-text text-transparent">
+                        <span className="font-bold font-headline text-lg uppercase bg-gradient-to-r from-orange-600 to-yellow-400 bg-clip-text text-transparent">
                           EDENSTORE
                         </span>
                       </Link>
@@ -233,7 +233,7 @@ export function Header() {
         <div className="hidden flex-1 items-center justify-start md:flex">
           <Link href="/" className="mr-6 flex items-center space-x-2">
             <Shirt className="h-6 w-6 text-primary" />
-            <span className="font-bold font-headline text-lg uppercase bg-gradient-to-r from-yellow-400 to-orange-600 bg-clip-text text-transparent">
+            <span className="font-bold font-headline text-lg uppercase bg-gradient-to-r from-orange-600 to-yellow-400 bg-clip-text text-transparent">
               EDENSTORE
             </span>
           </Link>
@@ -360,4 +360,3 @@ export function Header() {
     </header>
   );
 }
-

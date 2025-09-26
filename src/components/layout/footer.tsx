@@ -8,7 +8,7 @@ export function Footer() {
       <div className="container mx-auto flex flex-col items-center justify-between gap-6 px-4 py-8 sm:flex-row">
         <div className="flex items-center space-x-2">
           <Shirt className="h-6 w-6 text-primary" />
-          <span className="font-bold font-headline text-lg uppercase bg-gradient-to-r from-yellow-400 to-orange-600 bg-clip-text text-transparent">
+          <span className="font-bold font-headline text-lg uppercase bg-gradient-to-r from-orange-600 to-yellow-400 bg-clip-text text-transparent">
             EDENSTORE
           </span>
         </div>
@@ -30,4 +30,3 @@ export function Footer() {
     </footer>
   );
 }
-
