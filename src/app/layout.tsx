@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import { Inter, Bangers } from 'next/font/google';
+import { Inter, Space_Grotesk } from 'next/font/google';
 import './globals.css';
 import { Toaster } from '@/components/ui/toaster';
 import { Header } from '@/components/layout/header';
@@ -11,10 +11,10 @@ const inter = Inter({
   variable: '--font-inter',
 });
 
-const bangers = Bangers({
+const spaceGrotesk = Space_Grotesk({
   subsets: ['latin'],
-  variable: '--font-bangers',
-  weight: '400',
+  variable: '--font-space-grotesk',
+  weight: ['400', '700'],
 });
 
 export const metadata: Metadata = {
@@ -30,7 +30,7 @@ export default function RootLayout({
   return (
     <html lang="en" className="dark">
       <body
-        className={`${inter.variable} ${bangers.variable} font-body antialiased`}
+        className={`${inter.variable} ${spaceGrotesk.variable} font-body antialiased`}
       >
         <AppProviders>
           <div className="flex min-h-screen flex-col">
