@@ -130,7 +130,7 @@ export default function AddProductPage() {
                   <FormItem>
                     <FormLabel>Price</FormLabel>
                     <FormControl>
-                      <Input type="number" placeholder="29.99" {...field} onChange={e => field.onChange(e.target.value === '' ? '' : Number(e.target.value))}/>
+                      <Input type="number" placeholder="29.99" {...field} onChange={e => field.onChange(e.target.valueAsNumber || 0)} value={field.value ?? ''} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -152,7 +152,7 @@ export default function AddProductPage() {
               <FormField
                 control={form.control}
                 name="image"
-                render={({field: { onChange, ...fieldProps }}) => (
+                render={({field: { onChange, value, ...fieldProps }}) => (
                   <FormItem>
                     <FormLabel>Product Image</FormLabel>
                     <FormControl>
