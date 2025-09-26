@@ -206,3 +206,51 @@ export async function addProduct(data: ProductFormValues): Promise<ServerRespons
         product: finalProduct,
     };
 }
+
+export async function deleteProduct(productId: string): Promise<ServerResponse> {
+  // First, fetch the product to get the image URL for deletion from storage
+  const { data: productData, error: fetchError } = await supabaseAdmin
+    .from('products')
+    .select('id, product_images(url)')
+    .eq('id', productId)
+    .single();
+
+  if (fetchError || !productData) {
+    console.error('Error fetching product for deletion:', fetchError);
+    return { success: false, message: 'Could not find the product to delete.' };
+  }
+
+  // Delete image from Supabase Storage
+  if (productData.product_images && productData.product_images.length > 0) {
+      const imageUrl = productData.product_images[0].url;
+      const filePath = new URL(imageUrl).pathname.split('/product-images/').pop();
+      if(filePath) {
+        const { error: storageError } = await supabaseAdmin.storage
+            .from('product-images')
+            .remove([`product-images/${filePath}`]);
+
+        if (storageError) {
+            console.error('Error deleting product image from storage:', storageError);
+            // Don't block product deletion if image deletion fails, but log it.
+        }
+      }
+  }
+
+  // Delete the product from the 'products' table.
+  // Cascading delete should handle related tables (images, sizes, colors)
+  const { error: deleteError } = await supabaseAdmin
+    .from('products')
+    .delete()
+    .eq('id', productId);
+
+  if (deleteError) {
+    console.error('Error deleting product:', deleteError);
+    return { success: false, message: 'Failed to delete product.', error: { message: deleteError.message } };
+  }
+
+  revalidatePath('/admin/add-product');
+  revalidatePath('/products');
+  revalidatePath('/');
+
+  return { success: true, message: 'Product deleted successfully.' };
+}
