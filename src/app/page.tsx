@@ -12,7 +12,6 @@ import {
 } from '@/components/ui/carousel';
 import Image from 'next/image';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
-import { Recommendations } from '@/components/recommendations';
 
 export default async function Home() {
   const products = await getProducts();
@@ -50,10 +49,6 @@ export default async function Home() {
             </Button>
           </div>
         </div>
-      </section>
-
-      <section id="for-you" className="container mx-auto px-4">
-        <Recommendations />
       </section>
 
       <section id="new-releases" className="container mx-auto px-4">
