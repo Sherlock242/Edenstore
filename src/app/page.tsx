@@ -44,7 +44,7 @@ export default async function Home() {
             characters and stories to life.
           </p>
           <div>
-            <Button asChild size="lg" className="bg-accent text-accent-foreground hover:bg-accent/90">
+            <Button asChild size="lg" className="bg-yellow-500 text-black hover:bg-yellow-600">
               <Link href="#new-releases">Shop Now</Link>
             </Button>
           </div>
