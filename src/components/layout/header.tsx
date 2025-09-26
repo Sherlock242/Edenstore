@@ -12,6 +12,7 @@ import {
   LogIn,
   Trash2,
   Search,
+  X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -50,6 +51,7 @@ import md5 from "md5";
 import { deleteUserAccount } from "@/app/actions";
 import { useToast } from "@/hooks/use-toast";
 import { Separator } from "../ui/separator";
+import { Input } from "../ui/input";
 
 const navLinks = [
   { href: "/products", label: "T-Shirts" },
@@ -67,6 +69,7 @@ export function Header() {
   const { toast } = useToast();
   const [isDeleteAlertOpen, setIsDeleteAlertOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
 
   const cartItemCount = cartState.items.reduce((acc, item) => acc + item.quantity, 0);
   
@@ -104,17 +107,17 @@ export function Header() {
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="flex h-16 w-full items-center px-4 sm:px-6 lg:px-8">
-        <div className="flex flex-1 items-center justify-start md:hidden">
+      <div className="flex h-16 items-center px-4 sm:px-6 lg:px-8">
+        <div className="flex items-center justify-start md:hidden">
           <Link href="/" className="flex items-center space-x-2">
-              <span className="font-bold font-headline text-lg uppercase bg-gradient-to-r from-orange-600 to-yellow-400 bg-clip-text text-transparent">
+              <span className="font-bold font-headline text-lg uppercase bg-gradient-to-r from-orange-500 to-yellow-400 bg-clip-text text-transparent">
                 EDENSTORE
               </span>
           </Link>
         </div>
 
-        <div className="flex items-center justify-end md:hidden">
-          <Button variant="ghost" size="icon">
+        <div className="ml-auto flex items-center md:hidden">
+          <Button variant="ghost" size="icon" onClick={() => setIsSearchOpen(!isSearchOpen)}>
             <Search className="h-5 w-5" />
             <span className="sr-only">Search</span>
           </Button>
@@ -146,7 +149,7 @@ export function Header() {
               <SheetHeader>
                   <SheetTitle>
                     <Link href="/" className="mb-6 flex items-center space-x-2">
-                      <span className="font-bold font-headline text-lg uppercase bg-gradient-to-r from-orange-600 to-yellow-400 bg-clip-text text-transparent">
+                      <span className="font-bold font-headline text-lg uppercase bg-gradient-to-r from-orange-500 to-yellow-400 bg-clip-text text-transparent">
                         EDENSTORE
                       </span>
                     </Link>
@@ -226,7 +229,7 @@ export function Header() {
 
         <div className="hidden flex-1 items-center justify-start md:flex">
           <Link href="/" className="mr-6 flex items-center space-x-2">
-            <span className="font-bold font-headline text-lg uppercase bg-gradient-to-r from-orange-600 to-yellow-400 bg-clip-text text-transparent">
+            <span className="font-bold font-headline text-lg uppercase bg-gradient-to-r from-orange-500 to-yellow-400 bg-clip-text text-transparent">
               EDENSTORE
             </span>
           </Link>
@@ -258,7 +261,7 @@ export function Header() {
             )}
 
             <div className="flex items-center space-x-2">
-                <Button variant="ghost" size="icon">
+                <Button variant="ghost" size="icon" onClick={() => setIsSearchOpen(!isSearchOpen)}>
                   <Search className="h-5 w-5" />
                   <span className="sr-only">Search</span>
                 </Button>
@@ -302,6 +305,11 @@ export function Header() {
                                 <span>Log out</span>
                             </DropdownMenuItem>
                             <DropdownMenuSeparator />
+                             <DropdownMenuItem onClick={() => router.push('/wishlist')}>
+                                <Heart className="mr-2 h-4 w-4" />
+                                <span>Wishlist</span>
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
                             <DropdownMenuItem
                                 className="text-red-500 focus:bg-red-500/10 focus:text-red-600"
                                 onClick={() => setIsDeleteAlertOpen(true)}
@@ -317,6 +325,25 @@ export function Header() {
                     </Button>
                 )}
             </div>
+        </div>
+      </div>
+      <div
+        className={cn(
+          "absolute top-full left-0 w-full bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 transition-[max-height,opacity] duration-300 ease-in-out overflow-hidden",
+          isSearchOpen ? "max-h-40 opacity-100" : "max-h-0 opacity-0"
+        )}
+      >
+        <div className="p-4 border-b">
+          <div className="container mx-auto max-w-7xl">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+              <Input placeholder="Search for products..." className="pl-10" />
+              <Button variant="ghost" size="icon" className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8" onClick={() => setIsSearchOpen(false)}>
+                <X className="h-5 w-5" />
+                <span className="sr-only">Close search</span>
+              </Button>
+            </div>
+          </div>
         </div>
       </div>
       <AlertDialog open={isDeleteAlertOpen} onOpenChange={setIsDeleteAlertOpen}>
@@ -343,3 +370,5 @@ export function Header() {
     </header>
   );
 }
+
+    
