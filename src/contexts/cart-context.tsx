@@ -1,7 +1,7 @@
 
 "use client";
 
-import type { Product } from "@/lib/placeholder-data";
+import type { Product } from "@/app/actions";
 import {
   createContext,
   useContext,

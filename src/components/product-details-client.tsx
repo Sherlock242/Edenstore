@@ -1,7 +1,7 @@
 
 "use client";
 import { useState } from "react";
-import type { Product } from "@/lib/placeholder-data";
+import type { Product } from "@/app/actions";
 import { Button } from "@/components/ui/button";
 import { Heart, ShoppingCart } from "lucide-react";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";

@@ -1,11 +1,11 @@
 
 // src/app/admin/add-product/page.tsx
 'use client';
-import {useEffect, useState} from 'react';
-import {useForm} from 'react-hook-form';
-import {zodResolver} from '@hookform/resolvers/zod';
-import {z} from 'zod';
-import {Button} from '@/components/ui/button';
+import { useState } from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
+import { Button } from '@/components/ui/button';
 import {
   Form,
   FormControl,
@@ -15,13 +15,12 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form';
-import {Input} from '@/components/ui/input';
-import {Textarea} from '@/components/ui/textarea';
-import {Card, CardContent, CardHeader, CardTitle} from '@/components/ui/card';
-import {useToast} from '@/hooks/use-toast';
-import {addProduct} from './actions';
-import type {ProductFormValues} from './actions';
-import {Lock, Upload} from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { useToast } from '@/hooks/use-toast';
+import { addProduct, type ProductFormValues } from '@/app/actions';
+import { Upload } from 'lucide-react';
 import Image from 'next/image';
 
 const formSchema = z.object({
@@ -52,7 +51,6 @@ const formSchema = z.object({
 });
 
 export default function AddProductPage() {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const {toast} = useToast();
   const form = useForm<z.infer<typeof formSchema>>({
@@ -68,14 +66,6 @@ export default function AddProductPage() {
   });
 
   const imageRef = form.register('image');
-
-  useEffect(() => {
-    // In a real application, never do this. This is for demonstration purposes only.
-    const password = prompt('Enter password to access this page:');
-    if (password === 'santosh242') {
-      setIsAuthenticated(true);
-    }
-  }, []);
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     // In a real app, you would upload the image to a storage service
@@ -95,18 +85,6 @@ export default function AddProductPage() {
         description: 'Something went wrong.',
       });
     }
-  }
-
-  if (!isAuthenticated) {
-    return (
-      <div className="container mx-auto flex min-h-[60vh] max-w-2xl flex-col items-center justify-center px-4 py-8 text-center md:py-12">
-        <Lock className="h-16 w-16 text-destructive" />
-        <h1 className="mt-4 font-headline text-3xl font-bold">Access Denied</h1>
-        <p className="mt-2 text-muted-foreground">
-          You do not have permission to view this page.
-        </p>
-      </div>
-    );
   }
 
   return (
