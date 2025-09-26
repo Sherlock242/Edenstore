@@ -16,7 +16,7 @@ export type ProductFormValues = {
 type ServerResponse = {
     success: boolean;
     message: string;
-    error?: PostgrestError | { message: string } | null;
+    error?: { message: string } | null;
 }
 
 export async function addProduct(data: ProductFormValues): Promise<ServerResponse> {
@@ -33,7 +33,7 @@ export async function addProduct(data: ProductFormValues): Promise<ServerRespons
 
     if (uploadError) {
         console.error('Error uploading image:', uploadError);
-        return { success: false, message: 'Failed to upload image.', error: uploadError };
+        return { success: false, message: 'Failed to upload image.', error: { message: uploadError.message } };
     }
 
     // 2. Get public URL for the uploaded image
@@ -62,7 +62,7 @@ export async function addProduct(data: ProductFormValues): Promise<ServerRespons
 
     if (productInsertError) {
         console.error('Error inserting product:', productInsertError);
-        return { success: false, message: 'Failed to add product to database.', error: productInsertError };
+        return { success: false, message: 'Failed to add product to database.', error: { message: productInsertError.message } };
     }
 
     const productId = newProductData.id;
@@ -79,7 +79,7 @@ export async function addProduct(data: ProductFormValues): Promise<ServerRespons
     if (imageInsertError) {
         console.error('Error inserting product image:', imageInsertError);
         // Optionally, handle cleanup of product or image if this step fails
-        return { success: false, message: 'Failed to save product image.', error: imageInsertError };
+        return { success: false, message: 'Failed to save product image.', error: { message: imageInsertError.message } };
     }
 
     // For simplicity, we'll add some default sizes and colors. In a real app, this would be part of the form.
