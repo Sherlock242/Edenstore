@@ -24,12 +24,14 @@ import {
 import { getProducts, deleteProduct, type Product } from '@/app/actions';
 import { useToast } from '@/hooks/use-toast';
 import { Edit, Trash2 } from 'lucide-react';
-import { EditProductForm } from './edit-product-form';
 
-export function ManageProducts() {
+type ManageProductsProps = {
+  onEditProduct: (product: Product) => void;
+};
+
+export function ManageProducts({ onEditProduct }: ManageProductsProps) {
   const [products, setProducts] = useState<Product[]>([]);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [isPending, startTransition] = useTransition();
   const { toast } = useToast();
@@ -42,8 +44,7 @@ export function ManageProducts() {
   }, []);
   
   const handleEditClick = (product: Product) => {
-    setSelectedProduct(product);
-    setIsEditDialogOpen(true);
+    onEditProduct(product);
   };
 
   const handleDeleteClick = (product: Product) => {
@@ -73,10 +74,6 @@ export function ManageProducts() {
       setSelectedProduct(null);
     });
   };
-
-  const handleUpdateProduct = (updatedProduct: Product) => {
-     setProducts(prevProducts => prevProducts.map(p => p.id === updatedProduct.id ? updatedProduct : p));
-  }
 
   return (
     <div className="space-y-4">
@@ -159,15 +156,6 @@ export function ManageProducts() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-
-      {selectedProduct && (
-        <EditProductForm 
-            product={selectedProduct}
-            isOpen={isEditDialogOpen}
-            onOpenChange={setIsEditDialogOpen}
-            onProductUpdate={handleUpdateProduct}
-        />
-      )}
     </div>
   );
 }

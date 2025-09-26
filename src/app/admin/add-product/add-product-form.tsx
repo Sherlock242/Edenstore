@@ -1,6 +1,6 @@
 // src/app/admin/add-product/add-product-form.tsx
 'use client';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -17,11 +17,12 @@ import {
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
-import { addProduct, type ProductFormValues } from '@/app/actions';
+import { addProduct, updateProduct, type Product, type ProductFormValues } from '@/app/actions';
 import { Upload } from 'lucide-react';
 import Image from 'next/image';
 
 const formSchema = z.object({
+  id: z.string().optional(),
   name: z.string().min(2, {
     message: 'Product name must be at least 2 characters.',
   }),
@@ -32,9 +33,7 @@ const formSchema = z.object({
   category: z.string().min(2, {
     message: 'Category must be at least 2 characters.',
   }),
-  imageHint: z.string().min(2, {
-    message: 'Image hint must be at least 2 characters.',
-  }),
+  imageHint: z.string().optional(),
   image: z
     .custom<File>(v => v instanceof File, 'Image is required.')
     .refine(
@@ -44,16 +43,23 @@ const formSchema = z.object({
     .refine(
       file => ['image/jpeg', 'image/png', 'image/webp'].includes(file.type),
       'Only .jpg, .png, and .webp formats are supported.'
-    ),
+    ).optional(),
 });
 
-export function AddProductForm() {
+type AddProductFormProps = {
+    productToEdit?: Product | null;
+    onProductAddedOrUpdated: () => void;
+}
+
+export function AddProductForm({ productToEdit, onProductAddedOrUpdated }: AddProductFormProps) {
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const {toast} = useToast();
+  const isEditMode = !!productToEdit;
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
+      id: '',
       name: '',
       description: '',
       price: 0,
@@ -63,10 +69,50 @@ export function AddProductForm() {
     },
   });
 
+  useEffect(() => {
+      if (productToEdit) {
+          form.reset({
+              id: productToEdit.id,
+              name: productToEdit.name,
+              description: productToEdit.description,
+              price: productToEdit.price,
+              category: productToEdit.category,
+              image: undefined,
+              imageHint: productToEdit.images[0]?.hint || '',
+          });
+          setImagePreview(productToEdit.images[0]?.url || null);
+      } else {
+          form.reset({
+            id: '',
+            name: '',
+            description: '',
+            price: 0,
+            category: '',
+            imageHint: '',
+            image: undefined,
+          });
+          setImagePreview(null);
+      }
+  }, [productToEdit, form]);
+
   const imageRef = form.register('image');
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
-    const result = await addProduct(values as ProductFormValues);
+    
+    let result;
+
+    if (isEditMode && values.id) {
+        // We don't support image updates in this simplified form.
+        const { image, imageHint, ...updateValues } = values;
+        result = await updateProduct(updateValues as {id:string, name:string, description:string, price:number, category:string});
+    } else {
+       if (!values.image) {
+            form.setError('image', { type: 'manual', message: 'Image is required for a new product.' });
+            return;
+       }
+        result = await addProduct(values as ProductFormValues);
+    }
+
     if (result.success) {
       toast({
         title: 'Success!',
@@ -74,7 +120,7 @@ export function AddProductForm() {
       });
       form.reset();
       setImagePreview(null);
-      // We might want to trigger a refresh of the 'manage' tab here
+      onProductAddedOrUpdated();
     } else {
       let errorMessage = 'Something went wrong.';
       if (typeof result.error?.message === 'string') {
@@ -153,7 +199,7 @@ export function AddProductForm() {
                 <div className="flex w-full items-center justify-center">
                   <label
                     htmlFor="image-upload"
-                    className="flex h-64 w-full cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-border bg-card hover:bg-muted"
+                    className={`flex h-64 w-full cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-border bg-card ${!isEditMode && 'hover:bg-muted'}`}
                   >
                     {imagePreview ? (
                       <Image
@@ -181,6 +227,7 @@ export function AddProductForm() {
                       className="hidden"
                       accept="image/png, image/jpeg, image/webp"
                       {...fieldProps}
+                      disabled={isEditMode}
                       onChange={event => {
                         const file = event.target.files?.[0];
                         if (file) {
@@ -196,11 +243,14 @@ export function AddProductForm() {
                   </label>
                 </div>
               </FormControl>
+               {isEditMode && (
+                  <FormDescription>Image updates are not supported in this simplified form.</FormDescription>
+                )}
               <FormMessage />
             </FormItem>
           )}
         />
-        <FormField
+        {!isEditMode && <FormField
           control={form.control}
           name="imageHint"
           render={({field}) => (
@@ -215,9 +265,9 @@ export function AddProductForm() {
               <FormMessage />
             </FormItem>
           )}
-        />
+        />}
         <Button type="submit" disabled={form.formState.isSubmitting}>
-          {form.formState.isSubmitting ? 'Adding Product...' : 'Add Product'}
+          {isEditMode ? (form.formState.isSubmitting ? 'Updating...' : 'Update Product') : (form.formState.isSubmitting ? 'Adding...' : 'Add Product')}
         </Button>
       </form>
     </Form>
