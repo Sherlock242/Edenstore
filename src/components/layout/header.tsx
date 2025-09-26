@@ -47,7 +47,7 @@ const adminLinks = [
 
 export function Header() {
   const { state: cartState } = useCart();
-  const { user, loading, logout } = useAuth();
+  const { user, loading, logout, isadmin } = useAuth();
   const pathname = usePathname();
   const cartItemCount = cartState.items.reduce((acc, item) => acc + item.quantity, 0);
   
@@ -108,6 +108,7 @@ export function Header() {
                   {link.label}
                 </Link>
               ))}
+              {isadmin && (
                <div className="pt-4 mt-4 border-t">
                 {adminLinks.map(link => (
                     <Link
@@ -120,6 +121,7 @@ export function Header() {
                     </Link>
                 ))}
                 </div>
+               )}
             </nav>
           </SheetContent>
         </Sheet>
@@ -142,16 +144,18 @@ export function Header() {
                 </Button>
             </form>
             
-            <div className="hidden md:flex items-center">
-                {adminLinks.map(link => (
-                    <Button variant="ghost" size="sm" asChild key={link.href}>
-                        <Link href={link.href} className="flex items-center gap-1">
-                            <link.icon className="h-4 w-4" />
-                            {link.label}
-                        </Link>
-                    </Button>
-                ))}
-            </div>
+            {isadmin && (
+              <div className="hidden md:flex items-center">
+                  {adminLinks.map(link => (
+                      <Button variant="ghost" size="sm" asChild key={link.href}>
+                          <Link href={link.href} className="flex items-center gap-1">
+                              <link.icon className="h-4 w-4" />
+                              {link.label}
+                          </Link>
+                      </Button>
+                  ))}
+              </div>
+            )}
 
             <Button variant="ghost" size="icon" asChild>
                 <Link href="/wishlist">

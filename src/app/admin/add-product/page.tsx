@@ -1,7 +1,7 @@
-
 // src/app/admin/add-product/page.tsx
 'use client';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -22,6 +22,7 @@ import { useToast } from '@/hooks/use-toast';
 import { addProduct, type ProductFormValues } from '@/app/actions';
 import { Upload } from 'lucide-react';
 import Image from 'next/image';
+import { useAuth } from '@/contexts/auth-context';
 
 const formSchema = z.object({
   name: z.string().min(2, {
@@ -52,6 +53,17 @@ const formSchema = z.object({
 export default function AddProductPage() {
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const {toast} = useToast();
+  const { user, loading, isadmin } = useAuth();
+  const router = useRouter();
+
+  useEffect(() => {
+    // Redirect if user is not an admin and data has finished loading
+    if (!loading && !isadmin) {
+      router.push('/');
+    }
+  }, [user, loading, isadmin, router]);
+
+
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -86,6 +98,15 @@ export default function AddProductPage() {
         description: errorMessage,
       });
     }
+  }
+  
+  // Render a loading state or nothing while checking for admin status
+  if (loading || !isadmin) {
+    return (
+      <div className="container mx-auto max-w-2xl px-4 py-8 md:py-12 text-center">
+        <p>Loading or unauthorized...</p>
+      </div>
+    );
   }
 
   return (
