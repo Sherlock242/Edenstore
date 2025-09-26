@@ -1,3 +1,4 @@
+
 // src/app/admin/add-product/actions.ts
 'use server';
 import {revalidatePath} from 'next/cache';
@@ -13,6 +14,7 @@ export type ProductFormValues = {
   price: number;
   category: string;
   imageHint: string;
+  image: FileList;
 };
 
 export async function addProduct(data: ProductFormValues) {
@@ -24,6 +26,7 @@ export async function addProduct(data: ProductFormValues) {
     images: [
       {
         id: `product-${products.length + 1}`,
+        // In a real app, you would upload data.image and store the URL
         url: `https://picsum.photos/seed/${products.length + 1}/400/500`,
         hint: data.imageHint,
       },

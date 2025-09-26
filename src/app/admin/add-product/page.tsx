@@ -1,3 +1,4 @@
+
 // src/app/admin/add-product/page.tsx
 'use client';
 import {useEffect, useState} from 'react';
@@ -20,7 +21,8 @@ import {Card, CardContent, CardHeader, CardTitle} from '@/components/ui/card';
 import {useToast} from '@/hooks/use-toast';
 import {addProduct} from './actions';
 import type {ProductFormValues} from './actions';
-import {Lock} from 'lucide-react';
+import {Lock, Upload} from 'lucide-react';
+import Image from 'next/image';
 
 const formSchema = z.object({
   name: z.string().min(2, {
@@ -36,10 +38,22 @@ const formSchema = z.object({
   imageHint: z.string().min(2, {
     message: 'Image hint must be at least 2 characters.',
   }),
+  image: z
+    .any()
+    .refine(files => files?.length === 1, 'Image is required.')
+    .refine(
+      files => files?.[0]?.size <= 5000000,
+      `Max file size is 5MB.`
+    )
+    .refine(
+      files => ['image/jpeg', 'image/png', 'image/webp'].includes(files?.[0]?.type),
+      'Only .jpg, .png, and .webp formats are supported.'
+    ),
 });
 
 export default function AddProductPage() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
   const {toast} = useToast();
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -49,8 +63,11 @@ export default function AddProductPage() {
       price: 0,
       category: '',
       imageHint: '',
+      image: undefined,
     },
   });
+
+  const imageRef = form.register('image');
 
   useEffect(() => {
     // In a real application, never do this. This is for demonstration purposes only.
@@ -61,6 +78,8 @@ export default function AddProductPage() {
   }, []);
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
+    // In a real app, you would upload the image to a storage service
+    // and get back a URL. For this demo, we'll continue to use placeholders.
     const result = await addProduct(values as ProductFormValues);
     if (result.success) {
       toast({
@@ -68,6 +87,7 @@ export default function AddProductPage() {
         description: result.message,
       });
       form.reset();
+      setImagePreview(null);
     } else {
       toast({
         variant: 'destructive',
@@ -152,6 +172,63 @@ export default function AddProductPage() {
               />
               <FormField
                 control={form.control}
+                name="image"
+                render={({field}) => (
+                  <FormItem>
+                    <FormLabel>Product Image</FormLabel>
+                    <FormControl>
+                      <div className="flex w-full items-center justify-center">
+                        <label
+                          htmlFor="image-upload"
+                          className="flex h-64 w-full cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-border bg-card hover:bg-muted"
+                        >
+                          {imagePreview ? (
+                            <Image
+                              src={imagePreview}
+                              alt="Image preview"
+                              width={200}
+                              height={200}
+                              className="h-full w-full object-contain"
+                            />
+                          ) : (
+                            <div className="flex flex-col items-center justify-center pb-6 pt-5">
+                              <Upload className="mb-4 h-8 w-8 text-muted-foreground" />
+                              <p className="mb-2 text-sm text-muted-foreground">
+                                <span className="font-semibold">Click to upload</span> or drag
+                                and drop
+                              </p>
+                              <p className="text-xs text-muted-foreground">
+                                PNG, JPG, or WEBP (MAX. 5MB)
+                              </p>
+                            </div>
+                          )}
+                          <Input
+                            id="image-upload"
+                            type="file"
+                            className="hidden"
+                            accept="image/png, image/jpeg, image/webp"
+                            {...imageRef}
+                            onChange={event => {
+                              const file = event.target.files?.[0];
+                              if (file) {
+                                field.onChange(event.target.files);
+                                const reader = new FileReader();
+                                reader.onloadend = () => {
+                                  setImagePreview(reader.result as string);
+                                };
+                                reader.readAsDataURL(file);
+                              }
+                            }}
+                          />
+                        </label>
+                      </div>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
                 name="imageHint"
                 render={({field}) => (
                   <FormItem>
@@ -160,7 +237,7 @@ export default function AddProductPage() {
                       <Input placeholder="e.g., anime character" {...field} />
                     </FormControl>
                     <FormDescription>
-                      A hint for the AI to generate a relevant placeholder image.
+                      A fallback hint for the AI if the image cannot be used.
                     </FormDescription>
                     <FormMessage />
                   </FormItem>
