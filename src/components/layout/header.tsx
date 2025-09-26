@@ -105,118 +105,123 @@ export function Header() {
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="flex h-16 w-full items-center px-4 sm:px-6 lg:px-8">
-        <div className="flex w-full items-center justify-between md:hidden">
+        <div className="flex flex-1 items-center justify-start md:hidden">
           <Link href="/" className="flex items-center space-x-2">
               <span className="font-bold font-headline text-lg uppercase bg-gradient-to-r from-orange-600 to-yellow-400 bg-clip-text text-transparent">
                 EDENSTORE
               </span>
           </Link>
-          <div className="flex items-center">
-            <Sheet>
-                <SheetTrigger asChild>
-                <Button variant="ghost" size="icon" className="relative">
-                    <ShoppingBag className="h-5 w-5" />
-                    {cartItemCount > 0 && (
-                    <span className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-xs text-primary-foreground">
-                        {cartItemCount}
-                    </span>
-                    )}
-                    <span className="sr-only">Shopping Cart</span>
-                </Button>
-                </SheetTrigger>
-                <CartSheetContent />
-            </Sheet>
-             <Sheet>
+        </div>
+
+        <div className="flex items-center justify-end md:hidden">
+          <Button variant="ghost" size="icon">
+            <Search className="h-5 w-5" />
+            <span className="sr-only">Search</span>
+          </Button>
+          <Sheet>
               <SheetTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  aria-label="Toggle navigation menu"
-                >
-                  <Menu className="h-5 w-5" />
-                </Button>
+              <Button variant="ghost" size="icon" className="relative">
+                  <ShoppingBag className="h-5 w-5" />
+                  {cartItemCount > 0 && (
+                  <span className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-xs text-primary-foreground">
+                      {cartItemCount}
+                  </span>
+                  )}
+                  <span className="sr-only">Shopping Cart</span>
+              </Button>
               </SheetTrigger>
-              <SheetContent side="right" className="flex flex-col">
-                <SheetHeader>
-                   <SheetTitle>
-                     <Link href="/" className="mb-6 flex items-center space-x-2">
-                        <span className="font-bold font-headline text-lg uppercase bg-gradient-to-r from-orange-600 to-yellow-400 bg-clip-text text-transparent">
-                          EDENSTORE
-                        </span>
-                      </Link>
-                   </SheetTitle>
-                </SheetHeader>
-                <nav className="flex flex-col space-y-4 mt-6">
-                  {navLinks.map(link => (
-                    <Link
-                      key={link.href}
-                      href={link.href}
-                      className={cn("transition-colors hover:text-foreground/80", pathname === link.href ? "text-foreground" : "text-foreground/60")}
-                    >
-                      {link.label}
+              <CartSheetContent />
+          </Sheet>
+            <Sheet>
+            <SheetTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                aria-label="Toggle navigation menu"
+              >
+                <Menu className="h-5 w-5" />
+              </Button>
+            </SheetTrigger>
+            <SheetContent side="right" className="flex flex-col">
+              <SheetHeader>
+                  <SheetTitle>
+                    <Link href="/" className="mb-6 flex items-center space-x-2">
+                      <span className="font-bold font-headline text-lg uppercase bg-gradient-to-r from-orange-600 to-yellow-400 bg-clip-text text-transparent">
+                        EDENSTORE
+                      </span>
                     </Link>
+                  </SheetTitle>
+              </SheetHeader>
+              <nav className="flex flex-col space-y-4 mt-6">
+                {navLinks.map(link => (
+                  <Link
+                    key={link.href}
+                    href={link.href}
+                    className={cn("transition-colors hover:text-foreground/80", pathname === link.href ? "text-foreground" : "text-foreground/60")}
+                  >
+                    {link.label}
+                  </Link>
+                ))}
+                  <Link href="/wishlist" className="transition-colors hover:text-foreground/80 text-foreground/60">Wishlist</Link>
+                {isadmin && (
+                  <div className="pt-4 mt-4 border-t">
+                  <p className="px-2 py-1 text-xs font-semibold text-muted-foreground">Admin</p>
+                  {adminLinks.map(link => (
+                      <Link
+                          key={link.href}
+                          href={link.href}
+                          className="flex items-center gap-2 text-foreground/60 transition-colors hover:text-foreground/80 py-2"
+                      >
+                          <link.icon className="h-4 w-4" />
+                          {link.label}
+                      </Link>
                   ))}
-                   <Link href="/wishlist" className="transition-colors hover:text-foreground/80 text-foreground/60">Wishlist</Link>
-                  {isadmin && (
-                   <div className="pt-4 mt-4 border-t">
-                    <p className="px-2 py-1 text-xs font-semibold text-muted-foreground">Admin</p>
-                    {adminLinks.map(link => (
-                        <Link
-                            key={link.href}
-                            href={link.href}
-                            className="flex items-center gap-2 text-foreground/60 transition-colors hover:text-foreground/80 py-2"
-                        >
-                            <link.icon className="h-4 w-4" />
-                            {link.label}
-                        </Link>
-                    ))}
-                    </div>
-                   )}
-                </nav>
-                <SheetFooter className="mt-auto border-t pt-6">
-                     {loading ? (
-                        <div className="flex items-center gap-2">
-                            <div className="h-9 w-9 rounded-full bg-muted animate-pulse" />
-                            <div className="h-4 w-24 rounded-md bg-muted animate-pulse" />
-                        </div>
-                    ) : user ? (
-                        <div className="flex w-full flex-col gap-4">
-                            <div className="flex items-center gap-3">
-                                 <Avatar className="h-9 w-9">
-                                    <AvatarImage src={user.user_metadata?.avatar_url || getGravatarUrl(user.email)} alt={user.email || 'User'} />
-                                    <AvatarFallback>{getAvatarFallback(user.email)}</AvatarFallback>
-                                </Avatar>
-                                 <div className="flex flex-col space-y-1">
-                                    <p className="text-sm font-medium leading-none">{userProfile?.display_name || user.email}</p>
-                                    {userProfile?.display_name && <p className="text-xs leading-none text-muted-foreground">{user.email}</p>}
-                                </div>
-                            </div>
-                            <Separator />
-                             <Button variant="ghost" className="w-full justify-start" onClick={() => logout()}>
-                                <LogOut className="mr-2 h-4 w-4" />
-                                <span>Log out</span>
-                            </Button>
-                            <Button
-                                variant="ghost"
-                                className="w-full justify-start text-red-500 hover:bg-red-500/10 hover:text-red-600"
-                                onClick={() => setIsDeleteAlertOpen(true)}
-                            >
-                                <Trash2 className="mr-2 h-4 w-4" />
-                                <span>Delete Account</span>
-                            </Button>
-                        </div>
-                    ) : (
-                        <Button asChild className="w-full">
-                           <Link href="/login">
-                             <LogIn className="mr-2 h-4 w-4"/>
-                             Login
-                           </Link>
-                        </Button>
-                    )}
-                </SheetFooter>
-              </SheetContent>
-            </Sheet>
-          </div>
+                  </div>
+                  )}
+              </nav>
+              <SheetFooter className="mt-auto border-t pt-6">
+                    {loading ? (
+                      <div className="flex items-center gap-2">
+                          <div className="h-9 w-9 rounded-full bg-muted animate-pulse" />
+                          <div className="h-4 w-24 rounded-md bg-muted animate-pulse" />
+                      </div>
+                  ) : user ? (
+                      <div className="flex w-full flex-col gap-4">
+                          <div className="flex items-center gap-3">
+                                <Avatar className="h-9 w-9">
+                                  <AvatarImage src={user.user_metadata?.avatar_url || getGravatarUrl(user.email)} alt={user.email || 'User'} />
+                                  <AvatarFallback>{getAvatarFallback(user.email)}</AvatarFallback>
+                              </Avatar>
+                                <div className="flex flex-col space-y-1">
+                                  <p className="text-sm font-medium leading-none">{userProfile?.display_name || user.email}</p>
+                                  {userProfile?.display_name && <p className="text-xs leading-none text-muted-foreground">{user.email}</p>}
+                              </div>
+                          </div>
+                          <Separator />
+                            <Button variant="ghost" className="w-full justify-start" onClick={() => logout()}>
+                              <LogOut className="mr-2 h-4 w-4" />
+                              <span>Log out</span>
+                          </Button>
+                          <Button
+                              variant="ghost"
+                              className="w-full justify-start text-red-500 hover:bg-red-500/10 hover:text-red-600"
+                              onClick={() => setIsDeleteAlertOpen(true)}
+                          >
+                              <Trash2 className="mr-2 h-4 w-4" />
+                              <span>Delete Account</span>
+                          </Button>
+                      </div>
+                  ) : (
+                      <Button asChild className="w-full">
+                          <Link href="/login">
+                            <LogIn className="mr-2 h-4 w-4"/>
+                            Login
+                          </Link>
+                      </Button>
+                  )}
+              </SheetFooter>
+            </SheetContent>
+          </Sheet>
         </div>
 
         <div className="hidden flex-1 items-center justify-start md:flex">
@@ -338,9 +343,3 @@ export function Header() {
     </header>
   );
 }
-
-    
-
-    
-
-    
