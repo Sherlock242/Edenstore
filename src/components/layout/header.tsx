@@ -8,7 +8,6 @@ import {
   Menu,
   Search,
   ShoppingBag,
-  Shirt,
   User,
   PlusCircle,
   LogOut,
@@ -111,7 +110,6 @@ export function Header() {
       <div className="flex h-16 w-full items-center px-4 sm:px-6 lg:px-8">
         <div className="flex w-full items-center justify-between md:hidden">
           <Link href="/" className="flex items-center space-x-2">
-              <Shirt className="h-6 w-6 text-primary" />
               <span className="font-bold font-headline text-lg uppercase bg-gradient-to-r from-orange-600 to-yellow-400 bg-clip-text text-transparent">
                 EDENSTORE
               </span>
@@ -151,7 +149,6 @@ export function Header() {
                 <SheetHeader>
                    <SheetTitle>
                      <Link href="/" className="mb-6 flex items-center space-x-2">
-                        <Shirt className="h-6 w-6 text-primary" />
                         <span className="font-bold font-headline text-lg uppercase bg-gradient-to-r from-orange-600 to-yellow-400 bg-clip-text text-transparent">
                           EDENSTORE
                         </span>
@@ -232,7 +229,6 @@ export function Header() {
 
         <div className="hidden flex-1 items-center justify-start md:flex">
           <Link href="/" className="mr-6 flex items-center space-x-2">
-            <Shirt className="h-6 w-6 text-primary" />
             <span className="font-bold font-headline text-lg uppercase bg-gradient-to-r from-orange-600 to-yellow-400 bg-clip-text text-transparent">
               EDENSTORE
             </span>
@@ -360,3 +356,5 @@ export function Header() {
     </header>
   );
 }
+
+    
