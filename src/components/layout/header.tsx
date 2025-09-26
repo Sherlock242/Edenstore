@@ -11,6 +11,7 @@ import {
   LogOut,
   LogIn,
   Trash2,
+  Search,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -52,7 +53,6 @@ import { Separator } from "../ui/separator";
 
 const navLinks = [
   { href: "/products", label: "T-Shirts" },
-  { href: "/wishlist", label: "Wishlist" },
   { href: "/track", label: "Track Order" },
 ];
 
@@ -156,6 +156,7 @@ export function Header() {
                       {link.label}
                     </Link>
                   ))}
+                   <Link href="/wishlist" className="transition-colors hover:text-foreground/80 text-foreground/60">Wishlist</Link>
                   {isadmin && (
                    <div className="pt-4 mt-4 border-t">
                     <p className="px-2 py-1 text-xs font-semibold text-muted-foreground">Admin</p>
@@ -252,6 +253,10 @@ export function Header() {
             )}
 
             <div className="flex items-center space-x-2">
+                <Button variant="ghost" size="icon">
+                  <Search className="h-5 w-5" />
+                  <span className="sr-only">Search</span>
+                </Button>
                 <Sheet>
                     <SheetTrigger asChild>
                     <Button variant="ghost" size="icon" className="relative">
@@ -333,6 +338,8 @@ export function Header() {
     </header>
   );
 }
+
+    
 
     
 
