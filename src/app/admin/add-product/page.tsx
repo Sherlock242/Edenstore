@@ -1,3 +1,4 @@
+
 // src/app/admin/add-product/page.tsx
 'use client';
 import { useState } from 'react';
@@ -37,14 +38,13 @@ const formSchema = z.object({
     message: 'Image hint must be at least 2 characters.',
   }),
   image: z
-    .any()
-    .refine(files => files?.length === 1, 'Image is required.')
+    .instanceof(File, { message: 'Image is required.' })
     .refine(
-      files => files?.[0]?.size <= 5000000,
+      file => file.size <= 5000000,
       `Max file size is 5MB.`
     )
     .refine(
-      files => ['image/jpeg', 'image/png', 'image/webp'].includes(files?.[0]?.type),
+      file => ['image/jpeg', 'image/png', 'image/webp'].includes(file.type),
       'Only .jpg, .png, and .webp formats are supported.'
     ),
 });
@@ -67,8 +67,6 @@ export default function AddProductPage() {
   const imageRef = form.register('image');
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
-    // In a real app, you would upload the image to a storage service
-    // and get back a URL. For this demo, we'll continue to use placeholders.
     const result = await addProduct(values as ProductFormValues);
     if (result.success) {
       toast({
@@ -81,7 +79,7 @@ export default function AddProductPage() {
       toast({
         variant: 'destructive',
         title: 'Error',
-        description: 'Something went wrong.',
+        description: result.message || 'Something went wrong.',
       });
     }
   }
@@ -188,7 +186,7 @@ export default function AddProductPage() {
                             onChange={event => {
                               const file = event.target.files?.[0];
                               if (file) {
-                                field.onChange(event.target.files);
+                                field.onChange(file);
                                 const reader = new FileReader();
                                 reader.onloadend = () => {
                                   setImagePreview(reader.result as string);
@@ -230,3 +228,5 @@ export default function AddProductPage() {
     </div>
   );
 }
+
+    

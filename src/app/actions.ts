@@ -3,6 +3,8 @@
 
 import { revalidatePath } from 'next/cache';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
+import { supabase } from '@/lib/supabase-client';
+import type { PostgrestError } from '@supabase/supabase-js';
 
 export type Product = {
   id: string;
@@ -180,38 +182,76 @@ export type ProductFormValues = {
   price: number;
   category: string;
   imageHint: string;
-  image: FileList;
+  image: File;
 };
 
-export async function addProduct(data: ProductFormValues) {
-  const newProduct: Product = {
-    id: `${products.length + 1}`,
-    name: data.name,
-    description: data.description,
-    price: Number(data.price),
-    images: [
-      {
-        id: `product-${products.length + 1}`,
-        // In a real app, you would upload data.image and store the URL
-        url: `https://picsum.photos/seed/${products.length + 1}/400/500`,
-        hint: data.imageHint,
-      },
-    ],
-    sizes: ['S', 'M', 'L', 'XL', 'XXL'],
-    colors: ['Black', 'White'],
-    category: data.category,
-    popularity: 75,
-    releaseDate: new Date().toISOString(),
-  };
-
-  products.unshift(newProduct);
-
-  revalidatePath('/');
-  revalidatePath('/products');
-
-  return {
-    success: true,
-    message: 'Product added successfully!',
-    product: newProduct,
-  };
+type ServerResponse = {
+    success: boolean;
+    message: string;
+    error?: PostgrestError | null;
+    product?: Product;
 }
+
+export async function addProduct(data: ProductFormValues): Promise<ServerResponse> {
+    const { image, ...productData } = data;
+    
+    // 1. Upload image to Supabase Storage
+    const fileExt = image.name.split('.').pop();
+    const fileName = `${Math.random()}.${fileExt}`;
+    const filePath = `product-images/${fileName}`;
+
+    const { error: uploadError } = await supabase.storage
+        .from('product-images')
+        .upload(filePath, image);
+
+    if (uploadError) {
+        console.error('Error uploading image:', uploadError);
+        return { success: false, message: 'Failed to upload image.', error: uploadError };
+    }
+
+    // 2. Get public URL for the uploaded image
+    const { data: urlData } = supabase.storage
+        .from('product-images')
+        .getPublicUrl(filePath);
+    
+    if (!urlData) {
+        return { success: false, message: 'Failed to get image URL.' };
+    }
+    
+    const imageUrl = urlData.publicUrl;
+
+    // 3. Create new product object with the new image URL
+    const newProduct: Product = {
+        id: `${products.length + 1}`,
+        name: productData.name,
+        description: productData.description,
+        price: Number(productData.price),
+        images: [
+        {
+            id: `product-${products.length + 1}`,
+            url: imageUrl,
+            hint: productData.imageHint,
+        },
+        ],
+        sizes: ['S', 'M', 'L', 'XL', 'XXL'],
+        colors: ['Black', 'White'],
+        category: productData.category,
+        popularity: 75,
+        releaseDate: new Date().toISOString(),
+    };
+
+    // This part would insert into a database in a real app.
+    // For now, we prepend to the in-memory array.
+    products.unshift(newProduct);
+
+    revalidatePath('/');
+    revalidatePath('/products');
+
+    return {
+        success: true,
+        message: 'Product added successfully!',
+        product: newProduct,
+    };
+}
+
+    
