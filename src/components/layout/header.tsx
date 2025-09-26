@@ -119,14 +119,16 @@ export function Header() {
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="flex h-16 items-center px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-start md:hidden">
+      <div className="grid h-16 w-full grid-cols-3 items-center px-4 sm:px-6 lg:px-8">
+        {/* Left Section (Mobile Menu & Desktop Nav) */}
+        <div className="flex items-center justify-start">
            <Sheet>
             <SheetTrigger asChild>
               <Button
                 variant="ghost"
                 size="icon"
                 aria-label="Toggle navigation menu"
+                className="md:hidden"
               >
                 <Menu className="h-5 w-5" />
               </Button>
@@ -211,46 +213,7 @@ export function Header() {
               </SheetFooter>
             </SheetContent>
           </Sheet>
-        </div>
-
-        <div className="flex w-full items-center justify-center md:justify-start">
-             <Link href="/" className="flex items-center space-x-2">
-              <span className="font-bold font-headline text-lg uppercase bg-gradient-to-r from-orange-600 to-yellow-400 bg-clip-text text-transparent">
-                EDENSTORE
-              </span>
-            </Link>
-        </div>
-
-
-        <div className="ml-auto flex items-center md:hidden">
-          <Button variant="ghost" size="icon" onClick={() => setIsSearchOpen(!isSearchOpen)}>
-            <Search className="h-5 w-5" />
-            <span className="sr-only">Search</span>
-          </Button>
-          <Sheet>
-              <SheetTrigger asChild>
-              <Button variant="ghost" size="icon" className="relative">
-                  <ShoppingBag className="h-5 w-5" />
-                  {cartItemCount > 0 && (
-                  <span className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-xs text-primary-foreground">
-                      {cartItemCount}
-                  </span>
-                  )}
-                  <span className="sr-only">Shopping Cart</span>
-              </Button>
-              </SheetTrigger>
-              <CartSheetContent />
-          </Sheet>
-           
-        </div>
-
-        <div className="hidden flex-1 items-center justify-start md:flex">
-          <Link href="/" className="mr-6 flex items-center space-x-2">
-            <span className="font-bold font-headline text-lg uppercase bg-gradient-to-r from-orange-600 to-yellow-400 bg-clip-text text-transparent">
-              EDENSTORE
-            </span>
-          </Link>
-          <nav className="flex items-center space-x-6 text-sm font-medium">
+           <nav className="hidden items-center space-x-6 text-sm font-medium md:flex">
             {navLinks.map(link => (
               <Link
                 key={link.href}
@@ -262,10 +225,20 @@ export function Header() {
             ))}
           </nav>
         </div>
-        
-        <div className="hidden flex-1 items-center justify-end md:flex">
+
+        {/* Center Section (Logo) */}
+        <div className="flex items-center justify-center">
+             <Link href="/" className="flex items-center space-x-2">
+              <span className="font-bold font-headline text-lg uppercase bg-gradient-to-r from-orange-600 to-yellow-400 bg-clip-text text-transparent">
+                EDENSTORE
+              </span>
+            </Link>
+        </div>
+
+        {/* Right Section (Icons) */}
+        <div className="flex items-center justify-end">
             {isadmin && (
-              <div className="flex items-center">
+              <div className="hidden items-center md:flex">
                   {adminLinks.map(link => (
                       <Button variant="ghost" size="sm" asChild key={link.href}>
                           <Link href={link.href} className="flex items-center gap-1">
@@ -298,11 +271,11 @@ export function Header() {
                 </Sheet>
 
                 {loading ? (
-                    <div className="h-9 w-9 rounded-full bg-muted animate-pulse" />
+                    <div className="hidden h-9 w-9 rounded-full bg-muted animate-pulse md:block" />
                 ) : user ? (
                      <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" className="relative h-9 w-9 rounded-full">
+                            <Button variant="ghost" className="relative hidden h-9 w-9 rounded-full md:flex">
                                 <Avatar className="h-9 w-9">
                                     <AvatarImage src={user.user_metadata?.avatar_url || getGravatarUrl(user.email)} alt={user.email || 'User'} />
                                     <AvatarFallback>{getAvatarFallback(user.email)}</AvatarFallback>
@@ -337,7 +310,7 @@ export function Header() {
                         </DropdownMenuContent>
                     </DropdownMenu>
                 ) : (
-                    <Button variant="ghost" asChild>
+                    <Button variant="ghost" asChild className="hidden md:flex">
                        <Link href="/login">Login</Link>
                     </Button>
                 )}
@@ -394,7 +367,5 @@ export function Header() {
     </header>
   );
 }
-
-    
 
     
