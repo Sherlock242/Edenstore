@@ -45,7 +45,7 @@ export default function AddProductPage() {
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList className="grid w-full grid-cols-2 max-w-md mx-auto">
           <TabsTrigger value="add">{productToEdit ? 'Edit Product' : 'Add New Product'}</TabsTrigger>
-          <TabsTrigger value="manage">Manage Existing Products</TabsTrigger>
+          <TabsTrigger value="manage">Manage Products</TabsTrigger>
         </TabsList>
         <TabsContent value="add">
           <Card className="max-w-2xl mx-auto">
