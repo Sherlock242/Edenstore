@@ -174,20 +174,22 @@ create trigger on_auth_user_created
   for each row execute procedure public.handle_new_user();
 
 --
--- Create Storage Bucket and Policies
+-- Create a new storage bucket for product images
 --
 insert into storage.buckets (id, name, public)
 values ('product-images', 'product-images', true)
 on conflict (id) do nothing;
 
+--
+-- Policies for 'product-images' storage bucket
+--
+
+-- Allow public read access to all images in the bucket
 create policy "Allow public read access on product images"
-on storage.objects for select
-to public
-using ( bucket_id = 'product-images' );
+  on storage.objects for select
+  using ( bucket_id = 'product-images' );
 
+-- Allow authenticated users to upload images to the bucket
 create policy "Allow authenticated users to upload product images"
-on storage.objects for insert
-to authenticated
-with check ( bucket_id = 'product-images' );
-
-    
+  on storage.objects for insert
+  to authenticated with check ( bucket_id = 'product-images' );

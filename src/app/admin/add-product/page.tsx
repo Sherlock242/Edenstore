@@ -38,7 +38,7 @@ const formSchema = z.object({
     message: 'Image hint must be at least 2 characters.',
   }),
   image: z
-    .instanceof(File, { message: 'Image is required.' })
+    .custom<File>(v => v instanceof File, 'Image is required.')
     .refine(
       file => file.size <= 5000000,
       `Max file size is 5MB.`
@@ -76,10 +76,14 @@ export default function AddProductPage() {
       form.reset();
       setImagePreview(null);
     } else {
+      let errorMessage = 'Something went wrong.';
+      if (typeof result.error?.message === 'string') {
+          errorMessage = result.error.message;
+      }
       toast({
         variant: 'destructive',
         title: 'Error',
-        description: result.message || 'Something went wrong.',
+        description: errorMessage,
       });
     }
   }
@@ -148,7 +152,7 @@ export default function AddProductPage() {
               <FormField
                 control={form.control}
                 name="image"
-                render={({field}) => (
+                render={({field: { onChange, ...fieldProps }}) => (
                   <FormItem>
                     <FormLabel>Product Image</FormLabel>
                     <FormControl>
@@ -182,11 +186,11 @@ export default function AddProductPage() {
                             type="file"
                             className="hidden"
                             accept="image/png, image/jpeg, image/webp"
-                            {...imageRef}
+                            {...fieldProps}
                             onChange={event => {
                               const file = event.target.files?.[0];
                               if (file) {
-                                field.onChange(file);
+                                onChange(file);
                                 const reader = new FileReader();
                                 reader.onloadend = () => {
                                   setImagePreview(reader.result as string);
@@ -228,5 +232,3 @@ export default function AddProductPage() {
     </div>
   );
 }
-
-    
