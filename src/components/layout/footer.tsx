@@ -22,7 +22,7 @@ export function Footer() {
           <Link href="#" aria-label="GitHub">
             <Github className="h-5 w-5 text-muted-foreground transition-colors hover:text-foreground" />
           </Link>
-          <Link href="#" aria-label="Instagram">
+          <Link href="https://www.instagram.com/santosh.r.k__?igsh=dDA4eXY0Z2l5bXZj" aria-label="Instagram">
             <Instagram className="h-5 w-5 text-muted-foreground transition-colors hover:text-foreground" />
           </Link>
         </div>
