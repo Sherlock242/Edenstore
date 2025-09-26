@@ -11,8 +11,8 @@ import {
 import { auth } from "@/lib/firebase";
 import {
   onAuthStateChanged,
-  GoogleAuthProvider,
-  signInWithPopup,
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
   signOut,
   type User,
 } from "firebase/auth";
@@ -20,7 +20,8 @@ import {
 type AuthContextType = {
   user: User | null;
   loading: boolean;
-  signInWithGoogle: () => Promise<void>;
+  signUpWithEmail: (email: string, password: string) => Promise<any>;
+  signInWithEmail: (email: string, password: string) => Promise<any>;
   logout: () => Promise<void>;
 };
 
@@ -39,13 +40,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => unsubscribe();
   }, []);
 
-  const signInWithGoogle = async () => {
-    const provider = new GoogleAuthProvider();
-    try {
-      await signInWithPopup(auth, provider);
-    } catch (error) {
-      console.error("Error signing in with Google", error);
-    }
+  const signUpWithEmail = async (email: string, password: string) => {
+    return createUserWithEmailAndPassword(auth, email, password);
+  };
+  
+  const signInWithEmail = async (email: string, password: string) => {
+    return signInWithEmailAndPassword(auth, email, password);
   };
 
   const logout = async () => {
@@ -56,7 +56,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const value = { user, loading, signInWithGoogle, logout };
+  const value = { user, loading, signUpWithEmail, signInWithEmail, logout };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
