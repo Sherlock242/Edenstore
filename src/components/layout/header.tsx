@@ -207,7 +207,6 @@ export function Header() {
                 </DropdownMenu>
             ) : (
                 <Button variant="ghost" onClick={() => signInWithGoogle()}>
-                    <LogIn className="mr-2 h-4 w-4"/>
                     Login
                 </Button>
             )}
