@@ -4,9 +4,7 @@
 import Link from "next/link";
 import { useState, useTransition } from "react";
 import {
-  Heart,
   Menu,
-  Search,
   ShoppingBag,
   User,
   PlusCircle,
@@ -15,7 +13,6 @@ import {
   Trash2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import {
   Sheet,
   SheetContent,
@@ -115,12 +112,6 @@ export function Header() {
               </span>
           </Link>
           <div className="flex items-center">
-            <Button variant="ghost" size="icon" asChild>
-                <Link href="/wishlist">
-                <Heart className="h-5 w-5" />
-                <span className="sr-only">Wishlist</span>
-                </Link>
-            </Button>
             <Sheet>
                 <SheetTrigger asChild>
                 <Button variant="ghost" size="icon" className="relative">
@@ -247,13 +238,6 @@ export function Header() {
         </div>
         
         <div className="hidden flex-1 items-center justify-end md:flex">
-            <form className="flex w-full max-w-sm items-center">
-                <Input type="search" placeholder="Search shirts..." className="h-9" />
-                <Button variant="ghost" size="icon" type="submit" aria-label="Search">
-                <Search className="h-4 w-4" />
-                </Button>
-            </form>
-            
             {isadmin && (
               <div className="flex items-center">
                   {adminLinks.map(link => (
@@ -268,13 +252,6 @@ export function Header() {
             )}
 
             <div className="flex items-center space-x-2">
-                <Button variant="ghost" size="icon" asChild>
-                    <Link href="/wishlist">
-                    <Heart className="h-5 w-5" />
-                    <span className="sr-only">Wishlist</span>
-                    </Link>
-                </Button>
-
                 <Sheet>
                     <SheetTrigger asChild>
                     <Button variant="ghost" size="icon" className="relative">
@@ -356,5 +333,7 @@ export function Header() {
     </header>
   );
 }
+
+    
 
     
