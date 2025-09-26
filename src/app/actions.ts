@@ -79,6 +79,15 @@ export type ProductFormValues = {
   image: File;
 };
 
+export type UpdateProductFormValues = {
+  id: string;
+  name: string;
+  description: string;
+  price: number;
+  category: string;
+};
+
+
 type ServerResponse = {
     success: boolean;
     message: string;
@@ -206,6 +215,70 @@ export async function addProduct(data: ProductFormValues): Promise<ServerRespons
         product: finalProduct,
     };
 }
+
+
+export async function updateProduct(data: UpdateProductFormValues): Promise<ServerResponse> {
+  const { id, ...productData } = data;
+
+  const { data: updatedProductData, error: productUpdateError } = await supabaseAdmin
+    .from('products')
+    .update({
+      name: productData.name,
+      description: productData.description,
+      price: Number(productData.price),
+      category: productData.category,
+    })
+    .eq('id', id)
+    .select()
+    .single();
+
+  if (productUpdateError) {
+    console.error('Error updating product:', productUpdateError);
+    return { success: false, message: 'Failed to update product.', error: { message: productUpdateError.message } };
+  }
+
+  revalidatePath('/');
+  revalidatePath('/products');
+  revalidatePath(`/products/${id}`);
+  revalidatePath('/admin/add-product');
+
+  // Fetch the fully updated product to return it
+  const { data: finalProductData, error: finalProductError } = await supabaseAdmin
+    .from('products')
+    .select(`
+      id, name, description, price, category, popularity, release_date,
+      product_images ( id, url, hint ),
+      product_sizes ( size ),
+      product_colors ( color )
+    `)
+    .eq('id', id)
+    .single();
+  
+  if (finalProductError || !finalProductData) {
+    console.error('Error fetching updated product:', finalProductError);
+    return { success: true, message: 'Product updated, but failed to fetch final details.' };
+  }
+
+  const finalProduct: Product = {
+      id: finalProductData.id.toString(),
+      name: finalProductData.name,
+      description: finalProductData.description,
+      price: finalProductData.price,
+      category: finalProductData.category,
+      popularity: finalProductData.popularity,
+      releaseDate: finalProductData.release_date,
+      images: finalProductData.product_images.map((img: any) => ({ id: img.id.toString(), url: img.url, hint: img.hint })),
+      sizes: finalProductData.product_sizes.map((s: any) => s.size),
+      colors: finalProductData.product_colors.map((c: any) => c.color),
+  };
+
+  return {
+    success: true,
+    message: 'Product updated successfully!',
+    product: finalProduct,
+  };
+}
+
 
 export async function deleteProduct(productId: string): Promise<ServerResponse> {
   // First, fetch the product to get the image URL for deletion from storage

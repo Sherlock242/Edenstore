@@ -24,11 +24,13 @@ import {
 import { getProducts, deleteProduct, type Product } from '@/app/actions';
 import { useToast } from '@/hooks/use-toast';
 import { Edit, Trash2 } from 'lucide-react';
+import { EditProductForm } from './edit-product-form';
 
 export function ManageProducts() {
   const [products, setProducts] = useState<Product[]>([]);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-  const [selectedProductId, setSelectedProductId] = useState<string | null>(null);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [isPending, startTransition] = useTransition();
   const { toast } = useToast();
 
@@ -38,19 +40,24 @@ export function ManageProducts() {
       setProducts(fetchedProducts);
     });
   }, []);
+  
+  const handleEditClick = (product: Product) => {
+    setSelectedProduct(product);
+    setIsEditDialogOpen(true);
+  };
 
-  const handleDeleteClick = (productId: string) => {
-    setSelectedProductId(productId);
+  const handleDeleteClick = (product: Product) => {
+    setSelectedProduct(product);
     setIsDeleteDialogOpen(true);
   };
 
   const handleConfirmDelete = async () => {
-    if (!selectedProductId) return;
+    if (!selectedProduct) return;
 
     startTransition(async () => {
-      const result = await deleteProduct(selectedProductId);
+      const result = await deleteProduct(selectedProduct.id);
       if (result.success) {
-        setProducts(prevProducts => prevProducts.filter(p => p.id !== selectedProductId));
+        setProducts(prevProducts => prevProducts.filter(p => p.id !== selectedProduct.id));
         toast({
           title: 'Success!',
           description: result.message,
@@ -63,9 +70,13 @@ export function ManageProducts() {
         });
       }
       setIsDeleteDialogOpen(false);
-      setSelectedProductId(null);
+      setSelectedProduct(null);
     });
   };
+
+  const handleUpdateProduct = (updatedProduct: Product) => {
+     setProducts(prevProducts => prevProducts.map(p => p.id === updatedProduct.id ? updatedProduct : p));
+  }
 
   return (
     <div className="space-y-4">
@@ -81,7 +92,7 @@ export function ManageProducts() {
             </TableRow>
             </TableHeader>
             <TableBody>
-            {isPending && (
+            {isPending && !products.length && (
                 <TableRow>
                     <TableCell colSpan={5} className="h-24 text-center">
                         Loading products...
@@ -111,14 +122,14 @@ export function ManageProducts() {
                 <TableCell>{product.category}</TableCell>
                 <TableCell>${product.price.toFixed(2)}</TableCell>
                 <TableCell className="text-right">
-                    <Button variant="ghost" size="icon" disabled>
+                    <Button variant="ghost" size="icon" onClick={() => handleEditClick(product)} disabled={isPending}>
                         <Edit className="h-4 w-4" />
                         <span className="sr-only">Edit</span>
                     </Button>
                     <Button
                     variant="ghost"
                     size="icon"
-                    onClick={() => handleDeleteClick(product.id)}
+                    onClick={() => handleDeleteClick(product)}
                     disabled={isPending}
                     >
                     <Trash2 className="h-4 w-4 text-destructive" />
@@ -148,6 +159,15 @@ export function ManageProducts() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {selectedProduct && (
+        <EditProductForm 
+            product={selectedProduct}
+            isOpen={isEditDialogOpen}
+            onOpenChange={setIsEditDialogOpen}
+            onProductUpdate={handleUpdateProduct}
+        />
+      )}
     </div>
   );
 }
