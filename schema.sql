@@ -5,6 +5,7 @@ create table users (
   id uuid references auth.users not null primary key,
   email text unique,
   display_name text,
+  role text default 'user',
   created_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
 
@@ -111,8 +112,10 @@ create policy "Users can update their own profile" on users
   for update using (auth.uid() = id);
 
 --
--- Policies for 'products' and related tables (public access)
+-- Policies for 'products' and related tables (public read, admin write)
 --
+
+-- Public can read all products and details
 create policy "Allow public read access on products" on products
   for select using (true);
 create policy "Allow public read access on product_images" on product_images
@@ -122,6 +125,15 @@ create policy "Allow public read access on product_sizes" on product_sizes
 create policy "Allow public read access on product_colors" on product_colors
     for select using (true);
 
+-- Admins can do anything with products and details
+create policy "Allow admin to manage products" on products
+  for all using (is_admin()) with check (is_admin());
+create policy "Allow admin to manage product images" on product_images
+  for all using (is_admin()) with check (is_admin());
+create policy "Allow admin to manage product sizes" on product_sizes
+  for all using (is_admin()) with check (is_admin());
+create policy "Allow admin to manage product colors" on product_colors
+  for all using (is_admin()) with check (is_admin());
 
 --
 -- Policies for 'orders' table
@@ -152,7 +164,7 @@ create policy "Users can manage their own wishlist items" on wishlist_items
   for all using (auth.uid() = user_id);
 
 --
--- Function to automatically create a user profile when a new user signs up in Firebase Auth
+-- Function to automatically create a user profile when a new user signs up
 --
 create or replace function public.handle_new_user()
 returns trigger
@@ -160,8 +172,8 @@ language plpgsql
 security definer set search_path = public
 as $$
 begin
-  insert into public.users (id, email, display_name)
-  values (new.id, new.email, new.raw_user_meta_data->>'full_name');
+  insert into public.users (id, email, display_name, role)
+  values (new.id, new.email, new.raw_user_meta_data->>'full_name', 'user');
   return new;
 end;
 $$;
@@ -174,8 +186,24 @@ create trigger on_auth_user_created
   for each row execute procedure public.handle_new_user();
 
 --
--- Create a new storage bucket for product images
+-- Helper function to check for admin role
 --
+create or replace function is_admin()
+returns boolean
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  user_role text;
+begin
+  select role into user_role from public.users where id = auth.uid();
+  return user_role = 'admin';
+end;
+$$;
+
+
+-- Create a new storage bucket for product images
 insert into storage.buckets (id, name, public)
 values ('product-images', 'product-images', true)
 on conflict (id) do nothing;
@@ -189,7 +217,7 @@ create policy "Allow public read access on product images"
   on storage.objects for select
   using ( bucket_id = 'product-images' );
 
--- Allow authenticated users to upload images to the bucket
-create policy "Allow authenticated users to upload product images"
+-- Allow admin users to upload images to the bucket
+create policy "Allow admin users to upload product images"
   on storage.objects for insert
-  to authenticated with check ( bucket_id = 'product-images' );
+  with check ( bucket_id = 'product-images' AND is_admin() );
