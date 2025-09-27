@@ -18,9 +18,16 @@ type CreateOrderPayload = {
 }
 export async function createRazorpayOrder(payload: CreateOrderPayload): Promise<{success: boolean; order?: any; message: string}> {
     try {
+        const keyId = process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID;
+        const keySecret = process.env.RAZORPAY_KEY_SECRET;
+
+        if (!keyId || !keySecret) {
+            return { success: false, message: "Razorpay keys are not configured correctly." };
+        }
+
         const instance = new Razorpay({
-            key_id: process.env.RAZORPAY_KEY_ID!,
-            key_secret: process.env.RAZORPAY_KEY_SECRET!,
+            key_id: keyId,
+            key_secret: keySecret,
         });
 
         const options = {
