@@ -137,46 +137,57 @@ export async function addCartItem(payload: AddItemPayload): Promise<{ success: b
     return { success: false, message: 'You must be logged in.' };
   }
 
-  // Upsert allows us to either insert a new item or update the quantity if it already exists.
-  // The ON CONFLICT clause targets the unique index we created on (user_id, product_id, size, color).
-  const { data, error } = await supabase
+  // First, check if the item already exists
+  const { data: existingItem, error: findError } = await supabase
     .from('cart_items')
-    .upsert({
-      user_id: user.id,
-      product_id: payload.product.id,
-      size: payload.size,
-      color: payload.color,
-      quantity: payload.quantity,
-    }, {
-      onConflict: 'user_id, product_id, size, color',
-      // If there's a conflict, we update the quantity. We add the new quantity to the existing one.
-      // Note: This SQL is specific to Supabase/PostgreSQL.
-      ignoreDuplicates: false,
-    })
-    .select()
+    .select('id, quantity')
+    .eq('user_id', user.id)
+    .eq('product_id', payload.product.id)
+    .eq('size', payload.size)
+    .eq('color', payload.color)
     .single();
-
-  if (error) {
-     // A "23505" error code indicates a unique constraint violation, which is what our upsert handles.
-     // If we get a different error, we log it.
-    if (error.code !== '23505') {
-        console.error('Error adding to cart:', error);
-        return { success: false, message: 'Could not add item to cart.' };
-    }
-    // If it is a unique constraint violation, we'll manually update the quantity.
-    // This is a fallback for the `upsert` with `onConflict` not behaving as expected in all environments.
-     const { data: existing, error: findError } = await supabase.from('cart_items').select('id, quantity').eq('user_id', user.id).eq('product_id', payload.product.id).eq('size', payload.size).eq('color', payload.color).single();
-     if(findError || !existing) {
-         return { success: false, message: 'Could not add item to cart.' };
-     }
-     const { data: updatedData, error: updateError } = await supabase.from('cart_items').update({ quantity: existing.quantity + payload.quantity }).eq('id', existing.id).select().single();
-     if (updateError) {
-         return { success: false, message: 'Could not update item quantity.' };
-     }
-     return { success: true, item: { ...payload, quantity: updatedData.quantity }, message: 'Item quantity updated.' };
+  
+  if (findError && findError.code !== 'PGRST116') { // PGRST116: row not found
+      console.error('Error checking for existing cart item:', findError);
+      return { success: false, message: 'Could not add item to cart.' };
   }
 
-  return { success: true, item: { ...payload, quantity: data.quantity }, message: 'Item added to cart.' };
+  if (existingItem) {
+    // Item exists, so update the quantity
+    const newQuantity = existingItem.quantity + payload.quantity;
+    const { data: updatedData, error: updateError } = await supabase
+        .from('cart_items')
+        .update({ quantity: newQuantity })
+        .eq('id', existingItem.id)
+        .select()
+        .single();
+    
+    if (updateError) {
+        console.error('Error updating cart quantity:', updateError);
+        return { success: false, message: 'Could not update item quantity.' };
+    }
+    return { success: true, item: { ...payload, quantity: updatedData.quantity }, message: 'Item quantity updated in cart.' };
+
+  } else {
+    // Item does not exist, so insert it
+    const { data, error } = await supabase
+        .from('cart_items')
+        .insert({
+            user_id: user.id,
+            product_id: payload.product.id,
+            size: payload.size,
+            color: payload.color,
+            quantity: payload.quantity,
+        })
+        .select()
+        .single();
+
+    if (error) {
+        console.error('Error inserting new cart item:', error);
+        return { success: false, message: 'Could not add new item to cart.' };
+    }
+     return { success: true, item: { ...payload, quantity: data.quantity }, message: 'Item added to cart.' };
+  }
 }
 
 
