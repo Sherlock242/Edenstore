@@ -125,9 +125,9 @@ export async function verifyPaymentAndCreateOrder(payload: VerifyPaymentPayload)
       billing_last_name: shippingAddress.lastName || shippingAddress.firstName,
       billing_address: shippingAddress.address,
       billing_city: shippingAddress.city,
-      billing_state: "N/A", // Shiprocket requires a state
+      billing_state: shippingAddress.state || "N/A", // Use state from form, fallback to N/A
       billing_country: shippingAddress.country,
-      billing_pincode: "000000", // And a pincode
+      billing_pincode: shippingAddress.pincode || "000000", // Use pincode from form, fallback to 000000
       billing_email: shippingAddress.email,
       billing_phone: shippingAddress.phone,
       order_items: orderItemsForShipment,
@@ -140,6 +140,7 @@ export async function verifyPaymentAndCreateOrder(payload: VerifyPaymentPayload)
     });
 
     if (shipmentResult.success && shipmentResult.payload) {
+      console.log('Shiprocket shipment created successfully:', shipmentResult.payload);
       // Save shipment details to our order
       const { error: updateError } = await supabaseAdmin
         .from('orders')

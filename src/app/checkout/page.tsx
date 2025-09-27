@@ -29,6 +29,8 @@ export default function CheckoutPage() {
   const [lastName, setLastName] = useState('');
   const [address, setAddress] = useState('');
   const [city, setCity] = useState('');
+  const [stateName, setStateName] = useState(''); // Renamed for clarity
+  const [pincode, setPincode] = useState('');
   const [country, setCountry] = useState('');
   const [phone, setPhone] = useState('');
 
@@ -61,7 +63,7 @@ export default function CheckoutPage() {
         return;
     }
 
-    if (!firstName || !address || !city || !country || !phone || !email) {
+    if (!firstName || !address || !city || !country || !phone || !email || !pincode || !stateName) {
         toast({
             variant: 'destructive',
             title: 'Missing Information',
@@ -101,6 +103,8 @@ export default function CheckoutPage() {
         lastName,
         address,
         city,
+        state: stateName,
+        pincode,
         country,
         email,
         phone,
@@ -188,12 +192,12 @@ export default function CheckoutPage() {
               <CardHeader>
                 <CardTitle>Shipping Information</CardTitle>
               </CardHeader>
-              <CardContent className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                <div className="md:col-span-2">
+              <CardContent className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <div className="sm:col-span-2">
                   <Label htmlFor="email">Email Address</Label>
                   <Input id="email" type="email" placeholder="you@example.com" value={email} onChange={(e) => setEmail(e.target.value)} required/>
                 </div>
-                 <div className="md:col-span-2">
+                 <div className="sm:col-span-2">
                   <Label htmlFor="phone">Phone Number</Label>
                   <Input id="phone" type="tel" placeholder="Your phone number" value={phone} onChange={(e) => setPhone(e.target.value)} required/>
                 </div>
@@ -205,13 +209,21 @@ export default function CheckoutPage() {
                   <Label htmlFor="last-name">Last Name</Label>
                   <Input id="last-name" placeholder="Doe" value={lastName} onChange={(e) => setLastName(e.target.value)}/>
                 </div>
-                <div className="md:col-span-2">
+                <div className="sm:col-span-2">
                   <Label htmlFor="address">Address</Label>
                   <Input id="address" placeholder="123 Anime St" value={address} onChange={(e) => setAddress(e.target.value)} required/>
                 </div>
                 <div>
                   <Label htmlFor="city">City</Label>
                   <Input id="city" placeholder="Tokyo" value={city} onChange={(e) => setCity(e.target.value)} required/>
+                </div>
+                 <div>
+                  <Label htmlFor="state">State</Label>
+                  <Input id="state" placeholder="e.g. California" value={stateName} onChange={(e) => setStateName(e.target.value)} required/>
+                </div>
+                <div>
+                  <Label htmlFor="pincode">Pincode / ZIP</Label>
+                  <Input id="pincode" placeholder="e.g. 90210" value={pincode} onChange={(e) => setPincode(e.target.value)} required/>
                 </div>
                 <div>
                   <Label htmlFor="country">Country</Label>
@@ -280,5 +292,3 @@ export default function CheckoutPage() {
     </>
   );
 }
-
-    

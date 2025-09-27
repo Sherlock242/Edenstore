@@ -12,6 +12,11 @@ type ShiprocketAuthResponse = {
 // Function to get the authentication token from Shiprocket
 async function getShiprocketToken(): Promise<string | null> {
     try {
+        if (!process.env.SHIPROCKET_API_EMAIL || !process.env.SHIPROCKET_API_PASSWORD) {
+            console.error("Shiprocket API credentials are not set in .env file.");
+            return null;
+        }
+        
         const response = await fetch(`${SHIPROCKET_API_URL}/auth/login`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -44,7 +49,7 @@ type ShipmentOrderItem = {
     hsn: number;
 }
 
-type ShipmentPayload = {
+export type ShipmentPayload = {
     order_id: string; // Your internal order ID
     order_date: string;
     billing_customer_name: string;
@@ -96,7 +101,8 @@ export async function createShipment(payload: ShipmentPayload): Promise<{success
 
         if (!response.ok || responseData.status_code !== 200) {
             console.error("Shiprocket Shipment Error:", responseData);
-            return { success: false, message: responseData.message || "Failed to create shipment." };
+            const errorMessage = responseData.errors ? JSON.stringify(responseData.errors) : responseData.message;
+            return { success: false, message: errorMessage || "Failed to create shipment." };
         }
         
         return { success: true, message: "Shipment created successfully.", payload: responseData.payload };
