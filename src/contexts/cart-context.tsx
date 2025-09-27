@@ -93,6 +93,7 @@ function cartReducer(state: CartState, action: CartAction): CartState {
 
 type CartContextType = {
   state: CartState;
+  dispatch: React.Dispatch<CartAction>;
   addToCart: (item: Omit<CartItem, 'quantity'> & { quantity?: number }) => Promise<void>;
   updateQuantity: (productId: string, size: string, color: string, quantity: number) => Promise<void>;
   removeFromCart: (productId: string, size: string, color: string) => Promise<void>;
@@ -187,7 +188,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
      }
   };
 
-  const value = { state, addToCart, updateQuantity, removeFromCart };
+  const value = { state, dispatch, addToCart, updateQuantity, removeFromCart };
 
   return (
     <CartContext.Provider value={value}>

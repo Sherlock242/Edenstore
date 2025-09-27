@@ -1,33 +1,62 @@
 
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useSearchParams } from 'next/navigation';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { CheckCircle, Loader, Package, Truck } from "lucide-react";
+import { createClient } from "@/lib/supabase/client";
 
 type OrderStatus = "not_found" | "processing" | "shipped" | "delivered";
-const mockOrderStatuses: Record<string, OrderStatus> = {
-    "12345": "delivered",
-    "67890": "shipped",
-    "54321": "processing",
+
+type Order = {
+  id: string;
+  status: OrderStatus;
+  created_at: string;
+  total_amount: number;
 }
 
 export default function TrackOrderPage() {
+    const searchParams = useSearchParams();
     const [orderId, setOrderId] = useState("");
+    const [order, setOrder] = useState<Order | null>(null);
     const [status, setStatus] = useState<OrderStatus | null>(null);
     const [isLoading, setIsLoading] = useState(false);
 
-    const handleTrackOrder = (e: React.FormEvent) => {
-        e.preventDefault();
+    useEffect(() => {
+        const orderIdFromUrl = searchParams.get('order_id');
+        if (orderIdFromUrl) {
+            setOrderId(orderIdFromUrl);
+            handleTrackOrder(null, orderIdFromUrl);
+        }
+    }, [searchParams]);
+
+    const handleTrackOrder = async (e: React.FormEvent | null, idToTrack?: string) => {
+        if (e) e.preventDefault();
+        const currentOrderId = idToTrack || orderId;
+        if (!currentOrderId) return;
+        
         setIsLoading(true);
         setStatus(null);
-        setTimeout(() => {
-            const foundStatus = mockOrderStatuses[orderId] || "not_found";
-            setStatus(foundStatus);
-            setIsLoading(false);
-        }, 1500);
+        setOrder(null);
+
+        const supabase = createClient();
+        const { data, error } = await supabase
+            .from('orders')
+            .select('id, status, created_at, total_amount')
+            .eq('id', currentOrderId)
+            .single();
+
+        if (error || !data) {
+            setStatus("not_found");
+        } else {
+            setOrder(data as Order);
+            setStatus(data.status as OrderStatus);
+        }
+        
+        setIsLoading(false);
     }
 
     const getStatusComponent = () => {
@@ -98,7 +127,7 @@ export default function TrackOrderPage() {
                         <Input 
                             value={orderId}
                             onChange={(e) => setOrderId(e.target.value)}
-                            placeholder="e.g., 12345"
+                            placeholder="Enter your Order ID"
                             className="flex-grow"
                         />
                         <Button type="submit" disabled={isLoading} className="bg-accent text-accent-foreground hover:bg-accent/90">

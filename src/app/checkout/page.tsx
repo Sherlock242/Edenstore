@@ -11,7 +11,7 @@ import { Separator } from '@/components/ui/separator';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import Script from 'next/script';
 import { useState } from 'react';
-import { createRazorpayOrder, verifyPayment } from './actions';
+import { createRazorpayOrder, verifyPaymentAndCreateOrder } from './actions';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/auth-context';
 import { useRouter } from 'next/navigation';
@@ -22,18 +22,36 @@ export default function CheckoutPage() {
   const { toast } = useToast();
   const router = useRouter();
   const [isProcessing, setIsProcessing] = useState(false);
+  
+  // State for shipping information
+  const [email, setEmail] = useState(user?.email || '');
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
+  const [address, setAddress] = useState('');
+  const [city, setCity] = useState('');
+  const [country, setCountry] = useState('');
+
 
   const subtotal = state.items.reduce(
     (acc, item) => acc + item.product.price * item.quantity,
     0
   );
   
-  // Hardcoded shipping for now, you can make this dynamic
   const shippingCost = subtotal > 50 ? 0 : 5; 
   const total = subtotal + shippingCost;
 
 
   const handlePlaceOrder = async () => {
+    
+    if (!firstName || !address || !city || !country) {
+        toast({
+            variant: 'destructive',
+            title: 'Missing Information',
+            description: 'Please fill out all shipping fields.',
+        });
+        return;
+    }
+    
     setIsProcessing(true);
     
     if (!user) {
@@ -46,7 +64,6 @@ export default function CheckoutPage() {
         return;
     }
 
-    // 1. Create order on Razorpay
     const orderDetails = await createRazorpayOrder({ amount: total });
 
     if (!orderDetails.success || !orderDetails.order) {
@@ -61,7 +78,15 @@ export default function CheckoutPage() {
     
     const { order } = orderDetails;
 
-    // 2. Open Razorpay Checkout
+    const shippingAddress = {
+        firstName,
+        lastName,
+        address,
+        city,
+        country,
+        email,
+    };
+
     const options = {
         key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID!,
         amount: order.amount,
@@ -70,10 +95,12 @@ export default function CheckoutPage() {
         description: 'T-Shirt Purchase',
         order_id: order.id,
         handler: async function (response: any) {
-             const verificationResult = await verifyPayment({
+             const verificationResult = await verifyPaymentAndCreateOrder({
                 razorpay_order_id: response.razorpay_order_id,
                 razorpay_payment_id: response.razorpay_payment_id,
                 razorpay_signature: response.razorpay_signature,
+                totalAmount: total,
+                shippingAddress: shippingAddress
              });
 
             if (verificationResult.success) {
@@ -81,22 +108,22 @@ export default function CheckoutPage() {
                     title: 'Payment Successful!',
                     description: 'Your order has been placed.',
                 });
-                // Here you would typically save the order to your DB and clear the cart
-                // For now, we'll just clear the client-side cart
+                // Clear the client-side cart
                 dispatch({ type: 'SET_ITEMS', payload: [] });
-                router.push('/track?order_id=' + order.id);
+                router.push(`/track?order_id=${verificationResult.orderId}`);
 
             } else {
                  toast({
                     variant: 'destructive',
-                    title: 'Payment Failed',
+                    title: 'Order Failed',
                     description: verificationResult.message,
                 });
             }
+             setIsProcessing(false);
         },
         prefill: {
-            name: user.user_metadata?.full_name || 'John Doe',
-            email: user.email,
+            name: `${firstName} ${lastName}`,
+            email: email,
             contact: user.phone || '9999999999',
         },
         theme: {
@@ -116,8 +143,6 @@ export default function CheckoutPage() {
     });
 
     rzp.open();
-    // Don't set isProcessing to false here, as the modal is now open.
-    // It will be handled in the success or failure handlers.
   };
 
   if (state.items.length === 0 && !isProcessing) {
@@ -148,27 +173,27 @@ export default function CheckoutPage() {
               <CardContent className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <div className="md:col-span-2">
                   <Label htmlFor="email">Email Address</Label>
-                  <Input id="email" type="email" placeholder="you@example.com" defaultValue={user?.email}/>
+                  <Input id="email" type="email" placeholder="you@example.com" value={email} onChange={(e) => setEmail(e.target.value)} required/>
                 </div>
                 <div>
                   <Label htmlFor="first-name">First Name</Label>
-                  <Input id="first-name" placeholder="John" />
+                  <Input id="first-name" placeholder="John" value={firstName} onChange={(e) => setFirstName(e.target.value)} required/>
                 </div>
                 <div>
                   <Label htmlFor="last-name">Last Name</Label>
-                  <Input id="last-name" placeholder="Doe" />
+                  <Input id="last-name" placeholder="Doe" value={lastName} onChange={(e) => setLastName(e.target.value)}/>
                 </div>
                 <div className="md:col-span-2">
                   <Label htmlFor="address">Address</Label>
-                  <Input id="address" placeholder="123 Anime St" />
+                  <Input id="address" placeholder="123 Anime St" value={address} onChange={(e) => setAddress(e.target.value)} required/>
                 </div>
                 <div>
                   <Label htmlFor="city">City</Label>
-                  <Input id="city" placeholder="Tokyo" />
+                  <Input id="city" placeholder="Tokyo" value={city} onChange={(e) => setCity(e.target.value)} required/>
                 </div>
                 <div>
                   <Label htmlFor="country">Country</Label>
-                  <Input id="country" placeholder="Japan" />
+                  <Input id="country" placeholder="Japan" value={country} onChange={(e) => setCountry(e.target.value)} required/>
                 </div>
               </CardContent>
             </Card>
