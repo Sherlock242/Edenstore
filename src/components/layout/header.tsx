@@ -2,7 +2,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState, useTransition } from "react";
+import { useState, useTransition, useEffect, useRef } from "react";
 import {
   Menu,
   ShoppingBag,
@@ -77,6 +77,7 @@ export function Header() {
   const [searchQuery, setSearchQuery] = useState('');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isCartOpen, setIsCartOpen] = useState(false);
+  const searchRef = useRef<HTMLDivElement>(null);
 
   const cartItemCount = cartState.items.reduce((acc, item) => acc + item.quantity, 0);
   
@@ -126,6 +127,28 @@ export function Header() {
           setSearchQuery('');
       }
   }
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (searchRef.current && !searchRef.current.contains(event.target as Node)) {
+        // Check if the click was on the search trigger button itself
+        const searchTrigger = document.querySelector('[data-search-trigger]');
+        if (searchTrigger && !searchTrigger.contains(event.target as Node)) {
+          setIsSearchOpen(false);
+        }
+      }
+    };
+
+    if (isSearchOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    } else {
+      document.removeEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isSearchOpen]);
 
 
   return (
@@ -264,7 +287,7 @@ export function Header() {
             )}
 
             <div className="flex items-center space-x-2">
-                <Button variant="ghost" size="icon" onClick={() => setIsSearchOpen(!isSearchOpen)}>
+                <Button variant="ghost" size="icon" onClick={() => setIsSearchOpen(!isSearchOpen)} data-search-trigger>
                   <Search className="h-5 w-5" />
                   <span className="sr-only">Search</span>
                 </Button>
@@ -331,6 +354,7 @@ export function Header() {
         </div>
       </div>
       <div
+        ref={searchRef}
         className={cn(
           "absolute top-full left-0 w-full bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 transition-[max-height,opacity] duration-300 ease-in-out overflow-hidden",
           isSearchOpen ? "max-h-40 opacity-100" : "max-h-0 opacity-0"
