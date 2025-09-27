@@ -1,3 +1,4 @@
+
 // src/app/admin/add-product/manage-products.tsx
 'use client';
 import { useEffect, useState, useTransition } from 'react';
@@ -85,20 +86,21 @@ export function ManageProducts({ onEditProduct }: ManageProductsProps) {
                 <TableHead>Name</TableHead>
                 <TableHead>Category</TableHead>
                 <TableHead>Price</TableHead>
+                <TableHead>Weight</TableHead>
                 <TableHead className="w-[100px] text-right">Actions</TableHead>
             </TableRow>
             </TableHeader>
             <TableBody>
             {isPending && !products.length && (
                 <TableRow>
-                    <TableCell colSpan={5} className="h-24 text-center">
+                    <TableCell colSpan={6} className="h-24 text-center">
                         Loading products...
                     </TableCell>
                 </TableRow>
             )}
             {!isPending && products.length === 0 && (
                  <TableRow>
-                    <TableCell colSpan={5} className="h-24 text-center">
+                    <TableCell colSpan={6} className="h-24 text-center">
                         No products found.
                     </TableCell>
                 </TableRow>
@@ -118,6 +120,7 @@ export function ManageProducts({ onEditProduct }: ManageProductsProps) {
                 <TableCell className="font-medium">{product.name}</TableCell>
                 <TableCell>{product.category}</TableCell>
                 <TableCell>₹{product.price.toFixed(2)}</TableCell>
+                <TableCell>{product.weight} kg</TableCell>
                 <TableCell className="text-right">
                     <Button variant="ghost" size="icon" onClick={() => handleEditClick(product)} disabled={isPending}>
                         <Edit className="h-4 w-4" />
