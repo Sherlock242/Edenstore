@@ -98,7 +98,7 @@ export async function verifyPaymentAndCreateOrder(payload: VerifyPaymentPayload)
     
     if (orderError || !newOrder) {
         console.error("Error creating order:", orderError);
-        return { success: false, message: "Failed to save order to the database." };
+        return { success: false, message: `Failed to save order to the database. Reason: ${orderError?.message || 'Unknown error'}` };
     }
 
     // 5. Insert into 'order_items' table
@@ -117,7 +117,7 @@ export async function verifyPaymentAndCreateOrder(payload: VerifyPaymentPayload)
         console.error("Error creating order items:", itemsError);
         // If this fails, we should ideally roll back the order creation,
         // but for now, we'll just log the error.
-        return { success: false, message: "Failed to save order items." };
+        return { success: false, message: `Failed to save order items. Reason: ${itemsError.message}` };
     }
 
     // 6. Clear the user's cart
