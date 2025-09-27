@@ -7,7 +7,7 @@ import type { Product } from '@/app/actions';
 import { trackShipmentById } from '@/lib/shiprocket-client';
 
 // Admin client to securely fetch all order data
-const supabaseAdmin = createClient(
+const supabaseAdmin = createAdminClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!,
   { auth: { persistSession: false } }
