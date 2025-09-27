@@ -31,6 +31,7 @@ export type Product = {
   category: string;
   popularity: number;
   releaseDate: string; // ISO 8601 format
+  weight: number; // in kg
 };
 
 // This function now needs to fetch from Supabase
@@ -45,6 +46,7 @@ export const getProducts = async (): Promise<Product[]> => {
         category,
         popularity,
         release_date,
+        weight,
         product_images ( id, url, hint ),
         product_sizes ( size ),
         product_colors ( color )
@@ -65,6 +67,7 @@ export const getProducts = async (): Promise<Product[]> => {
         category: p.category,
         popularity: p.popularity,
         releaseDate: p.release_date,
+        weight: p.weight || 0.5, // Default weight if not set
         images: p.product_images.map((img: any) => ({ id: img.id.toString(), url: img.url, hint: img.hint })),
         sizes: p.product_sizes.map((s: any) => s.size),
         colors: p.product_colors.map((c: any) => c.color),
@@ -78,6 +81,7 @@ export type ProductFormValues = {
   category: string;
   imageHint: string;
   image: File;
+  weight: number;
 };
 
 export type UpdateProductFormValues = {
@@ -86,6 +90,7 @@ export type UpdateProductFormValues = {
   description: string;
   price: number;
   category: string;
+  weight: number;
   image?: File | null;
 };
 
@@ -133,6 +138,7 @@ export async function addProduct(data: ProductFormValues): Promise<ServerRespons
             description: productData.description,
             price: Number(productData.price),
             category: productData.category,
+            weight: Number(productData.weight),
             release_date: new Date().toISOString(),
         })
         .select()
@@ -185,6 +191,7 @@ export async function addProduct(data: ProductFormValues): Promise<ServerRespons
         category,
         popularity,
         release_date,
+        weight,
         product_images ( id, url, hint ),
         product_sizes ( size ),
         product_colors ( color )
@@ -197,7 +204,7 @@ export async function addProduct(data: ProductFormValues): Promise<ServerRespons
         return { success: true, message: 'Product added, but failed to fetch final details.' };
     }
     
-    const finalProduct = {
+    const finalProduct: Product = {
         id: finalProductData.id.toString(),
         name: finalProductData.name,
         description: finalProductData.description,
@@ -205,6 +212,7 @@ export async function addProduct(data: ProductFormValues): Promise<ServerRespons
         category: finalProductData.category,
         popularity: finalProductData.popularity,
         releaseDate: finalProductData.release_date,
+        weight: finalProductData.weight,
         images: finalProductData.product_images.map((img: any) => ({ id: img.id.toString(), url: img.url, hint: img.hint })),
         sizes: finalProductData.product_sizes.map((s: any) => s.size),
         colors: finalProductData.product_colors.map((c: any) => c.color),
@@ -283,6 +291,7 @@ export async function updateProduct(data: UpdateProductFormValues): Promise<Serv
       description: productData.description,
       price: Number(productData.price),
       category: productData.category,
+      weight: Number(productData.weight),
     })
     .eq('id', id);
 
@@ -300,7 +309,7 @@ export async function updateProduct(data: UpdateProductFormValues): Promise<Serv
   const { data: finalProductData, error: finalProductError } = await supabaseAdmin
     .from('products')
     .select(`
-      id, name, description, price, category, popularity, release_date,
+      id, name, description, price, category, popularity, release_date, weight,
       product_images ( id, url, hint ),
       product_sizes ( size ),
       product_colors ( color )
@@ -321,6 +330,7 @@ export async function updateProduct(data: UpdateProductFormValues): Promise<Serv
       category: finalProductData.category,
       popularity: finalProductData.popularity,
       releaseDate: finalProductData.release_date,
+      weight: finalProductData.weight,
       images: finalProductData.product_images.map((img: any) => ({ id: img.id.toString(), url: img.url, hint: img.hint })),
       sizes: finalProductData.product_sizes.map((s: any) => s.size),
       colors: finalProductData.product_colors.map((c: any) => c.color),

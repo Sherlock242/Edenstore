@@ -10,11 +10,12 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import Script from 'next/script';
-import { useState, useEffect } from 'react';
-import { createRazorpayOrder, verifyPaymentAndCreateOrder } from './actions';
+import { useState, useEffect, useTransition, useCallback } from 'react';
+import { createRazorpayOrder, verifyPaymentAndCreateOrder, fetchShippingRatesAction } from './actions';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/auth-context';
 import { useRouter } from 'next/navigation';
+import { Loader2 } from 'lucide-react';
 
 export default function CheckoutPage() {
   const { state, dispatch } = useCart();
@@ -29,26 +30,55 @@ export default function CheckoutPage() {
   const [lastName, setLastName] = useState('');
   const [address, setAddress] = useState('');
   const [city, setCity] = useState('');
-  const [stateName, setStateName] = useState(''); // Renamed for clarity
+  const [stateName, setStateName] = useState('');
   const [pincode, setPincode] = useState('');
   const [country, setCountry] = useState('');
   const [phone, setPhone] = useState('');
+
+  // State for shipping cost
+  const [shippingCost, setShippingCost] = useState<number | null>(null);
+  const [isFetchingRate, startFetchingRateTransition] = useTransition();
+  const [rateError, setRateError] = useState<string | null>(null);
 
 
   useEffect(() => {
     if (user) {
       setEmail(user.email || '');
-      // You can add more pre-filled data here if you store it in your user profile
     }
   }, [user]);
+  
+  // Debounce pincode input
+  useEffect(() => {
+    setRateError(null);
+    setShippingCost(null);
+
+    if (pincode && pincode.length === 6) {
+        const handler = setTimeout(() => {
+            startFetchingRateTransition(async () => {
+                const result = await fetchShippingRatesAction(pincode);
+                if (result.success && result.rate !== undefined) {
+                    setShippingCost(result.rate);
+                    setRateError(null);
+                } else {
+                    setShippingCost(null);
+                    setRateError(result.message);
+                }
+            });
+        }, 500); // 500ms delay
+
+        return () => {
+            clearTimeout(handler);
+        };
+    }
+  }, [pincode]);
+
 
   const subtotal = state.items.reduce(
     (acc, item) => acc + item.product.price * item.quantity,
     0
   );
   
-  const shippingCost = subtotal > 500 ? 0 : 50; 
-  const total = subtotal + shippingCost;
+  const total = subtotal + (shippingCost || 0);
 
 
   const handlePlaceOrder = async () => {
@@ -68,6 +98,15 @@ export default function CheckoutPage() {
             variant: 'destructive',
             title: 'Missing Information',
             description: 'Please fill out all shipping and contact fields.',
+        });
+        return;
+    }
+
+    if (shippingCost === null) {
+        toast({
+            variant: 'destructive',
+            title: 'Shipping Not Calculated',
+            description: rateError || 'Please enter a valid pincode to calculate shipping.',
         });
         return;
     }
@@ -223,7 +262,7 @@ export default function CheckoutPage() {
                 </div>
                 <div>
                   <Label htmlFor="pincode">Pincode / ZIP</Label>
-                  <Input id="pincode" placeholder="e.g. 90210" value={pincode} onChange={(e) => setPincode(e.target.value)} required/>
+                  <Input id="pincode" placeholder="e.g. 90210" value={pincode} onChange={(e) => setPincode(e.target.value)} required maxLength={6}/>
                 </div>
                 <div>
                   <Label htmlFor="country">Country</Label>
@@ -232,7 +271,7 @@ export default function CheckoutPage() {
               </CardContent>
             </Card>
 
-            <Button size="lg" className="w-full bg-accent text-accent-foreground hover:bg-accent/90" onClick={handlePlaceOrder} disabled={isProcessing}>
+            <Button size="lg" className="w-full bg-accent text-accent-foreground hover:bg-accent/90" onClick={handlePlaceOrder} disabled={isProcessing || isFetchingRate}>
                {isProcessing ? 'Processing...' : `Place Order - ₹${total.toFixed(2)}`}
             </Button>
           </div>
@@ -272,16 +311,24 @@ export default function CheckoutPage() {
                   </div>
                   <div className="flex justify-between">
                     <span>Shipping</span>
-                    <span>₹{shippingCost.toFixed(2)}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>Taxes</span>
-                    <span className="text-muted-foreground">Calculated at next step</span>
+                    <span className="text-right">
+                        {isFetchingRate ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : rateError ? (
+                            <span className="text-xs text-destructive">{rateError}</span>
+                        ) : shippingCost !== null ? (
+                            `₹${shippingCost.toFixed(2)}`
+                        ) : (
+                           <span className="text-xs text-muted-foreground">Enter pincode</span>
+                        )}
+                    </span>
                   </div>
                   <Separator className="my-2" />
                   <div className="flex justify-between text-lg font-bold">
                     <span>Total</span>
-                    <span>₹{total.toFixed(2)}</span>
+                    <span>
+                         {isFetchingRate || shippingCost === null ? '...' : `₹${total.toFixed(2)}`}
+                    </span>
                   </div>
                 </div>
               </CardContent>

@@ -114,6 +114,80 @@ export async function createShipment(payload: ShipmentPayload): Promise<{success
     }
 }
 
+type ShippingRatePayload = {
+  pickup_postcode: string;
+  delivery_postcode: string;
+  weight: number; // in kg
+  cod: 0 | 1; // 1 for COD, 0 for Prepaid
+};
+
+type CourierData = {
+    rate: number;
+    // ... other properties we might use later
+};
+
+type ServiceabilityResponse = {
+    status: number;
+    data: {
+        available_courier_companies: CourierData[];
+    };
+    // ... other properties
+}
+
+export async function getShippingRates(payload: ShippingRatePayload): Promise<{ success: boolean; message: string; rate?: number }> {
+  const token = await getShiprocketToken();
+  if (!token) {
+    return { success: false, message: "Could not authenticate with Shiprocket." };
+  }
+
+  try {
+    const { pickup_postcode, delivery_postcode, weight, cod } = payload;
+    const query = new URLSearchParams({
+        pickup_postcode,
+        delivery_postcode,
+        weight: weight.toString(),
+        cod: cod.toString(),
+    }).toString();
+    
+    const response = await fetch(`${SHIPROCKET_API_URL}/courier/serviceability/?${query}`, {
+        method: 'GET',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
+        },
+    });
+
+    const responseData = await response.json();
+
+    if (!response.ok || responseData.status !== 200) {
+        console.error("Shiprocket Serviceability Error:", responseData);
+        return { success: false, message: responseData.message || "Could not fetch shipping rates." };
+    }
+    
+    const availableCouriers = responseData.data?.available_courier_companies || [];
+    
+    if (availableCouriers.length === 0) {
+        return { success: false, message: "No couriers available for this pincode." };
+    }
+    
+    // Find the cheapest rate
+    const cheapestCourier = availableCouriers.reduce((min: CourierData | null, courier: CourierData) => {
+        if (!min || courier.rate < min.rate) {
+            return courier;
+        }
+        return min;
+    }, null);
+    
+    return { success: true, message: "Rate fetched.", rate: cheapestCourier?.rate };
+
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : "An unknown error occurred.";
+    console.error("Error fetching Shiprocket rates:", error);
+    return { success: false, message: errorMessage };
+  }
+}
+
+
 // You can add more functions here to track shipments, cancel orders, etc.
 // For example:
 export async function trackShipmentByAWB(awb: string) {

@@ -63,7 +63,7 @@ export async function getOrderDetails(razorpayOrderId: string): Promise<{ succes
     const { data: productsData, error: productsError } = await supabaseAdmin
         .from('products')
         .select(`
-            id, name, description, price, category, popularity, release_date,
+            id, name, description, price, category, popularity, release_date, weight,
             product_images ( id, url, hint ),
             product_sizes ( size ),
             product_colors ( color )
@@ -86,6 +86,7 @@ export async function getOrderDetails(razorpayOrderId: string): Promise<{ succes
             category: p.category,
             popularity: p.popularity,
             releaseDate: p.release_date,
+            weight: p.weight,
             images: p.product_images.map((img: any) => ({ id: img.id.toString(), url: img.url, hint: img.hint })),
             sizes: p.product_sizes.map((s: any) => s.size),
             colors: p.product_colors.map((c: any) => c.color),

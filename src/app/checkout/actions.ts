@@ -6,13 +6,43 @@ import crypto from 'crypto';
 import { createClient as createAdminClient } from '@supabase/supabase-js';
 import { createClient } from '@/lib/supabase/server';
 import { getCartItems } from '../cart/actions';
-import { createShipment } from '@/lib/shiprocket-client';
+import { createShipment, getShippingRates } from '@/lib/shiprocket-client';
 
 const supabaseAdmin = createAdminClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!,
   { auth: { persistSession: false }, db: { schema: 'public'} }
 );
+
+export async function fetchShippingRatesAction(pincode: string): Promise<{success: boolean, message: string, rate?: number}> {
+    if (!pincode || pincode.length !== 6) {
+        return { success: false, message: 'Invalid Pincode.' };
+    }
+
+    const pickupPostcode = process.env.SHIPROCKET_PICKUP_POSTCODE;
+    if (!pickupPostcode) {
+        console.error("SHIPROCKET_PICKUP_POSTCODE is not set in .env");
+        return { success: false, message: 'Server configuration error.' };
+    }
+
+    const cart = await getCartItems();
+    if (!cart.success || !cart.items || cart.items.length === 0) {
+        return { success: false, message: "Cart is empty." };
+    }
+
+    const totalWeight = cart.items.reduce((acc, item) => acc + (item.product.weight * item.quantity), 0);
+    const subTotal = cart.items.reduce((acc, item) => acc + (item.product.price * item.quantity), 0);
+
+    const result = await getShippingRates({
+        pickup_postcode: pickupPostcode,
+        delivery_postcode: pincode,
+        weight: totalWeight,
+        cod: 0 // Assuming prepaid for rate calculation. Shiprocket often has the same rate for both.
+    });
+
+    return result;
+}
+
 
 type CreateOrderPayload = {
     amount: number;
@@ -90,6 +120,7 @@ export async function verifyPaymentAndCreateOrder(payload: VerifyPaymentPayload)
     }
 
     const totalAmount = cart.items.reduce((acc, item) => acc + item.product.price * item.quantity, 0);
+    const totalWeight = cart.items.reduce((acc, item) => acc + (item.product.weight * item.quantity), 0);
     
     // 4. Insert into 'orders' table
     const { data: newOrder, error: orderError } = await supabaseAdmin
@@ -136,7 +167,7 @@ export async function verifyPaymentAndCreateOrder(payload: VerifyPaymentPayload)
       length: 10,
       breadth: 10,
       height: 2,
-      weight: 0.5,
+      weight: totalWeight,
     });
 
     if (shipmentResult.success && shipmentResult.payload) {

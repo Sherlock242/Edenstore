@@ -33,6 +33,7 @@ const formSchema = z.object({
   category: z.string().min(2, {
     message: 'Category must be at least 2 characters.',
   }),
+  weight: z.coerce.number().positive({message: 'Weight must be a positive number (in kg).'}),
   imageHint: z.string().optional(),
   image: z
     .custom<File>(v => v instanceof File, 'Image is required.')
@@ -62,8 +63,9 @@ export function AddProductForm({ productToEdit, onProductAddedOrUpdated }: AddPr
       id: '',
       name: '',
       description: '',
-      price: undefined, // Changed to undefined
+      price: undefined,
       category: '',
+      weight: 0.5,
       imageHint: '',
       image: undefined,
     },
@@ -77,6 +79,7 @@ export function AddProductForm({ productToEdit, onProductAddedOrUpdated }: AddPr
               description: productToEdit.description,
               price: productToEdit.price,
               category: productToEdit.category,
+              weight: productToEdit.weight,
               image: undefined, // Clear image input on edit
               imageHint: productToEdit.images[0]?.hint || '',
           });
@@ -88,6 +91,7 @@ export function AddProductForm({ productToEdit, onProductAddedOrUpdated }: AddPr
             description: '',
             price: undefined,
             category: '',
+            weight: 0.5,
             imageHint: '',
             image: undefined,
           });
@@ -108,6 +112,7 @@ export function AddProductForm({ productToEdit, onProductAddedOrUpdated }: AddPr
             description: values.description,
             price: values.price,
             category: values.category,
+            weight: values.weight,
             image: values.image || null,
         };
         result = await updateProduct(updateValues);
@@ -174,19 +179,34 @@ export function AddProductForm({ productToEdit, onProductAddedOrUpdated }: AddPr
             </FormItem>
           )}
         />
-        <FormField
-          control={form.control}
-          name="price"
-          render={({field}) => (
-            <FormItem>
-              <FormLabel>Price</FormLabel>
-              <FormControl>
-                <Input type="number" placeholder="29.99" {...field} onChange={e => field.onChange(e.target.value === '' ? undefined : e.target.valueAsNumber)} value={field.value ?? ''} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <FormField
+            control={form.control}
+            name="price"
+            render={({field}) => (
+                <FormItem>
+                <FormLabel>Price</FormLabel>
+                <FormControl>
+                    <Input type="number" step="0.01" placeholder="29.99" {...field} onChange={e => field.onChange(e.target.value === '' ? undefined : e.target.valueAsNumber)} value={field.value ?? ''} />
+                </FormControl>
+                <FormMessage />
+                </FormItem>
+            )}
+            />
+            <FormField
+            control={form.control}
+            name="weight"
+            render={({field}) => (
+                <FormItem>
+                <FormLabel>Weight (kg)</FormLabel>
+                <FormControl>
+                    <Input type="number" step="0.1" placeholder="0.5" {...field} onChange={e => field.onChange(e.target.value === '' ? undefined : e.target.valueAsNumber)} value={field.value ?? ''} />
+                </FormControl>
+                <FormMessage />
+                </FormItem>
+            )}
+            />
+        </div>
         <FormField
           control={form.control}
           name="category"
