@@ -41,47 +41,47 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
 
   useEffect(() => {
+    // Function to fetch user profile
+    const fetchUserProfile = async (user: User) => {
+        const { data: profile } = await supabase
+            .from('users')
+            .select('*')
+            .eq('id', user.id)
+            .single();
+        setUserProfile(profile as UserProfile | null);
+        setIsAdmin(profile?.role === 'admin');
+    };
+
+    // Check initial session
+    const checkInitialSession = async () => {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session) {
+            setUser(session.user);
+            await fetchUserProfile(session.user);
+        }
+        setLoading(false);
+    };
+
+    checkInitialSession();
+    
+    // Set up the auth state change listener
     const { data: authListener } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        setLoading(true);
         const currentUser = session?.user ?? null;
         setUser(currentUser);
 
         if (currentUser) {
-          const { data: profile } = await supabase
-            .from('users')
-            .select('*')
-            .eq('id', currentUser.id)
-            .single();
-          setUserProfile(profile as UserProfile | null);
-          setIsAdmin(profile?.role === 'admin');
+          await fetchUserProfile(currentUser);
         } else {
           setUserProfile(null);
           setIsAdmin(false);
         }
         
         setLoading(false);
+        // Refresh the page to sync server and client components
         router.refresh();
       }
     );
-    
-    // This handles the initial session check on component mount.
-    const checkInitialSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session) {
-         setUser(session.user);
-         const { data: profile } = await supabase
-            .from('users')
-            .select('*')
-            .eq('id', session.user.id)
-            .single();
-          setUserProfile(profile as UserProfile | null);
-          setIsAdmin(profile?.role === 'admin');
-      }
-      setLoading(false);
-    }
-    checkInitialSession();
-
 
     return () => {
       authListener?.subscription.unsubscribe();
@@ -94,7 +94,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const signUpWithEmail = async (email: string, password: string) => {
-    const origin = window.location.origin;
+    const origin = typeof window !== 'undefined' ? window.location.origin : '';
     const { error } = await supabase.auth.signUp({
       email,
       password,
