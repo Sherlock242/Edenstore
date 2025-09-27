@@ -87,7 +87,7 @@ export async function verifyPaymentAndCreateOrder(payload: VerifyPaymentPayload)
         .from('orders')
         .insert({
             user_id: user.id,
-            total_price: totalAmount,
+            total_amount: totalAmount,
             status: 'processing',
             shipping_address: JSON.stringify(shippingAddress),
             razorpay_order_id: razorpay_order_id,
