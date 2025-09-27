@@ -15,7 +15,11 @@ import { Separator } from "./ui/separator";
 import { Input } from "./ui/input";
 import { Minus, Plus, Trash2 } from "lucide-react";
 
-export function CartSheetContent() {
+type CartSheetContentProps = {
+  setSheetOpen: (open: boolean) => void;
+};
+
+export function CartSheetContent({ setSheetOpen }: CartSheetContentProps) {
   const { state, dispatch } = useCart();
 
   const subtotal = state.items.reduce(
@@ -114,10 +118,10 @@ export function CartSheetContent() {
                 <span>${subtotal.toFixed(2)}</span>
               </div>
               <p className="text-xs text-muted-foreground">Shipping and taxes will be calculated at checkout.</p>
-              <Button asChild size="lg" className="w-full bg-accent text-accent-foreground hover:bg-accent/90">
+              <Button asChild size="lg" className="w-full bg-accent text-accent-foreground hover:bg-accent/90" onClick={() => setSheetOpen(false)}>
                 <Link href="/checkout">Proceed to Checkout</Link>
               </Button>
-              <Button variant="outline" asChild>
+              <Button variant="outline" asChild onClick={() => setSheetOpen(false)}>
                   <Link href="/cart">View Cart</Link>
               </Button>
             </div>
@@ -127,7 +131,7 @@ export function CartSheetContent() {
         <div className="flex flex-grow flex-col items-center justify-center gap-4 text-center">
             <h3 className="font-semibold text-lg">Your cart is empty</h3>
             <p className="text-muted-foreground">Add some awesome anime tees to get started!</p>
-            <Button asChild className="bg-accent text-accent-foreground hover:bg-accent/90">
+            <Button asChild className="bg-accent text-accent-foreground hover:bg-accent/90" onClick={() => setSheetOpen(false)}>
                 <Link href="/products">Start Shopping</Link>
             </Button>
         </div>

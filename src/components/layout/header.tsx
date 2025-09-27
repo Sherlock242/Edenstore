@@ -75,6 +75,7 @@ export function Header() {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isCartOpen, setIsCartOpen] = useState(false);
 
   const cartItemCount = cartState.items.reduce((acc, item) => acc + item.quantity, 0);
   
@@ -259,7 +260,7 @@ export function Header() {
                   <Search className="h-5 w-5" />
                   <span className="sr-only">Search</span>
                 </Button>
-                <Sheet>
+                <Sheet open={isCartOpen} onOpenChange={setIsCartOpen}>
                     <SheetTrigger asChild>
                     <Button variant="ghost" size="icon" className="relative">
                         <ShoppingBag className="h-5 w-5" />
@@ -271,7 +272,7 @@ export function Header() {
                         <span className="sr-only">Shopping Cart</span>
                     </Button>
                     </SheetTrigger>
-                    <CartSheetContent />
+                    <CartSheetContent setSheetOpen={setIsCartOpen} />
                 </Sheet>
 
                 {loading ? (
