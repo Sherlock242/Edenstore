@@ -182,8 +182,8 @@ export default function CheckoutPage() {
         <h1 className="mb-8 font-headline text-3xl font-bold tracking-tighter md:text-4xl">
           Checkout
         </h1>
-        <div className="grid grid-cols-1 gap-12 lg:grid-cols-2">
-          <div className="flex flex-col gap-8">
+        <div className="grid grid-cols-1 gap-8 md:gap-12 lg:grid-cols-2">
+          <div className="order-last flex flex-col gap-8 lg:order-first">
             <Card>
               <CardHeader>
                 <CardTitle>Shipping Information</CardTitle>
@@ -280,3 +280,5 @@ export default function CheckoutPage() {
     </>
   );
 }
+
+    

@@ -58,7 +58,7 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="container mx-auto flex min-h-[80vh] items-center justify-center px-4 py-12">
+    <div className="container mx-auto flex min-h-[80vh] items-center justify-center px-4 py-8 md:py-12">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <CardTitle>Welcome Back!</CardTitle>
@@ -111,3 +111,5 @@ export default function LoginPage() {
     </div>
   );
 }
+
+    

@@ -80,7 +80,7 @@ export default function TrackOrderPage() {
                     <CardTitle>Enter Order ID</CardTitle>
                 </CardHeader>
                 <CardContent>
-                    <form onSubmit={handleFormSubmit} className="flex gap-4">
+                    <form onSubmit={handleFormSubmit} className="flex flex-col gap-4 sm:flex-row">
                         <Input 
                             value={orderId}
                             onChange={(e) => setOrderId(e.target.value)}
@@ -125,7 +125,7 @@ export default function TrackOrderPage() {
                               <div className="flex-grow space-y-2 text-center sm:text-left">
                                   <div className="flex items-center justify-center sm:justify-start gap-2">
                                     <Hash className="w-5 h-5 text-muted-foreground" />
-                                    <p className="font-mono text-sm text-muted-foreground">Order ID: {order.razorpay_order_id}</p>
+                                    <p className="font-mono text-sm text-muted-foreground break-all">Order ID: {order.razorpay_order_id}</p>
                                   </div>
                                   <h3 className="text-xl font-bold">{order.items.length > 1 ? `${order.items[0].product.name} and ${order.items.length - 1} other item(s)` : order.items[0].product.name}</h3>
                                   <div className="flex items-center justify-center sm:justify-start gap-2">
@@ -149,11 +149,11 @@ export default function TrackOrderPage() {
                                     const isActive = index <= currentStatusIndex;
                                     const Icon = step.icon;
                                     return (
-                                        <div key={step.name} className="flex flex-col items-center gap-2 z-10 w-24">
+                                        <div key={step.name} className="flex flex-col items-center gap-2 z-10 w-20 sm:w-24 text-center">
                                             <div className={`flex h-8 w-8 items-center justify-center rounded-full transition-colors ${isActive ? 'bg-green-500 text-white' : 'bg-muted text-muted-foreground'}`}>
                                                <Icon className='h-5 w-5' />
                                             </div>
-                                            <p className={`text-sm font-medium ${isActive ? 'text-foreground' : 'text-muted-foreground'}`}>{step.name}</p>
+                                            <p className={`text-xs sm:text-sm font-medium ${isActive ? 'text-foreground' : 'text-muted-foreground'}`}>{step.name}</p>
                                         </div>
                                     )
                                 })}
@@ -166,3 +166,5 @@ export default function TrackOrderPage() {
         </div>
     )
 }
+
+    
