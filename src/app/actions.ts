@@ -4,7 +4,6 @@
 import { revalidatePath } from 'next/cache';
 import { createClient } from '@supabase/supabase-js';
 import { supabase as supabaseClient } from '@/lib/supabase-client';
-import { cache } from 'react';
 
 // Create a new Supabase client with admin privileges for server-side operations
 // This uses the service role key, which has full admin privileges.
@@ -35,7 +34,7 @@ export type Product = {
 };
 
 // This function now needs to fetch from Supabase
-export const getProducts = cache(async (): Promise<Product[]> => {
+export const getProducts = async (): Promise<Product[]> => {
     const { data: productsData, error } = await supabaseAdmin
       .from('products')
       .select(`
@@ -70,7 +69,7 @@ export const getProducts = cache(async (): Promise<Product[]> => {
         sizes: p.product_sizes.map((s: any) => s.size),
         colors: p.product_colors.map((c: any) => c.color),
     }));
-});
+};
 
 export type ProductFormValues = {
   name: string;

@@ -422,5 +422,3 @@ export function Header() {
     </header>
   );
 }
-
-    
