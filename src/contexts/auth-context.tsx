@@ -104,12 +104,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const value = { user, userProfile, loading, isadmin, signUpWithEmail, signInWithEmail, logout };
 
-  // While loading is true, we can render nothing or a global loader.
-  // This prevents child components from rendering with incomplete auth data.
-  if (loading) {
-    return null;
-  }
-
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 

@@ -53,6 +53,7 @@ import { deleteUserAccount } from "@/app/actions";
 import { useToast } from "@/hooks/use-toast";
 import { Separator } from "../ui/separator";
 import { Input } from "../ui/input";
+import { Skeleton } from "../ui/skeleton";
 
 const navLinks = [
   { href: "/products", label: "T-Shirts" },
@@ -120,9 +121,9 @@ export function Header() {
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="grid h-16 w-full grid-cols-3 items-center px-4 sm:px-6 lg:px-8">
+      <div className="container mx-auto flex h-16 items-center justify-between px-4 sm:px-6 lg:px-8">
         {/* Left Section (Mobile Menu & Desktop Nav) */}
-        <div className="flex items-center justify-start">
+        <div className="flex items-center">
            <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
             <SheetTrigger asChild>
               <Button
@@ -176,8 +177,8 @@ export function Header() {
               <SheetFooter className="mt-auto border-t pt-6">
                     {loading ? (
                       <div className="flex items-center gap-2">
-                          <div className="h-9 w-9 rounded-full bg-muted animate-pulse" />
-                          <div className="h-4 w-24 rounded-md bg-muted animate-pulse" />
+                          <Skeleton className="h-9 w-9 rounded-full" />
+                          <Skeleton className="h-4 w-24 rounded-md" />
                       </div>
                   ) : user ? (
                       <div className="flex w-full flex-col gap-4">
@@ -230,7 +231,7 @@ export function Header() {
         </div>
 
         {/* Center Section (Logo) */}
-        <div className="flex items-center justify-center">
+        <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
              <Link href="/" className="flex items-center space-x-2">
               <span className="font-bold font-headline text-lg uppercase bg-gradient-to-r from-orange-600 to-yellow-400 bg-clip-text text-transparent">
                 EDENSTORE
@@ -274,7 +275,7 @@ export function Header() {
                 </Sheet>
 
                 {loading ? (
-                    <div className="hidden h-9 w-9 rounded-full bg-muted animate-pulse md:block" />
+                    <Skeleton className="hidden h-9 w-9 rounded-full md:block" />
                 ) : user ? (
                      <DropdownMenu>
                         <DropdownMenuTrigger asChild>
