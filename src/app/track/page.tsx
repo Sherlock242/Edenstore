@@ -57,7 +57,7 @@ export default function TrackOrderPage() {
     const estimatedDeliveryDate = order ? addDays(new Date(order.created_at), 7) : null;
 
     const statusSteps = [
-        { name: "Processing", status: "processing", icon: Loader },
+        { name: "Order Placed", status: "processing", icon: CheckCircle },
         { name: "Shipped", status: "shipped", icon: Truck },
         { name: "Delivered", status: "delivered", icon: CheckCircle },
     ];
@@ -147,12 +147,11 @@ export default function TrackOrderPage() {
                             <div className="flex justify-between relative">
                                 {statusSteps.map((step, index) => {
                                     const isActive = index <= currentStatusIndex;
-                                    const isCurrent = index === currentStatusIndex;
                                     const Icon = step.icon;
                                     return (
                                         <div key={step.name} className="flex flex-col items-center gap-2 z-10 w-24">
                                             <div className={`flex h-8 w-8 items-center justify-center rounded-full transition-colors ${isActive ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'}`}>
-                                               <Icon className={`h-5 w-5 ${isCurrent && step.status === 'processing' ? 'animate-spin' : ''}`} />
+                                               <Icon className='h-5 w-5' />
                                             </div>
                                             <p className={`text-sm font-medium ${isActive ? 'text-foreground' : 'text-muted-foreground'}`}>{step.name}</p>
                                         </div>
