@@ -26,6 +26,12 @@ function createSupabaseServerClient() {
         get(name: string) {
           return cookieStore.get(name)?.value;
         },
+        set(name: string, value: string, options: any) {
+          cookieStore.set({ name, value, ...options });
+        },
+        remove(name: string, options: any) {
+          cookieStore.set({ name, value: '', ...options });
+        },
       },
     }
   );
@@ -122,21 +128,20 @@ export async function addCartItem(payload: AddItemPayload): Promise<{ success: b
 
   // Use an "upsert" operation to either insert a new item or update the quantity of an existing one.
   // The `onConflict` part tells Supabase what to do if an item with the same user_id, product_id, size, and color already exists.
-  const { data, error } = await supabase.rpc('upsert_cart_item', {
-      p_user_id: user.id,
-      p_product_id: payload.product.id,
-      p_size: payload.size,
-      p_color: payload.color,
-      p_quantity: payload.quantity
-  }).select().single();
-
+   const { data, error } = await supabase
+    .from('cart_items')
+    .upsert({
+      user_id: user.id,
+      product_id: payload.product.id,
+      size: payload.size,
+      color: payload.color,
+      quantity: payload.quantity,
+    }, { onConflict: 'user_id,product_id,size,color' })
+    .select()
+    .single();
 
   if (error) {
       console.error('Error in upsert_cart_item:', error);
-      // Handle specific error for unique constraint violation if needed, though upsert should prevent it.
-      if (error.code === '23505') { // unique_violation
-          return { success: false, message: 'This item is already in your cart. Quantity was not updated.' };
-      }
       return { success: false, message: 'Could not add item to cart.' };
   }
  
@@ -146,7 +151,15 @@ export async function addCartItem(payload: AddItemPayload): Promise<{ success: b
   const addedItem = items?.find(i => i.product.id === payload.product.id && i.size === payload.size && i.color === payload.color);
 
   if (!addedItem) {
-      return { success: false, message: 'Could not retrieve the added item.' };
+      // This could happen if getCartItems fails, but the upsert succeeded.
+      // We can construct a partial item to send back to the client reducer.
+      const partialItem = {
+          product: payload.product,
+          quantity: data.quantity,
+          size: data.size,
+          color: data.color
+      };
+      return { success: true, item: partialItem, message: 'Item added/updated in cart.' };
   }
 
   return { success: true, item: addedItem, message: 'Item added/updated in cart.' };
@@ -183,6 +196,10 @@ export async function updateCartItemQuantity(payload: UpdateQuantityPayload): Pr
      const { items } = await getCartItems();
      const updatedItem = items?.find(i => i.product.id === payload.productId && i.size === payload.size && i.color === payload.color);
 
+     if (!updatedItem) {
+        return { success: false, message: 'Could not retrieve the updated item.' };
+     }
+
      return { success: true, item: updatedItem, message: 'Quantity updated.' };
 }
 
@@ -214,3 +231,4 @@ export async function removeCartItem(payload: RemoveItemPayload): Promise<{ succ
     return { success: true, message: 'Item removed.' };
 }
 
+    
