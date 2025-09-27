@@ -51,7 +51,7 @@ export default async function ProductPage({ params }: { params: { id: string } }
               <span className="ml-2 text-sm text-muted-foreground">(123 reviews)</span>
             </div>
           </div>
-          <p className="text-3xl font-bold">${product.price.toFixed(2)}</p>
+          <p className="text-3xl font-bold">₹{product.price.toFixed(2)}</p>
           <ProductDetailsClient product={product} />
           <Accordion type="single" collapsible className="w-full">
             <AccordionItem value="description">

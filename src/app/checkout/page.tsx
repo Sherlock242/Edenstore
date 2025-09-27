@@ -37,12 +37,22 @@ export default function CheckoutPage() {
     0
   );
   
-  const shippingCost = subtotal > 50 ? 0 : 5; 
+  const shippingCost = subtotal > 500 ? 0 : 50; 
   const total = subtotal + shippingCost;
 
 
   const handlePlaceOrder = async () => {
     
+    const keyId = process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID;
+    if (!keyId) {
+       toast({
+            variant: 'destructive',
+            title: 'Configuration Error',
+            description: 'Razorpay Key ID is not set. Please restart the server after setting environment variables.',
+        });
+        return;
+    }
+
     if (!firstName || !address || !city || !country) {
         toast({
             variant: 'destructive',
@@ -88,7 +98,7 @@ export default function CheckoutPage() {
     };
 
     const options = {
-        key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID!,
+        key: keyId,
         amount: order.amount,
         currency: order.currency,
         name: 'EdenStore',
@@ -199,7 +209,7 @@ export default function CheckoutPage() {
             </Card>
 
             <Button size="lg" className="w-full bg-accent text-accent-foreground hover:bg-accent/90" onClick={handlePlaceOrder} disabled={isProcessing}>
-               {isProcessing ? 'Processing...' : `Place Order - $${total.toFixed(2)}`}
+               {isProcessing ? 'Processing...' : `Place Order - ₹${total.toFixed(2)}`}
             </Button>
           </div>
           <div className="order-first lg:order-last">
@@ -223,7 +233,7 @@ export default function CheckoutPage() {
                               <p className="font-semibold">{item.product.name}</p>
                               <p className="text-sm text-muted-foreground">{item.size} / {item.color}</p>
                             </div>
-                            <p className="font-medium">${(item.product.price * item.quantity).toFixed(2)}</p>
+                            <p className="font-medium">₹{(item.product.price * item.quantity).toFixed(2)}</p>
                           </div>
                         ))}
                       </div>
@@ -234,11 +244,11 @@ export default function CheckoutPage() {
                 <div className="space-y-2">
                   <div className="flex justify-between">
                     <span>Subtotal</span>
-                    <span>${subtotal.toFixed(2)}</span>
+                    <span>₹{subtotal.toFixed(2)}</span>
                   </div>
                   <div className="flex justify-between">
                     <span>Shipping</span>
-                    <span>${shippingCost.toFixed(2)}</span>
+                    <span>₹{shippingCost.toFixed(2)}</span>
                   </div>
                   <div className="flex justify-between">
                     <span>Taxes</span>
@@ -247,7 +257,7 @@ export default function CheckoutPage() {
                   <Separator className="my-2" />
                   <div className="flex justify-between text-lg font-bold">
                     <span>Total</span>
-                    <span>${total.toFixed(2)}</span>
+                    <span>₹{total.toFixed(2)}</span>
                   </div>
                 </div>
               </CardContent>

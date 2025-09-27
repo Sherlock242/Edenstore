@@ -117,7 +117,7 @@ export function ManageProducts({ onEditProduct }: ManageProductsProps) {
                 </TableCell>
                 <TableCell className="font-medium">{product.name}</TableCell>
                 <TableCell>{product.category}</TableCell>
-                <TableCell>${product.price.toFixed(2)}</TableCell>
+                <TableCell>₹{product.price.toFixed(2)}</TableCell>
                 <TableCell className="text-right">
                     <Button variant="ghost" size="icon" onClick={() => handleEditClick(product)} disabled={isPending}>
                         <Edit className="h-4 w-4" />

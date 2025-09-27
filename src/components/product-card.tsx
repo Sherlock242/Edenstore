@@ -74,7 +74,7 @@ export function ProductCard({ product }: ProductCardProps) {
             <h3 className="font-semibold truncate">{product.name}</h3>
           </Link>
           <p className="text-sm text-muted-foreground">{product.category}</p>
-          <p className="mt-2 font-bold">${product.price.toFixed(2)}</p>
+          <p className="mt-2 font-bold">₹{product.price.toFixed(2)}</p>
         </div>
       </CardContent>
     </Card>

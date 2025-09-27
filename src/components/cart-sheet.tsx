@@ -82,7 +82,7 @@ export function CartSheetContent({ setSheetOpen }: CartSheetContentProps) {
                           {item.size} / {item.color}
                         </p>
                         <p className="text-sm font-medium">
-                          ${item.product.price.toFixed(2)}
+                          ₹{item.product.price.toFixed(2)}
                         </p>
                       </div>
                       <div className="flex items-center justify-between">
@@ -129,7 +129,7 @@ export function CartSheetContent({ setSheetOpen }: CartSheetContentProps) {
             <div className="flex w-full flex-col gap-4">
               <div className="flex justify-between font-semibold">
                 <span>Subtotal</span>
-                <span>${subtotal.toFixed(2)}</span>
+                <span>₹{subtotal.toFixed(2)}</span>
               </div>
               <p className="text-xs text-muted-foreground">Shipping and taxes will be calculated at checkout.</p>
               <Button asChild size="lg" className="w-full bg-gradient-to-r from-orange-500 to-yellow-400 text-black font-bold hover:opacity-90 transition-opacity" onClick={() => setSheetOpen(false)}>

@@ -19,13 +19,13 @@ type CreateOrderPayload = {
 export async function createRazorpayOrder(payload: CreateOrderPayload): Promise<{success: boolean; order?: any; message: string}> {
     try {
         const instance = new Razorpay({
-            key_id: process.env.RAZORPAY_KEY_ID!,
+            key_id: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID!,
             key_secret: process.env.RAZORPAY_KEY_SECRET!,
         });
 
         const options = {
-            amount: payload.amount * 100, // amount in smallest currency unit
-            currency: "USD",
+            amount: Math.round(payload.amount * 100), // amount in smallest currency unit
+            currency: "INR",
             receipt: `receipt_order_${new Date().getTime()}`,
         };
 
@@ -39,7 +39,8 @@ export async function createRazorpayOrder(payload: CreateOrderPayload): Promise<
 
     } catch (error) {
         console.error("Error creating Razorpay order:", error);
-        return { success: false, message: "An error occurred while creating the order." };
+        const errorMessage = error instanceof Error ? error.message : "An unknown error occurred.";
+        return { success: false, message: `An error occurred while creating the order: ${errorMessage}` };
     }
 }
 
