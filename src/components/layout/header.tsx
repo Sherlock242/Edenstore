@@ -15,6 +15,7 @@ import {
   X,
   Heart,
   Package,
+  Users,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -63,7 +64,8 @@ const navLinks = [
 ];
 
 const adminLinks = [
-    { href: "/admin/add-product", label: "Add Product", icon: PlusCircle },
+    { href: "/admin/add-product", label: "Manage Products", icon: PlusCircle },
+    { href: "/admin/orders", label: "Customer Orders", icon: Users },
 ]
 
 export function Header() {
@@ -410,3 +412,5 @@ export function Header() {
     </header>
   );
 }
+
+    
