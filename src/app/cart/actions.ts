@@ -22,7 +22,7 @@ const supabaseAdmin = createClient(
 
 // This function creates a Supabase client for the current user, using their auth cookie.
 // It's the standard way to interact with Supabase on behalf of a logged-in user in Server Actions.
-async function createSupabaseServerClient() {
+function createSupabaseServerClient() {
   const cookieStore = cookies();
   return createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -32,13 +32,19 @@ async function createSupabaseServerClient() {
         get(name: string) {
           return cookieStore.get(name)?.value;
         },
+        set(name: string, value: string, options: any) {
+          cookieStore.set({ name, value, ...options });
+        },
+        remove(name: string, options: any) {
+          cookieStore.set({ name, value: '', ...options });
+        },
       },
     }
   );
 }
 
 export async function getCartItems(): Promise<{ success: boolean; items?: CartItem[]; message: string }> {
-  const supabase = await createSupabaseServerClient();
+  const supabase = createSupabaseServerClient();
   const { data: { user } } = await supabase.auth.getUser();
 
   if (!user) {
@@ -119,7 +125,7 @@ type AddItemPayload = {
 };
 
 export async function addCartItem(payload: AddItemPayload): Promise<{ success: boolean; item?: CartItem; message: string }> {
-  const supabase = await createSupabaseServerClient();
+  const supabase = createSupabaseServerClient();
   const { data: { user } } = await supabase.auth.getUser();
 
   if (!user) {
@@ -176,7 +182,7 @@ type UpdateQuantityPayload = {
     quantity: number;
 }
 export async function updateCartItemQuantity(payload: UpdateQuantityPayload): Promise<{ success: boolean; item?: CartItem; message: string }> {
-     const supabase = await createSupabaseServerClient();
+     const supabase = createSupabaseServerClient();
      const { data: { user } } = await supabase.auth.getUser();
      if (!user) return { success: false, message: 'You must be logged in.' };
 
@@ -210,7 +216,7 @@ type RemoveItemPayload = {
 }
 
 export async function removeCartItem(payload: RemoveItemPayload): Promise<{ success: boolean; message: string }> {
-    const supabase = await createSupabaseServerClient();
+    const supabase = createSupabaseServerClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return { success: false, message: 'You must be logged in.' };
     
