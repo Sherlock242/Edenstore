@@ -18,37 +18,33 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
-import { useAuth } from '@/contexts/auth-context';
 import { useToast } from '@/hooks/use-toast';
+import { login } from '@/app/auth/actions';
+import { loginSchema } from '@/lib/zod-schemas';
 
-const formSchema = z.object({
-  email: z.string().email({ message: 'Please enter a valid email address.' }),
-  password: z.string().min(6, { message: 'Password must be at least 6 characters.' }),
-});
 
 export default function LoginPage() {
   const router = useRouter();
-  const { signInWithEmail } = useAuth();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
 
-  const form = useForm<z.infer<typeof formSchema>>({
-    resolver: zodResolver(formSchema),
+  const form = useForm<z.infer<typeof loginSchema>>({
+    resolver: zodResolver(loginSchema),
     defaultValues: {
       email: '',
       password: '',
     },
   });
 
-  async function onSubmit(values: z.infer<typeof formSchema>) {
+  async function onSubmit(values: z.infer<typeof loginSchema>) {
     setIsLoading(true);
-    const { error } = await signInWithEmail(values.email, values.password);
+    const result = await login(values);
 
-    if (error) {
+    if (!result.success) {
       toast({
         variant: 'destructive',
         title: 'Login Failed',
-        description: error.message || 'An unexpected error occurred.',
+        description: result.message,
       });
     } else {
       toast({
@@ -56,6 +52,7 @@ export default function LoginPage() {
         description: "You've successfully logged in.",
       });
       router.push('/');
+      router.refresh(); // Force a layout refresh to update user state in header
     }
     setIsLoading(false);
   }

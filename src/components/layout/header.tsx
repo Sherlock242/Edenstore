@@ -54,6 +54,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Separator } from "../ui/separator";
 import { Input } from "../ui/input";
 import { Skeleton } from "../ui/skeleton";
+import { logout } from "@/app/auth/actions";
 
 const navLinks = [
   { href: "/products", label: "T-Shirts" },
@@ -66,7 +67,7 @@ const adminLinks = [
 
 export function Header() {
   const { state: cartState } = useCart();
-  const { user, userProfile, loading, logout, isadmin } = useAuth();
+  const { user, userProfile, loading, isadmin } = useAuth();
   const pathname = usePathname();
   const router = useRouter();
   const { toast } = useToast();
@@ -194,10 +195,12 @@ export function Header() {
                               </div>
                           </div>
                           <Separator />
-                            <Button variant="ghost" className="w-full justify-start" onClick={() => logout()}>
-                              <LogOut className="mr-2 h-4 w-4" />
-                              <span>Log out</span>
-                          </Button>
+                            <form action={logout}>
+                               <Button variant="ghost" className="w-full justify-start">
+                                <LogOut className="mr-2 h-4 w-4" />
+                                <span>Log out</span>
+                               </Button>
+                            </form>
                           <Button
                               variant="ghost"
                               className="w-full justify-start text-red-500 hover:bg-red-500/10 hover:text-red-600"
@@ -300,10 +303,14 @@ export function Header() {
                                 <span>Wishlist</span>
                             </DropdownMenuItem>
                             <DropdownMenuSeparator />
-                            <DropdownMenuItem onClick={() => logout()}>
-                                <LogOut className="mr-2 h-4 w-4" />
-                                <span>Log out</span>
-                            </DropdownMenuItem>
+                             <form action={logout}>
+                                <DropdownMenuItem asChild>
+                                   <button type="submit" className="w-full">
+                                     <LogOut className="mr-2 h-4 w-4" />
+                                     <span>Log out</span>
+                                   </button>
+                                </DropdownMenuItem>
+                             </form>
                             <DropdownMenuSeparator />
                             <DropdownMenuItem
                                 className="text-red-500 focus:bg-red-500/10 focus:text-red-600"
@@ -372,5 +379,3 @@ export function Header() {
     </header>
   );
 }
-
-    
