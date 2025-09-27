@@ -218,14 +218,14 @@ type PickupRequestResponse = {
     status: number;
 }
 
-export async function requestShipmentPickup(shipmentIds: number[]): Promise<{success: boolean; message: string; response?: PickupRequestResponse}> {
+export async function requestShipmentPickup(shipmentIds: number[], pickupDate: string): Promise<{success: boolean; message: string; response?: PickupRequestResponse}> {
     const token = await getShiprocketToken();
     if (!token) {
         return { success: false, message: "Could not authenticate with Shiprocket." };
     }
 
     try {
-        const response = await fetch(`${SHIPROCKET_API_URL}/orders/pickup`, {
+        const response = await fetch(`${SHIPROCKET_API_URL}/orders/pickup/generate`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -233,6 +233,7 @@ export async function requestShipmentPickup(shipmentIds: number[]): Promise<{suc
             },
             body: JSON.stringify({
                 shipment_id: shipmentIds,
+                pickup_date: pickupDate, // YYYY-MM-DD format
             }),
         });
 

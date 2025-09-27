@@ -5,6 +5,7 @@ import { createClient as createAdminClient } from '@supabase/supabase-js';
 import type { OrderDetails } from '@/app/track/actions';
 import type { Product } from '@/app/actions';
 import { requestShipmentPickup } from '@/lib/shiprocket-client';
+import { format } from 'date-fns';
 
 export type UserProfileInfo = {
     display_name: string;
@@ -117,13 +118,21 @@ export async function updateOrderStatus(orderId: string, status: OrderDetails['s
 }
 
 
-export async function schedulePickupForOrder(shipmentId: number): Promise<{ success: boolean; message: string }> {
-    if (!shipmentId) {
+export async function schedulePickupForOrder(order: FullOrderDetails): Promise<{ success: boolean; message: string }> {
+    if (!order.shipment_id) {
         return { success: false, message: "Invalid Shipment ID." };
     }
 
+    // Calculate pickup date: 2 days after order creation
+    const orderDate = new Date(order.created_at);
+    const pickupDate = new Date(orderDate);
+    pickupDate.setDate(orderDate.getDate() + 2);
+    
+    // Format date as YYYY-MM-DD for the API
+    const formattedPickupDate = format(pickupDate, 'yyyy-MM-dd');
+
     // 1. Call Shiprocket to schedule the pickup
-    const pickupResult = await requestShipmentPickup([shipmentId]);
+    const pickupResult = await requestShipmentPickup([order.shipment_id], formattedPickupDate);
 
     if (!pickupResult.success) {
         return { success: false, message: pickupResult.message };
@@ -133,7 +142,7 @@ export async function schedulePickupForOrder(shipmentId: number): Promise<{ succ
     const { error: dbError } = await supabaseAdmin
         .from('orders')
         .update({ status: 'pickup-scheduled' })
-        .eq('shipment_id', shipmentId);
+        .eq('id', order.id);
     
     if (dbError) {
         console.error("Failed to update order status after scheduling pickup:", dbError.message);
@@ -141,5 +150,6 @@ export async function schedulePickupForOrder(shipmentId: number): Promise<{ succ
         return { success: true, message: `Pickup scheduled with Shiprocket, but failed to update status in local DB. Please update manually. Error: ${dbError.message}` };
     }
     
-    return { success: true, message: `Pickup successfully scheduled. Pickup Token: ${pickupResult.response?.pickup_token_number}` };
+    const responseData = pickupResult.response?.pickup_status;
+    return { success: true, message: `Pickup successfully scheduled for ${formattedPickupDate}. Status: ${responseData}` };
 }

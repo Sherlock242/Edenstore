@@ -37,7 +37,7 @@ type ViewOrdersProps = {
 
 export function ViewOrders({ orders, onStatusUpdated }: ViewOrdersProps) {
   const [isPending, startTransition] = useTransition();
-  const [schedulingPickupFor, setSchedulingPickupFor] = useState<number | null>(null);
+  const [schedulingPickupFor, setSchedulingPickupFor] = useState<string | null>(null);
   const { toast } = useToast();
 
   const getStatusInfo = (status: FullOrderDetails['status']) => {
@@ -66,12 +66,12 @@ export function ViewOrders({ orders, onStatusUpdated }: ViewOrdersProps) {
       });
   }
 
-  const handleSchedulePickup = (shipmentId: number, orderId: string) => {
-      setSchedulingPickupFor(shipmentId);
+  const handleSchedulePickup = (order: FullOrderDetails) => {
+      setSchedulingPickupFor(order.id);
       startTransition(async () => {
-          const result = await schedulePickupForOrder(shipmentId);
+          const result = await schedulePickupForOrder(order);
           if (result.success) {
-              onStatusUpdated(orderId, 'pickup-scheduled');
+              onStatusUpdated(order.id, 'pickup-scheduled');
               toast({ title: "Pickup Scheduled!", description: result.message });
           } else {
               toast({ variant: 'destructive', title: "Scheduling Failed", description: result.message });
@@ -85,7 +85,7 @@ export function ViewOrders({ orders, onStatusUpdated }: ViewOrdersProps) {
       {orders.map(order => {
         const statusInfo = getStatusInfo(order.status);
         const shippingInfo = JSON.parse(order.shipping_address as string);
-        const isSchedulingThis = schedulingPickupFor === order.shipment_id;
+        const isSchedulingThis = schedulingPickupFor === order.id;
 
         return (
           <AccordionItem value={order.id} key={order.id} className="rounded-lg border bg-card">
@@ -166,7 +166,7 @@ export function ViewOrders({ orders, onStatusUpdated }: ViewOrdersProps) {
                                 {order.status === 'processing' && order.shipment_id && (
                                     <Button 
                                         className="w-full" 
-                                        onClick={() => handleSchedulePickup(order.shipment_id!, order.id)}
+                                        onClick={() => handleSchedulePickup(order)}
                                         disabled={isPending || isSchedulingThis}
                                     >
                                         <Rocket className="mr-2 h-4 w-4" />
