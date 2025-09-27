@@ -17,16 +17,6 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from '@/components/ui/accordion';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
 import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
 import { updateOrderStatus, schedulePickupForOrder, type FullOrderDetails } from './actions';
@@ -52,11 +42,10 @@ type ViewOrdersProps = {
 export function ViewOrders({ orders, onStatusUpdated }: ViewOrdersProps) {
   const [isPending, startTransition] = useTransition();
   const { toast } = useToast();
-
-  const [isScheduleDialogOpen, setIsScheduleDialogOpen] = useState(false);
-  const [orderToSchedule, setOrderToSchedule] = useState<FullOrderDetails | null>(null);
+  
+  const [orderIdToSchedule, setOrderIdToSchedule] = useState<string | null>(null);
+  const [isScheduling, setIsScheduling] = useState(false);
   const [pickupDate, setPickupDate] = useState<Date | undefined>();
-
 
   const getStatusInfo = (status: FullOrderDetails['status']) => {
     switch (status) {
@@ -74,9 +63,10 @@ export function ViewOrders({ orders, onStatusUpdated }: ViewOrdersProps) {
   
   const handleStatusChange = (order: FullOrderDetails, newStatus: FullOrderDetails['status']) => {
       if (newStatus === 'pickup-scheduled' && order.status === 'processing' && order.shipment_id) {
-          setOrderToSchedule(order);
-          setIsScheduleDialogOpen(true);
+          setOrderIdToSchedule(order.id);
+          // Don't update the status immediately, wait for schedule confirmation
       } else {
+          setOrderIdToSchedule(null); // Hide scheduling UI if another status is selected
           startTransition(async () => {
               const result = await updateOrderStatus(order.id, newStatus);
               if (result.success) {
@@ -89,36 +79,39 @@ export function ViewOrders({ orders, onStatusUpdated }: ViewOrdersProps) {
       }
   }
 
-  const handleConfirmSchedule = (scheduleAutomatically: boolean = false) => {
-      if (!orderToSchedule) return;
-
-      const dateToUse = scheduleAutomatically ? undefined : pickupDate;
+  const handleConfirmSchedule = (order: FullOrderDetails, dateToUse?: Date) => {
+      if (!order) return;
       
-      if (!scheduleAutomatically && !dateToUse) {
-          toast({ variant: 'destructive', title: 'No Date Selected', description: 'Please select a pickup date.' });
-          return;
+      if (!dateToUse) {
+         // This condition is for manual date selection
+          const isManual = pickupDate !== undefined;
+          if (isManual && !pickupDate) {
+            toast({ variant: 'destructive', title: 'No Date Selected', description: 'Please select a pickup date.' });
+            return;
+          }
       }
 
+      setIsScheduling(true);
       startTransition(async () => {
-          const result = await schedulePickupForOrder(orderToSchedule, dateToUse);
+          const result = await schedulePickupForOrder(order, dateToUse || pickupDate);
           if (result.success) {
-              onStatusUpdated(orderToSchedule.id, 'pickup-scheduled');
+              onStatusUpdated(order.id, 'pickup-scheduled');
               toast({ title: "Pickup Scheduled!", description: result.message });
           } else {
               toast({ variant: 'destructive', title: "Scheduling Failed", description: result.message });
           }
-          setIsScheduleDialogOpen(false);
-          setOrderToSchedule(null);
+          setOrderIdToSchedule(null);
           setPickupDate(undefined);
+          setIsScheduling(false);
       });
   }
 
   return (
-    <>
     <Accordion type="multiple" className="w-full space-y-4">
       {orders.map(order => {
         const statusInfo = getStatusInfo(order.status);
         const shippingInfo = JSON.parse(order.shipping_address as string);
+        const isSchedulingThis = order.id === orderIdToSchedule;
 
         return (
           <AccordionItem value={order.id} key={order.id} className="rounded-lg border bg-card">
@@ -182,9 +175,9 @@ export function ViewOrders({ orders, onStatusUpdated }: ViewOrdersProps) {
                             <div className="space-y-2">
                                 <Select 
                                     defaultValue={order.status} 
-                                    value={order.status}
+                                    value={isSchedulingThis ? 'pickup-scheduled' : order.status}
                                     onValueChange={(value) => handleStatusChange(order, value as FullOrderDetails['status'])}
-                                    disabled={isPending}
+                                    disabled={isPending || isScheduling}
                                 >
                                     <SelectTrigger>
                                         <SelectValue placeholder="Change status..." />
@@ -198,6 +191,56 @@ export function ViewOrders({ orders, onStatusUpdated }: ViewOrdersProps) {
                                         <SelectItem value="delivered">Delivered</SelectItem>
                                     </SelectContent>
                                 </Select>
+
+                                {isSchedulingThis && (
+                                    <div className="grid gap-2 pt-2 border-t mt-2">
+                                        <Popover>
+                                            <PopoverTrigger asChild>
+                                            <Button
+                                                variant={"outline"}
+                                                className={cn(
+                                                "w-full justify-start text-left font-normal",
+                                                !pickupDate && "text-muted-foreground"
+                                                )}
+                                                disabled={isScheduling}
+                                            >
+                                                <CalendarIcon className="mr-2 h-4 w-4" />
+                                                {pickupDate ? format(pickupDate, "PPP") : <span>Pick a manual date</span>}
+                                            </Button>
+                                            </PopoverTrigger>
+                                            <PopoverContent className="w-auto p-0">
+                                            <Calendar
+                                                mode="single"
+                                                selected={pickupDate}
+                                                onSelect={setPickupDate}
+                                                initialFocus
+                                                disabled={(date) => date < new Date() || isScheduling}
+                                            />
+                                            </PopoverContent>
+                                        </Popover>
+                                        <Button onClick={() => handleConfirmSchedule(order, pickupDate)} disabled={isScheduling || !pickupDate}>
+                                            {isScheduling ? 'Confirming...' : 'Confirm Manual Date'}
+                                        </Button>
+                                        
+                                        <div className="relative my-1">
+                                            <div className="absolute inset-0 flex items-center">
+                                                <span className="w-full border-t" />
+                                            </div>
+                                            <div className="relative flex justify-center text-xs uppercase">
+                                                <span className="bg-card px-2 text-muted-foreground">Or</span>
+                                            </div>
+                                        </div>
+
+                                        <Button variant="secondary" onClick={() => handleConfirmSchedule(order, undefined)} disabled={isScheduling}>
+                                            <Rocket className="mr-2 h-4 w-4" />
+                                            Auto Schedule (2 Days)
+                                        </Button>
+
+                                        <Button variant="ghost" size="sm" onClick={() => { setOrderIdToSchedule(null); onStatusUpdated(order.id, order.status); }} disabled={isScheduling}>
+                                            Cancel
+                                        </Button>
+                                    </div>
+                                )}
                             </div>
                         </div>
                     </div>
@@ -207,65 +250,5 @@ export function ViewOrders({ orders, onStatusUpdated }: ViewOrdersProps) {
         );
       })}
     </Accordion>
-
-    <AlertDialog open={isScheduleDialogOpen} onOpenChange={setIsScheduleDialogOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Schedule Pickup</AlertDialogTitle>
-            <AlertDialogDescription>
-              Choose a date for the pickup or use the automatic option.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-            <div className="grid gap-4 py-4">
-                <Popover>
-                    <PopoverTrigger asChild>
-                    <Button
-                        variant={"outline"}
-                        className={cn(
-                        "w-full justify-start text-left font-normal",
-                        !pickupDate && "text-muted-foreground"
-                        )}
-                    >
-                        <CalendarIcon className="mr-2 h-4 w-4" />
-                        {pickupDate ? format(pickupDate, "PPP") : <span>Pick a date</span>}
-                    </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0">
-                    <Calendar
-                        mode="single"
-                        selected={pickupDate}
-                        onSelect={setPickupDate}
-                        initialFocus
-                        disabled={(date) => date < new Date()}
-                    />
-                    </PopoverContent>
-                </Popover>
-                <Button onClick={() => handleConfirmSchedule(false)} disabled={isPending || !pickupDate}>
-                    Confirm Manual Date
-                </Button>
-                
-                <div className="relative my-2">
-                    <div className="absolute inset-0 flex items-center">
-                        <span className="w-full border-t" />
-                    </div>
-                    <div className="relative flex justify-center text-xs uppercase">
-                        <span className="bg-background px-2 text-muted-foreground">Or</span>
-                    </div>
-                </div>
-
-                <Button variant="secondary" onClick={() => handleConfirmSchedule(true)} disabled={isPending}>
-                    <Rocket className="mr-2 h-4 w-4" />
-                    Auto Schedule (2 Days Later)
-                </Button>
-            </div>
-          <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => {
-                onStatusUpdated(orderToSchedule!.id, orderToSchedule!.status); // Revert dropdown
-                setOrderToSchedule(null);
-            }}>Cancel</AlertDialogCancel>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-    </>
   );
 }
