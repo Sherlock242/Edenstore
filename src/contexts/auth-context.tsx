@@ -37,11 +37,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isadmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
-    // The onAuthStateChange listener handles the initial load and any subsequent changes.
+    const getInitialSession = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      setUser(session?.user ?? null);
+      if (session?.user) {
+        const { data: profile } = await supabase
+          .from('users')
+          .select('*')
+          .eq('id', session.user.id)
+          .single();
+        setUserProfile(profile);
+        setIsAdmin(profile?.role === 'admin');
+      } else {
+        setUserProfile(null);
+        setIsAdmin(false);
+      }
+      setLoading(false);
+    };
+
+    getInitialSession();
+
     const { data: authListener } = supabase.auth.onAuthStateChange(
       async (_event, session) => {
         setUser(session?.user ?? null);
-
         if (session?.user) {
              const { data: profile } = await supabase
                 .from('users')
@@ -54,7 +72,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             setUserProfile(null);
             setIsAdmin(false);
         }
-        // Set loading to false only after the session and profile have been checked.
         setLoading(false);
       }
     );
@@ -89,7 +106,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // While loading is true, we can render nothing or a global loader.
   // This prevents child components from rendering with incomplete auth data.
-  return <AuthContext.Provider value={value}>{!loading ? children : null}</AuthContext.Provider>;
+  if (loading) {
+    return null;
+  }
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
 export function useAuth() {
