@@ -38,12 +38,12 @@ export default function MyOrdersPage() {
     }
   }, [user, authLoading]);
 
-  const getStatusColor = (status: OrderSummary['status']) => {
+  const getStatusInfo = (status: OrderSummary['status']) => {
     switch (status) {
-      case 'processing': return 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30';
-      case 'shipped': return 'bg-blue-500/20 text-blue-400 border-blue-500/30';
-      case 'delivered': return 'bg-green-500/20 text-green-400 border-green-500/30';
-      default: return 'bg-muted text-muted-foreground';
+      case 'processing': return { text: 'Order Placed', color: 'bg-green-500/20 text-green-400 border-green-500/30' };
+      case 'shipped': return { text: 'Shipped', color: 'bg-blue-500/20 text-blue-400 border-blue-500/30' };
+      case 'delivered': return { text: 'Delivered', color: 'bg-green-500/20 text-green-400 border-green-500/30' };
+      default: return { text: status, color: 'bg-muted text-muted-foreground' };
     }
   }
 
@@ -90,61 +90,64 @@ export default function MyOrdersPage() {
 
       {orders.length > 0 ? (
         <div className="space-y-6">
-          {orders.map(order => (
-            <Card key={order.id}>
-              <CardHeader className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                <div className="space-y-1">
-                  <CardTitle className="text-xl">Order #{order.razorpay_order_id.replace('order_', '')}</CardTitle>
-                  <CardDescription>
-                    Placed on {format(new Date(order.created_at), 'MMMM dd, yyyy')}
-                  </CardDescription>
-                </div>
-                <div className="flex flex-col items-start gap-2 sm:items-end">
-                    <Badge variant="outline" className={`capitalize ${getStatusColor(order.status)}`}>{order.status}</Badge>
-                    <div className="text-lg font-bold">
-                        Total: ₹{calculateOrderTotal(order).toFixed(2)}
-                    </div>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <Accordion type="single" collapsible>
-                    <AccordionItem value="items">
-                        <AccordionTrigger>{order.items.length} item(s)</AccordionTrigger>
-                        <AccordionContent>
-                             <div className="space-y-4">
-                                {order.items.map(item => (
-                                <div key={`${item.product.id}-${item.size}-${item.color}`} className="flex items-center gap-4">
-                                    <Image
-                                    src={item.product.images[0].url}
-                                    alt={item.product.name}
-                                    width={64}
-                                    height={80}
-                                    className="rounded-md object-cover"
-                                    />
-                                    <div className="flex-grow">
-                                        <p className="font-semibold">{item.product.name}</p>
-                                        <p className="text-sm text-muted-foreground">
-                                            {item.quantity} x ₹{item.price_at_purchase.toFixed(2)}
-                                        </p>
-                                        <p className="text-sm text-muted-foreground">
-                                            {item.size} / {item.color}
-                                        </p>
-                                    </div>
-                                    <p className="font-medium">₹{(item.price_at_purchase * item.quantity).toFixed(2)}</p>
-                                </div>
-                                ))}
-                            </div>
-                        </AccordionContent>
-                    </AccordionItem>
-                </Accordion>
-              </CardContent>
-              <CardFooter>
-                 <Button variant="outline" asChild>
-                    <Link href={`/track?order_id=${order.razorpay_order_id}`}>Track This Order</Link>
-                 </Button>
-              </CardFooter>
-            </Card>
-          ))}
+          {orders.map(order => {
+            const statusInfo = getStatusInfo(order.status);
+            return (
+              <Card key={order.id}>
+                <CardHeader className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="space-y-1">
+                    <CardTitle className="text-xl">Order #{order.razorpay_order_id.replace('order_', '')}</CardTitle>
+                    <CardDescription>
+                      Placed on {format(new Date(order.created_at), 'MMMM dd, yyyy')}
+                    </CardDescription>
+                  </div>
+                  <div className="flex flex-col items-start gap-2 sm:items-end">
+                      <Badge variant="outline" className={`capitalize ${statusInfo.color}`}>{statusInfo.text}</Badge>
+                      <div className="text-lg font-bold">
+                          Total: ₹{calculateOrderTotal(order).toFixed(2)}
+                      </div>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <Accordion type="single" collapsible>
+                      <AccordionItem value="items">
+                          <AccordionTrigger>{order.items.length} item(s)</AccordionTrigger>
+                          <AccordionContent>
+                              <div className="space-y-4">
+                                  {order.items.map(item => (
+                                  <div key={`${item.product.id}-${item.size}-${item.color}`} className="flex items-center gap-4">
+                                      <Image
+                                      src={item.product.images[0].url}
+                                      alt={item.product.name}
+                                      width={64}
+                                      height={80}
+                                      className="rounded-md object-cover"
+                                      />
+                                      <div className="flex-grow">
+                                          <p className="font-semibold">{item.product.name}</p>
+                                          <p className="text-sm text-muted-foreground">
+                                              {item.quantity} x ₹{item.price_at_purchase.toFixed(2)}
+                                          </p>
+                                          <p className="text-sm text-muted-foreground">
+                                              {item.size} / {item.color}
+                                          </p>
+                                      </div>
+                                      <p className="font-medium">₹{(item.price_at_purchase * item.quantity).toFixed(2)}</p>
+                                  </div>
+                                  ))}
+                              </div>
+                          </AccordionContent>
+                      </AccordionItem>
+                  </Accordion>
+                </CardContent>
+                <CardFooter>
+                  <Button variant="outline" asChild>
+                      <Link href={`/track?order_id=${order.razorpay_order_id}`}>Track This Order</Link>
+                  </Button>
+                </CardFooter>
+              </Card>
+            )
+          })}
         </div>
       ) : (
         <div className="flex min-h-[40vh] flex-col items-center justify-center gap-4 rounded-lg border border-dashed bg-card p-8 text-center">
