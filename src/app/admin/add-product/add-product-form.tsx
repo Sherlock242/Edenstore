@@ -66,7 +66,7 @@ export function AddProductForm({ productToEdit, onProductAddedOrUpdated }: AddPr
       description: '',
       price: undefined,
       category: '',
-      weight: 0.5,
+      weight: undefined,
       imageHint: '',
       image: undefined,
     },
@@ -92,7 +92,7 @@ export function AddProductForm({ productToEdit, onProductAddedOrUpdated }: AddPr
             description: '',
             price: undefined,
             category: '',
-            weight: 0.5,
+            weight: undefined,
             imageHint: '',
             image: undefined,
           });
