@@ -62,7 +62,7 @@ export function AddProductForm({ productToEdit, onProductAddedOrUpdated }: AddPr
       id: '',
       name: '',
       description: '',
-      price: 0,
+      price: undefined, // Changed to undefined
       category: '',
       imageHint: '',
       image: undefined,
@@ -86,7 +86,7 @@ export function AddProductForm({ productToEdit, onProductAddedOrUpdated }: AddPr
             id: '',
             name: '',
             description: '',
-            price: 0,
+            price: undefined,
             category: '',
             imageHint: '',
             image: undefined,
@@ -181,7 +181,7 @@ export function AddProductForm({ productToEdit, onProductAddedOrUpdated }: AddPr
             <FormItem>
               <FormLabel>Price</FormLabel>
               <FormControl>
-                <Input type="number" placeholder="29.99" {...field} onChange={e => field.onChange(e.target.valueAsNumber || 0)} value={field.value ?? ''} />
+                <Input type="number" placeholder="29.99" {...field} onChange={e => field.onChange(e.target.value === '' ? undefined : e.target.valueAsNumber)} value={field.value ?? ''} />
               </FormControl>
               <FormMessage />
             </FormItem>
