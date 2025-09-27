@@ -10,7 +10,7 @@ import { getCartItems } from '../cart/actions';
 const supabaseAdmin = createAdminClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!,
-  { auth: { persistSession: false } }
+  { auth: { persistSession: false }, db: { schema: 'public'} }
 );
 
 type CreateOrderPayload = {
@@ -87,9 +87,9 @@ export async function verifyPaymentAndCreateOrder(payload: VerifyPaymentPayload)
         .from('orders')
         .insert({
             user_id: user.id,
-            total_amount: totalAmount,
+            total_price: totalAmount,
             status: 'processing',
-            shipping_address: shippingAddress,
+            shipping_address: JSON.stringify(shippingAddress),
             razorpay_order_id: razorpay_order_id,
             razorpay_payment_id: razorpay_payment_id,
         })
