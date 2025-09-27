@@ -2,7 +2,7 @@
 // src/app/admin/add-product/add-product-form.tsx
 'use client';
 import { useEffect, useState } from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Button } from '@/components/ui/button';
@@ -18,9 +18,14 @@ import {
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
-import { addProduct, updateProduct, type Product, type ProductFormValues, type UpdateProductFormValues } from '@/app/actions';
-import { Upload } from 'lucide-react';
+import { addProduct, updateProduct, type Product } from '@/app/actions';
+import { Upload, X } from 'lucide-react';
 import Image from 'next/image';
+
+const sizeSchema = z.object({
+  size: z.string().min(1, 'Size is required.'),
+  quantity: z.coerce.number().min(0, 'Quantity must be 0 or more.'),
+});
 
 const formSchema = z.object({
   id: z.string().optional(),
@@ -46,6 +51,7 @@ const formSchema = z.object({
       file => ['image/jpeg', 'image/png', 'image/webp'].includes(file.type),
       'Only .jpg, .png, and .webp formats are supported.'
     ).optional(),
+  sizes: z.array(sizeSchema).min(1, 'At least one size is required.'),
 });
 
 type AddProductFormProps = {
@@ -69,7 +75,13 @@ export function AddProductForm({ productToEdit, onProductAddedOrUpdated }: AddPr
       weight: undefined,
       imageHint: '',
       image: undefined,
+      sizes: [{ size: 'S', quantity: 10 }],
     },
+  });
+  
+  const { fields, append, remove } = useFieldArray({
+    control: form.control,
+    name: "sizes"
   });
 
   useEffect(() => {
@@ -83,6 +95,7 @@ export function AddProductForm({ productToEdit, onProductAddedOrUpdated }: AddPr
               weight: productToEdit.weight,
               image: undefined, // Clear image input on edit
               imageHint: productToEdit.images[0]?.hint || '',
+              sizes: productToEdit.sizes,
           });
           setImagePreview(productToEdit.images[0]?.url || null);
       } else {
@@ -95,6 +108,7 @@ export function AddProductForm({ productToEdit, onProductAddedOrUpdated }: AddPr
             weight: undefined,
             imageHint: '',
             image: undefined,
+            sizes: [{size: 'S', quantity: 10}, {size: 'M', quantity: 10}],
           });
           setImagePreview(null);
       }
@@ -107,7 +121,7 @@ export function AddProductForm({ productToEdit, onProductAddedOrUpdated }: AddPr
     let result;
 
     if (isEditMode && values.id) {
-        const updateValues: UpdateProductFormValues = {
+        const updateValues = {
             id: values.id,
             name: values.name,
             description: values.description,
@@ -115,6 +129,7 @@ export function AddProductForm({ productToEdit, onProductAddedOrUpdated }: AddPr
             category: values.category,
             weight: values.weight,
             image: values.image || null,
+            sizes: values.sizes
         };
         result = await updateProduct(updateValues);
     } else {
@@ -126,8 +141,10 @@ export function AddProductForm({ productToEdit, onProductAddedOrUpdated }: AddPr
         const addValues = {
             ...values,
             imageHint: values.imageHint || values.name,
+            image: values.image,
+            sizes: values.sizes
         }
-        result = await addProduct(addValues as ProductFormValues);
+        result = await addProduct(addValues);
     }
 
     if (result.success) {
@@ -221,6 +238,51 @@ export function AddProductForm({ productToEdit, onProductAddedOrUpdated }: AddPr
             </FormItem>
           )}
         />
+
+        {/* Sizes and Quantities */}
+        <div>
+            <FormLabel>Sizes & Inventory</FormLabel>
+            <FormDescription>Add the sizes available and their stock quantity.</FormDescription>
+            <div className="space-y-4 mt-4">
+                {fields.map((field, index) => (
+                    <div key={field.id} className="flex items-center gap-4">
+                        <FormField
+                            control={form.control}
+                            name={`sizes.${index}.size`}
+                            render={({ field }) => (
+                                <FormItem className="flex-grow">
+                                    <FormControl>
+                                        <Input placeholder="Size (e.g., M)" {...field} />
+                                    </FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+                        <FormField
+                            control={form.control}
+                            name={`sizes.${index}.quantity`}
+                            render={({ field }) => (
+                                <FormItem className="w-28">
+                                    <FormControl>
+                                        <Input type="number" placeholder="Qty" {...field} />
+                                    </FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+                        <Button type="button" variant="destructive" size="icon" onClick={() => remove(index)}>
+                            <X className="h-4 w-4" />
+                        </Button>
+                    </div>
+                ))}
+                <Button type="button" variant="outline" size="sm" onClick={() => append({ size: "", quantity: 0 })}>
+                    Add Size
+                </Button>
+                 {form.formState.errors.sizes && <p className="text-sm font-medium text-destructive">{form.formState.errors.sizes.message}</p>}
+            </div>
+        </div>
+
+
         <FormField
           control={form.control}
           name="image"

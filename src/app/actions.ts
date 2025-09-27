@@ -26,7 +26,7 @@ export type Product = {
   description: string;
   price: number;
   images: { id: string; url: string; hint: string }[];
-  sizes: string[];
+  sizes: { size: string; quantity: number; }[];
   colors: string[];
   category: string;
   popularity: number;
@@ -48,7 +48,7 @@ export const getProducts = async (): Promise<Product[]> => {
         release_date,
         weight,
         product_images ( id, url, hint ),
-        product_sizes ( size ),
+        product_sizes ( size, quantity ),
         product_colors ( color )
       `)
       .order('created_at', { ascending: false });
@@ -69,7 +69,7 @@ export const getProducts = async (): Promise<Product[]> => {
         releaseDate: p.release_date,
         weight: p.weight || 0.5, // Default weight if not set
         images: p.product_images.map((img: any) => ({ id: img.id.toString(), url: img.url, hint: img.hint })),
-        sizes: p.product_sizes.map((s: any) => s.size),
+        sizes: p.product_sizes.map((s: any) => ({size: s.size, quantity: s.quantity})),
         colors: p.product_colors.map((c: any) => c.color),
     }));
 };
@@ -82,6 +82,7 @@ export type ProductFormValues = {
   imageHint: string;
   image: File;
   weight: number;
+  sizes: { size: string; quantity: number; }[];
 };
 
 export type UpdateProductFormValues = {
@@ -92,6 +93,7 @@ export type UpdateProductFormValues = {
   category: string;
   weight: number;
   image?: File | null;
+  sizes: { size: string; quantity: number; }[];
 };
 
 
@@ -103,7 +105,7 @@ type ServerResponse = {
 }
 
 export async function addProduct(data: ProductFormValues): Promise<ServerResponse> {
-    const { image, ...productData } = data;
+    const { image, sizes, ...productData } = data;
     
     // 1. Upload image to Supabase Storage using the admin client
     const fileExt = image.name.split('.').pop();
@@ -166,14 +168,13 @@ export async function addProduct(data: ProductFormValues): Promise<ServerRespons
         return { success: false, message: 'Failed to save product image.', error: { message: imageInsertError.message } };
     }
 
-    // For simplicity, we'll add some default sizes and colors. In a real app, this would be part of the form.
-    const defaultSizes = ['S', 'M', 'L', 'XL'];
-    const defaultColors = ['Black', 'White'];
-
-    const sizesToInsert = defaultSizes.map(size => ({ product_id: productId, size }));
-    const colorsToInsert = defaultColors.map(color => ({ product_id: productId, color }));
-
+    // 5. Insert sizes and quantities
+    const sizesToInsert = sizes.map(s => ({ product_id: productId, size: s.size, quantity: Number(s.quantity) }));
     await supabaseAdmin.from('product_sizes').insert(sizesToInsert);
+
+    // For simplicity, we'll add some default colors. In a real app, this would be part of the form.
+    const defaultColors = ['Black', 'White'];
+    const colorsToInsert = defaultColors.map(color => ({ product_id: productId, color }));
     await supabaseAdmin.from('product_colors').insert(colorsToInsert);
 
     revalidatePath('/');
@@ -184,16 +185,9 @@ export async function addProduct(data: ProductFormValues): Promise<ServerRespons
     const { data: finalProductData, error: finalProductError } = await supabaseAdmin
       .from('products')
       .select(`
-        id,
-        name,
-        description,
-        price,
-        category,
-        popularity,
-        release_date,
-        weight,
+        id, name, description, price, category, popularity, release_date, weight,
         product_images ( id, url, hint ),
-        product_sizes ( size ),
+        product_sizes ( size, quantity ),
         product_colors ( color )
       `)
       .eq('id', productId)
@@ -214,7 +208,7 @@ export async function addProduct(data: ProductFormValues): Promise<ServerRespons
         releaseDate: finalProductData.release_date,
         weight: finalProductData.weight,
         images: finalProductData.product_images.map((img: any) => ({ id: img.id.toString(), url: img.url, hint: img.hint })),
-        sizes: finalProductData.product_sizes.map((s: any) => s.size),
+        sizes: finalProductData.product_sizes.map((s: any) => ({size: s.size, quantity: s.quantity})),
         colors: finalProductData.product_colors.map((c: any) => c.color),
     };
 
@@ -228,7 +222,7 @@ export async function addProduct(data: ProductFormValues): Promise<ServerRespons
 
 
 export async function updateProduct(data: UpdateProductFormValues): Promise<ServerResponse> {
-  const { id, image, ...productData } = data;
+  const { id, image, sizes, ...productData } = data;
 
   // Handle image update if a new image is provided
   if (image) {
@@ -300,6 +294,14 @@ export async function updateProduct(data: UpdateProductFormValues): Promise<Serv
     return { success: false, message: 'Failed to update product details.', error: { message: productUpdateError.message } };
   }
 
+  // Update sizes
+  // 1. Delete existing sizes for the product
+  await supabaseAdmin.from('product_sizes').delete().eq('product_id', id);
+  // 2. Insert new sizes
+  const sizesToInsert = sizes.map(s => ({ product_id: id, size: s.size, quantity: Number(s.quantity) }));
+  await supabaseAdmin.from('product_sizes').insert(sizesToInsert);
+
+
   revalidatePath('/');
   revalidatePath('/products');
   revalidatePath(`/products/${id}`);
@@ -311,7 +313,7 @@ export async function updateProduct(data: UpdateProductFormValues): Promise<Serv
     .select(`
       id, name, description, price, category, popularity, release_date, weight,
       product_images ( id, url, hint ),
-      product_sizes ( size ),
+      product_sizes ( size, quantity ),
       product_colors ( color )
     `)
     .eq('id', id)
@@ -332,7 +334,7 @@ export async function updateProduct(data: UpdateProductFormValues): Promise<Serv
       releaseDate: finalProductData.release_date,
       weight: finalProductData.weight,
       images: finalProductData.product_images.map((img: any) => ({ id: img.id.toString(), url: img.url, hint: img.hint })),
-      sizes: finalProductData.product_sizes.map((s: any) => s.size),
+      sizes: finalProductData.product_sizes.map((s: any) => ({size: s.size, quantity: s.quantity})),
       colors: finalProductData.product_colors.map((c: any) => c.color),
   };
 

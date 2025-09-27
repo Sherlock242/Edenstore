@@ -43,7 +43,7 @@ export async function getAllOrders(): Promise<{ success: boolean; orders?: FullO
         .select(`
             id, name, description, price, category, popularity, release_date, weight,
             product_images ( id, url, hint ),
-            product_sizes ( size ),
+            product_sizes ( size, quantity ),
             product_colors ( color )
         `)
         .in('id', productIds);
@@ -71,7 +71,7 @@ export async function getAllOrders(): Promise<{ success: boolean; orders?: FullO
         releaseDate: p.release_date,
         weight: p.weight,
         images: p.product_images.map((img: any) => ({ id: img.id.toString(), url: img.url, hint: img.hint })),
-        sizes: p.product_sizes.map((s: any) => s.size),
+        sizes: p.product_sizes.map((s: any) => ({ size: s.size, quantity: s.quantity })),
         colors: p.product_colors.map((c: any) => c.color),
       }
     ]));
