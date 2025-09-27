@@ -14,24 +14,16 @@ import { cn } from "@/lib/utils";
 export function ProductDetailsClient({ product }: { product: Product }) {
   const [selectedSize, setSelectedSize] = useState(product.sizes[0]);
   const [selectedColor, setSelectedColor] = useState(product.colors[0]);
-  const { dispatch: cartDispatch } = useCart();
+  const { addToCart } = useCart();
   const { dispatch: wishlistDispatch, isInWishlist } = useWishlist();
   const { toast } = useToast();
   const inWishlist = isInWishlist(product.id);
 
   const handleAddToCart = () => {
-    cartDispatch({
-      type: "ADD_ITEM",
-      payload: {
-        product,
-        quantity: 1,
-        size: selectedSize,
-        color: selectedColor,
-      },
-    });
-    toast({
-      title: "Added to cart!",
-      description: `${product.name} (${selectedSize}, ${selectedColor}) is now in your cart.`,
+    addToCart({
+      product,
+      size: selectedSize,
+      color: selectedColor,
     });
   };
 

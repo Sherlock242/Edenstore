@@ -16,24 +16,16 @@ type ProductCardProps = {
 };
 
 export function ProductCard({ product }: ProductCardProps) {
-  const { dispatch: cartDispatch } = useCart();
+  const { addToCart } = useCart();
   const { dispatch: wishlistDispatch, isInWishlist } = useWishlist();
   const { toast } = useToast();
   const inWishlist = isInWishlist(product.id);
 
   const handleAddToCart = () => {
-    cartDispatch({
-      type: "ADD_ITEM",
-      payload: {
-        product,
-        quantity: 1,
-        size: product.sizes[0],
-        color: product.colors[0],
-      },
-    });
-    toast({
-      title: "Added to cart!",
-      description: `${product.name} is now in your shopping cart.`,
+    addToCart({
+      product,
+      size: product.sizes[0],
+      color: product.colors[0],
     });
   };
 

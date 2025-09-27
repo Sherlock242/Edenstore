@@ -1,14 +1,24 @@
 
-"use client";
+'use client';
 
-import type { Product } from "@/app/actions";
+import type { Product } from '@/app/actions';
 import {
   createContext,
   useContext,
   useReducer,
   type ReactNode,
   useEffect,
-} from "react";
+  useCallback,
+  useState,
+} from 'react';
+import { useAuth } from './auth-context';
+import {
+  getCartItems,
+  addCartItem,
+  updateCartItemQuantity,
+  removeCartItem,
+} from '@/app/cart/actions';
+import { useToast } from '@/hooks/use-toast';
 
 export type CartItem = {
   product: Product;
@@ -19,40 +29,43 @@ export type CartItem = {
 
 type CartState = {
   items: CartItem[];
+  loading: boolean;
 };
 
 type CartAction =
-  | { type: "ADD_ITEM"; payload: CartItem }
-  | { type: "REMOVE_ITEM"; payload: { productId: string; size: string; color: string } }
-  | {
-      type: "UPDATE_QUANTITY";
-      payload: { productId: string; size: string; color: string; quantity: number };
-    }
-  | { type: "CLEAR_CART" }
-  | { type: "SET_STATE"; payload: CartState };
+  | { type: 'SET_ITEMS'; payload: CartItem[] }
+  | { type: 'SET_LOADING'; payload: boolean }
+  | { type: 'ADD_OR_UPDATE_ITEM'; payload: CartItem }
+  | { type: 'REMOVE_ITEM'; payload: { productId: string; size: string; color: string } };
 
 const initialState: CartState = {
   items: [],
+  loading: true,
 };
 
 function cartReducer(state: CartState, action: CartAction): CartState {
   switch (action.type) {
-    case "ADD_ITEM": {
+    case 'SET_ITEMS':
+      return { ...state, items: action.payload, loading: false };
+    case 'SET_LOADING':
+      return { ...state, loading: action.payload };
+    case 'ADD_OR_UPDATE_ITEM': {
       const existingItemIndex = state.items.findIndex(
-        (item) =>
+        item =>
           item.product.id === action.payload.product.id &&
           item.size === action.payload.size &&
           item.color === action.payload.color
       );
+      const newItems = [...state.items];
       if (existingItemIndex > -1) {
-        const updatedItems = [...state.items];
-        updatedItems[existingItemIndex].quantity += action.payload.quantity;
-        return { ...state, items: updatedItems };
+        newItems[existingItemIndex] = action.payload;
+      } else {
+        newItems.push(action.payload);
       }
-      return { ...state, items: [...state.items, action.payload] };
+      return { ...state, items: newItems };
     }
-    case "REMOVE_ITEM": {
-      const filteredItems = state.items.filter(
+    case 'REMOVE_ITEM': {
+       const filteredItems = state.items.filter(
         (item) =>
           !(
             item.product.id === action.payload.productId &&
@@ -62,20 +75,6 @@ function cartReducer(state: CartState, action: CartAction): CartState {
       );
       return { ...state, items: filteredItems };
     }
-    case "UPDATE_QUANTITY": {
-      const updatedItems = state.items.map((item) =>
-        item.product.id === action.payload.productId &&
-        item.size === action.payload.size &&
-        item.color === action.payload.color
-          ? { ...item, quantity: action.payload.quantity }
-          : item
-      ).filter(item => item.quantity > 0);
-      return { ...state, items: updatedItems };
-    }
-    case "CLEAR_CART":
-      return { ...state, items: [] };
-    case "SET_STATE":
-      return action.payload;
     default:
       return state;
   }
@@ -84,38 +83,83 @@ function cartReducer(state: CartState, action: CartAction): CartState {
 type CartContextType = {
   state: CartState;
   dispatch: React.Dispatch<CartAction>;
+  addToCart: (item: Omit<CartItem, 'quantity'> & { quantity?: number }) => Promise<void>;
+  updateQuantity: (productId: string, size: string, color: string, quantity: number) => Promise<void>;
+  removeFromCart: (productId: string, size: string, color: string) => Promise<void>;
 };
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
 
 export function CartProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(cartReducer, initialState);
-  
-  useEffect(() => {
-    try {
-      const storedState = localStorage.getItem("edenstore-cart");
-      if (storedState) {
-        dispatch({ type: "SET_STATE", payload: JSON.parse(storedState) });
-      }
-    } catch (error) {
-        console.error("Failed to parse cart state from localStorage", error);
+  const { user, loading: authLoading } = useAuth();
+  const { toast } = useToast();
+
+  const loadCart = useCallback(async () => {
+    if (!user) {
+      dispatch({ type: 'SET_ITEMS', payload: [] });
+      return;
     }
-  }, []);
+    dispatch({ type: 'SET_LOADING', payload: true });
+    const result = await getCartItems();
+    if (result.success && result.items) {
+      dispatch({ type: 'SET_ITEMS', payload: result.items });
+    } else {
+      dispatch({ type: 'SET_ITEMS', payload: [] });
+    }
+  }, [user]);
 
   useEffect(() => {
-    // This effect runs only when state.items changes, preventing writes on initial load
-    if (state !== initialState) {
-        try {
-            localStorage.setItem("edenstore-cart", JSON.stringify(state));
-        } catch (error) {
-            console.error("Failed to save cart state to localStorage", error);
+    if (!authLoading) {
+      loadCart();
+    }
+  }, [user, authLoading, loadCart]);
+
+  const addToCart = async (item: Omit<CartItem, 'quantity'> & { quantity?: number }) => {
+    if (!user) {
+      toast({ variant: 'destructive', title: 'Please log in', description: 'You must be logged in to add items to your cart.' });
+      return;
+    }
+    const quantity = item.quantity || 1;
+    const result = await addCartItem({ ...item, quantity });
+
+    if (result.success && result.item) {
+      dispatch({ type: 'ADD_OR_UPDATE_ITEM', payload: result.item });
+      toast({ title: 'Added to cart!', description: `${item.product.name} is now in your shopping cart.` });
+    } else {
+      toast({ variant: 'destructive', title: 'Error', description: result.message });
+    }
+  };
+
+  const updateQuantity = async (productId: string, size: string, color: string, quantity: number) => {
+     if (!user) return;
+     if (quantity > 0) {
+        const result = await updateCartItemQuantity({ productId, size, color, quantity });
+        if (result.success && result.item) {
+          dispatch({ type: 'ADD_OR_UPDATE_ITEM', payload: result.item });
+        } else {
+          toast({ variant: 'destructive', title: 'Error', description: result.message });
         }
-    }
-  }, [state]);
+     } else {
+        await removeFromCart(productId, size, color);
+     }
+  };
 
+  const removeFromCart = async (productId: string, size: string, color: string) => {
+     if (!user) return;
+     const result = await removeCartItem({ productId, size, color });
+     if (result.success) {
+        dispatch({ type: 'REMOVE_ITEM', payload: { productId, size, color } });
+        toast({ title: 'Item removed', description: 'The item has been removed from your cart.' });
+     } else {
+        toast({ variant: 'destructive', title: 'Error', description: result.message });
+     }
+  };
+
+  const value = { state, dispatch, addToCart, updateQuantity, removeFromCart };
 
   return (
-    <CartContext.Provider value={{ state, dispatch }}>
+    <CartContext.Provider value={value}>
       {children}
     </CartContext.Provider>
   );
@@ -124,7 +168,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
 export function useCart() {
   const context = useContext(CartContext);
   if (context === undefined) {
-    throw new Error("useCart must be used within a CartProvider");
+    throw new Error('useCart must be used within a CartProvider');
   }
   return context;
 }
