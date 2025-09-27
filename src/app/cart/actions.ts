@@ -141,28 +141,46 @@ export async function addCartItem(payload: AddItemPayload): Promise<{ success: b
     .single();
 
   if (error) {
-      console.error('Error in upsert_cart_item:', error);
+      // A unique constraint violation (code '23505') means the upsert couldn't automatically update.
+      // This can happen in a race condition. We'll manually update the quantity.
+      if (error.code === '23505') {
+          const { data: existingItem, error: fetchError } = await supabase
+              .from('cart_items')
+              .select('id, quantity')
+              .eq('user_id', user.id)
+              .eq('product_id', payload.product.id)
+              .eq('size', payload.size)
+              .eq('color', payload.color)
+              .single();
+
+          if (fetchError || !existingItem) {
+              return { success: false, message: 'Could not update item in cart.' };
+          }
+
+          const { data: updatedData, error: updateError } = await supabase
+              .from('cart_items')
+              .update({ quantity: existingItem.quantity + payload.quantity })
+              .eq('id', existingItem.id)
+              .select()
+              .single();
+          
+          if (updateError || !updatedData) {
+               return { success: false, message: 'Could not update item quantity.' };
+          }
+          const finalItem: CartItem = { ...payload, quantity: updatedData.quantity };
+          return { success: true, item: finalItem, message: 'Cart updated.' };
+      }
       return { success: false, message: 'Could not add item to cart.' };
   }
  
-  // We need to fetch the full product again to return the full CartItem
-  // This is a simplified approach. For better performance, we could pass the full product back from the RPC.
-  const { items } = await getCartItems();
-  const addedItem = items?.find(i => i.product.id === payload.product.id && i.size === payload.size && i.color === payload.color);
+  const addedItem: CartItem = {
+      product: payload.product,
+      quantity: data.quantity,
+      size: data.size,
+      color: data.color
+  };
 
-  if (!addedItem) {
-      // This could happen if getCartItems fails, but the upsert succeeded.
-      // We can construct a partial item to send back to the client reducer.
-      const partialItem = {
-          product: payload.product,
-          quantity: data.quantity,
-          size: data.size,
-          color: data.color
-      };
-      return { success: true, item: partialItem, message: 'Item added/updated in cart.' };
-  }
-
-  return { success: true, item: addedItem, message: 'Item added/updated in cart.' };
+  return { success: true, item: addedItem, message: 'Item added to cart.' };
 }
 
 
@@ -172,35 +190,25 @@ type UpdateQuantityPayload = {
     color: string;
     quantity: number;
 }
-export async function updateCartItemQuantity(payload: UpdateQuantityPayload): Promise<{ success: boolean; item?: CartItem; message: string }> {
+export async function updateCartItemQuantity(payload: UpdateQuantityPayload): Promise<{ success: boolean; message: string }> {
      const supabase = createSupabaseServerClient();
      const { data: { user } } = await supabase.auth.getUser();
      if (!user) return { success: false, message: 'You must be logged in.' };
 
-     const { data, error } = await supabase
+     const { error } = await supabase
         .from('cart_items')
         .update({ quantity: payload.quantity })
         .eq('user_id', user.id)
         .eq('product_id', payload.productId)
         .eq('size', payload.size)
-        .eq('color', payload.color)
-        .select()
-        .single();
+        .eq('color', payload.color);
     
      if (error) {
          console.error("Error updating quantity:", error);
          return { success: false, message: 'Could not update quantity.' }
      }
     
-     // We need to fetch the full product again to return the full CartItem
-     const { items } = await getCartItems();
-     const updatedItem = items?.find(i => i.product.id === payload.productId && i.size === payload.size && i.color === payload.color);
-
-     if (!updatedItem) {
-        return { success: false, message: 'Could not retrieve the updated item.' };
-     }
-
-     return { success: true, item: updatedItem, message: 'Quantity updated.' };
+     return { success: true, message: 'Quantity updated.' };
 }
 
 
@@ -230,5 +238,3 @@ export async function removeCartItem(payload: RemoveItemPayload): Promise<{ succ
 
     return { success: true, message: 'Item removed.' };
 }
-
-    

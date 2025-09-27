@@ -35,7 +35,8 @@ type CartAction =
   | { type: 'SET_ITEMS'; payload: CartItem[] }
   | { type: 'SET_LOADING'; payload: boolean }
   | { type: 'ADD_OR_UPDATE_ITEM'; payload: CartItem }
-  | { type: 'REMOVE_ITEM'; payload: { productId: string; size: string; color: string } };
+  | { type: 'REMOVE_ITEM'; payload: { productId: string; size: string; color: string } }
+  | { type: 'UPDATE_ITEM_QUANTITY', payload: { productId: string; size: string; color: string; quantity: number } };
 
 const initialState: CartState = {
   items: [],
@@ -62,6 +63,17 @@ function cartReducer(state: CartState, action: CartAction): CartState {
         newItems.push(action.payload);
       }
       return { ...state, items: newItems };
+    }
+    case 'UPDATE_ITEM_QUANTITY': {
+        const { productId, size, color, quantity } = action.payload;
+        return {
+            ...state,
+            items: state.items.map(item =>
+                item.product.id === productId && item.size === size && item.color === color
+                    ? { ...item, quantity }
+                    : item
+            )
+        };
     }
     case 'REMOVE_ITEM': {
        const filteredItems = state.items.filter(
@@ -120,7 +132,6 @@ export function CartProvider({ children }: { children: ReactNode }) {
     }
     const quantity = item.quantity || 1;
     
-    // Find if the item already exists to determine if we should say "added" or "updated"
     const existingItem = state.items.find(
       i =>
         i.product.id === item.product.id &&
@@ -144,12 +155,15 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   const updateQuantity = async (productId: string, size: string, color: string, quantity: number) => {
      if (!user) return;
+     
      if (quantity > 0) {
+        // Optimistically update UI
+        dispatch({ type: 'UPDATE_ITEM_QUANTITY', payload: { productId, size, color, quantity } });
         const result = await updateCartItemQuantity({ productId, size, color, quantity });
-        if (result.success && result.item) {
-          dispatch({ type: 'ADD_OR_UPDATE_ITEM', payload: result.item });
-        } else {
+        if (!result.success) {
           toast({ variant: 'destructive', title: 'Error', description: result.message });
+          // Revert if server fails
+          loadCart();
         }
      } else {
         await removeFromCart(productId, size, color);
@@ -158,12 +172,18 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   const removeFromCart = async (productId: string, size: string, color: string) => {
      if (!user) return;
+     // Optimistically update UI
+     const itemToRemove = state.items.find(i => i.product.id === productId && i.size === size && i.color === color);
+     dispatch({ type: 'REMOVE_ITEM', payload: { productId, size, color } });
      const result = await removeCartItem({ productId, size, color });
      if (result.success) {
-        dispatch({ type: 'REMOVE_ITEM', payload: { productId, size, color } });
         toast({ title: 'Item removed', description: 'The item has been removed from your cart.' });
      } else {
         toast({ variant: 'destructive', title: 'Error', description: result.message });
+        // Revert if server fails
+        if (itemToRemove) {
+            dispatch({ type: 'ADD_OR_UPDATE_ITEM', payload: itemToRemove });
+        }
      }
   };
 
