@@ -15,6 +15,7 @@ export type OrderItem = {
     quantity: number;
     size: string;
     color: string;
+    price_at_purchase: number;
     product: Product;
 };
 
@@ -47,7 +48,7 @@ export async function getOrderDetails(razorpayOrderId: string): Promise<{ succes
     // 2. Fetch the associated order items
     const { data: orderItemsData, error: itemsError } = await supabaseAdmin
         .from('order_items')
-        .select('product_id, quantity, size, color')
+        .select('product_id, quantity, size, color, price_at_purchase')
         .eq('order_id', orderData.id);
 
     if (itemsError || !orderItemsData) {
@@ -96,6 +97,7 @@ export async function getOrderDetails(razorpayOrderId: string): Promise<{ succes
         quantity: item.quantity,
         size: item.size,
         color: item.color,
+        price_at_purchase: item.price_at_purchase,
         product: productsMap.get(item.product_id.toString())!,
     })).filter(item => item.product);
 

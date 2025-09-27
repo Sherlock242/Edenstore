@@ -14,6 +14,7 @@ import {
   Search,
   X,
   Heart,
+  Package,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -189,6 +190,7 @@ export function Header() {
                   </Link>
                 ))}
                   <Link href="/wishlist" onClick={() => setIsMobileMenuOpen(false)} className="transition-colors hover:text-foreground/80 text-foreground/60">Wishlist</Link>
+                  <Link href="/my-orders" onClick={() => setIsMobileMenuOpen(false)} className="transition-colors hover:text-foreground/80 text-foreground/60">My Orders</Link>
                 {isadmin && (
                   <div className="pt-4 mt-4 border-t">
                   <p className="px-2 py-1 text-xs font-semibold text-muted-foreground">Admin</p>
@@ -326,6 +328,10 @@ export function Header() {
                                 </div>
                             </DropdownMenuLabel>
                             <DropdownMenuSeparator />
+                             <DropdownMenuItem onClick={() => router.push('/my-orders')}>
+                                <Package className="mr-2 h-4 w-4" />
+                                <span>My Orders</span>
+                            </DropdownMenuItem>
                             <DropdownMenuItem onClick={() => router.push('/wishlist')}>
                                 <Heart className="mr-2 h-4 w-4" />
                                 <span>Wishlist</span>
