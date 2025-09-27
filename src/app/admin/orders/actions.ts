@@ -4,6 +4,7 @@
 import { createClient as createAdminClient } from '@supabase/supabase-js';
 import type { OrderDetails } from '@/app/track/actions';
 import type { Product } from '@/app/actions';
+import { requestShipmentPickup } from '@/lib/shiprocket-client';
 
 export type UserProfileInfo = {
     display_name: string;
@@ -23,7 +24,7 @@ export async function getAllOrders(): Promise<{ success: boolean; orders?: FullO
     const { data: ordersData, error: ordersError } = await supabaseAdmin
         .from('orders')
         .select(`
-            id, created_at, status, razorpay_order_id, shipping_address, user_id,
+            id, created_at, status, razorpay_order_id, shipping_address, user_id, shipment_id, shiprocket_order_id,
             order_items ( product_id, quantity, size, color, price_at_purchase )
         `)
         .order('created_at', { ascending: false });
@@ -41,9 +42,9 @@ export async function getAllOrders(): Promise<{ success: boolean; orders?: FullO
     const { data: productsData, error: productsError } = await supabaseAdmin
         .from('products')
         .select(`
-            id, name, description, price, category, popularity, release_date,
+            id, name, description, price, category, popularity, release_date, weight,
             product_images ( id, url, hint ),
-            product_sizes ( size ),
+            product_sizes ( size, quantity ),
             product_colors ( color )
         `)
         .in('id', productIds);
@@ -69,8 +70,9 @@ export async function getAllOrders(): Promise<{ success: boolean; orders?: FullO
         category: p.category,
         popularity: p.popularity,
         releaseDate: p.release_date,
+        weight: p.weight,
         images: p.product_images.map((img: any) => ({ id: img.id.toString(), url: img.url, hint: img.hint })),
-        sizes: p.product_sizes.map((s: any) => s.size),
+        sizes: p.product_sizes.map((s: any) => ({ size: s.size, quantity: s.quantity })),
         colors: p.product_colors.map((c: any) => c.color),
       }
     ]));
@@ -90,6 +92,8 @@ export async function getAllOrders(): Promise<{ success: boolean; orders?: FullO
             status: order.status as OrderDetails['status'],
             shipping_address: order.shipping_address,
             razorpay_order_id: order.razorpay_order_id,
+            shipment_id: order.shipment_id,
+            shiprocket_order_id: order.shiprocket_order_id,
             user: user,
             items: items,
         };
@@ -112,4 +116,30 @@ export async function updateOrderStatus(orderId: string, status: OrderDetails['s
     return { success: true, message: 'Order status updated successfully.' };
 }
 
+
+export async function schedulePickupForOrder(shipmentId: number): Promise<{ success: boolean; message: string }> {
+    if (!shipmentId) {
+        return { success: false, message: "Invalid Shipment ID." };
+    }
+
+    // 1. Call Shiprocket to schedule the pickup
+    const pickupResult = await requestShipmentPickup([shipmentId]);
+
+    if (!pickupResult.success) {
+        return { success: false, message: pickupResult.message };
+    }
+
+    // 2. Update the order status in our database to 'pickup-scheduled'
+    const { error: dbError } = await supabaseAdmin
+        .from('orders')
+        .update({ status: 'pickup-scheduled' })
+        .eq('shipment_id', shipmentId);
     
+    if (dbError) {
+        console.error("Failed to update order status after scheduling pickup:", dbError.message);
+        // Even if DB update fails, the pickup was scheduled. Inform the admin.
+        return { success: true, message: `Pickup scheduled with Shiprocket, but failed to update status in local DB. Please update manually. Error: ${dbError.message}` };
+    }
+    
+    return { success: true, message: `Pickup successfully scheduled. Pickup Token: ${pickupResult.response?.pickup_token_number}` };
+}

@@ -210,3 +210,45 @@ export async function trackShipmentById(shipmentId: string) {
         return null;
     }
 }
+
+type PickupRequestResponse = {
+    pickup_status: string;
+    pickup_scheduled_date: string;
+    pickup_token_number: string;
+    status: number;
+}
+
+export async function requestShipmentPickup(shipmentIds: number[]): Promise<{success: boolean; message: string; response?: PickupRequestResponse}> {
+    const token = await getShiprocketToken();
+    if (!token) {
+        return { success: false, message: "Could not authenticate with Shiprocket." };
+    }
+
+    try {
+        const response = await fetch(`${SHIPROCKET_API_URL}/orders/pickup`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`,
+            },
+            body: JSON.stringify({
+                shipment_id: shipmentIds,
+            }),
+        });
+
+        const responseData = await response.json();
+        
+        if (!response.ok || responseData.status_code !== 200) {
+            console.error("Shiprocket Pickup Request Error:", responseData);
+            const errorMessage = responseData.message || "Failed to schedule pickup.";
+            return { success: false, message: errorMessage };
+        }
+
+        return { success: true, message: "Pickup scheduled successfully.", response: responseData };
+
+    } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : "An unknown error occurred.";
+        console.error("Error requesting Shiprocket pickup:", error);
+        return { success: false, message: errorMessage };
+    }
+}

@@ -19,7 +19,7 @@ import {
 } from '@/components/ui/accordion';
 import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
-import { updateOrderStatus, type FullOrderDetails } from './actions';
+import { updateOrderStatus, schedulePickupForOrder, type FullOrderDetails } from './actions';
 import { useToast } from '@/hooks/use-toast';
 import {
   Select,
@@ -28,6 +28,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { Rocket } from 'lucide-react';
 
 type ViewOrdersProps = {
   orders: FullOrderDetails[];
@@ -36,11 +37,13 @@ type ViewOrdersProps = {
 
 export function ViewOrders({ orders, onStatusUpdated }: ViewOrdersProps) {
   const [isPending, startTransition] = useTransition();
+  const [schedulingPickupFor, setSchedulingPickupFor] = useState<number | null>(null);
   const { toast } = useToast();
 
   const getStatusInfo = (status: FullOrderDetails['status']) => {
     switch (status) {
-      case 'processing': return { text: 'Order Placed', color: 'bg-green-500/20 text-green-400 border-green-500/30' };
+      case 'processing': return { text: 'Processing', color: 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30' };
+      case 'pickup-scheduled': return { text: 'Pickup Scheduled', color: 'bg-cyan-500/20 text-cyan-400 border-cyan-500/30' };
       case 'shipped': return { text: 'Shipped', color: 'bg-blue-500/20 text-blue-400 border-blue-500/30' };
       case 'delivered': return { text: 'Delivered', color: 'bg-green-500/20 text-green-400 border-green-500/30' };
       default: return { text: status, color: 'bg-muted text-muted-foreground' };
@@ -63,11 +66,26 @@ export function ViewOrders({ orders, onStatusUpdated }: ViewOrdersProps) {
       });
   }
 
+  const handleSchedulePickup = (shipmentId: number, orderId: string) => {
+      setSchedulingPickupFor(shipmentId);
+      startTransition(async () => {
+          const result = await schedulePickupForOrder(shipmentId);
+          if (result.success) {
+              onStatusUpdated(orderId, 'pickup-scheduled');
+              toast({ title: "Pickup Scheduled!", description: result.message });
+          } else {
+              toast({ variant: 'destructive', title: "Scheduling Failed", description: result.message });
+          }
+          setSchedulingPickupFor(null);
+      })
+  }
+
   return (
     <Accordion type="multiple" className="w-full space-y-4">
       {orders.map(order => {
         const statusInfo = getStatusInfo(order.status);
         const shippingInfo = JSON.parse(order.shipping_address as string);
+        const isSchedulingThis = schedulingPickupFor === order.shipment_id;
 
         return (
           <AccordionItem value={order.id} key={order.id} className="rounded-lg border bg-card">
@@ -95,7 +113,7 @@ export function ViewOrders({ orders, onStatusUpdated }: ViewOrdersProps) {
                                 </TableHeader>
                                 <TableBody>
                                     {order.items.map(item => (
-                                        <TableRow key={item.product.id}>
+                                        <TableRow key={`${item.product.id}-${item.size}`}>
                                             <TableCell className="flex items-center gap-4 min-w-[200px]">
                                                 {item.product.images && item.product.images.length > 0 ? (
                                                     <Image src={item.product.images[0].url} alt={item.product.name} width={50} height={62} className="rounded-md object-cover"/>
@@ -127,21 +145,35 @@ export function ViewOrders({ orders, onStatusUpdated }: ViewOrdersProps) {
                         </div>
                         
                         <div className="mt-4">
-                            <h4 className="font-semibold mb-2">Update Status</h4>
-                            <Select 
-                                defaultValue={order.status} 
-                                onValueChange={(value) => handleStatusChange(order.id, value as FullOrderDetails['status'])}
-                                disabled={isPending}
-                            >
-                                <SelectTrigger>
-                                    <SelectValue placeholder="Change status..." />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="processing">Order Placed</SelectItem>
-                                    <SelectItem value="shipped">Shipped</SelectItem>
-                                    <SelectItem value="delivered">Delivered</SelectItem>
-                                </SelectContent>
-                            </Select>
+                            <h4 className="font-semibold mb-2">Manage Order</h4>
+                            <div className="space-y-2">
+                                <Select 
+                                    defaultValue={order.status} 
+                                    onValueChange={(value) => handleStatusChange(order.id, value as FullOrderDetails['status'])}
+                                    disabled={isPending}
+                                >
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="Change status..." />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="processing">Processing</SelectItem>
+                                        <SelectItem value="pickup-scheduled">Pickup Scheduled</SelectItem>
+                                        <SelectItem value="shipped">Shipped</SelectItem>
+                                        <SelectItem value="delivered">Delivered</SelectItem>
+                                    </SelectContent>
+                                </Select>
+
+                                {order.status === 'processing' && order.shipment_id && (
+                                    <Button 
+                                        className="w-full" 
+                                        onClick={() => handleSchedulePickup(order.shipment_id!, order.id)}
+                                        disabled={isPending || isSchedulingThis}
+                                    >
+                                        <Rocket className="mr-2 h-4 w-4" />
+                                        {isSchedulingThis ? 'Scheduling...' : 'Schedule Pickup'}
+                                    </Button>
+                                )}
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -152,5 +184,3 @@ export function ViewOrders({ orders, onStatusUpdated }: ViewOrdersProps) {
     </Accordion>
   );
 }
-
-    

@@ -7,7 +7,7 @@ import type { Product } from '@/app/actions';
 import { trackShipmentById } from '@/lib/shiprocket-client';
 
 // Admin client to securely fetch all order data
-const supabaseAdmin = createAdminClient(
+const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!,
   { auth: { persistSession: false } }
@@ -24,7 +24,7 @@ export type OrderItem = {
 export type OrderDetails = {
     id: string;
     created_at: string;
-    status: 'processing' | 'shipped' | 'delivered';
+    status: 'processing' | 'pickup-scheduled' | 'shipped' | 'delivered';
     shipping_address: any;
     razorpay_order_id: string;
     shipment_id: number | null;
