@@ -118,18 +118,23 @@ export async function updateOrderStatus(orderId: string, status: OrderDetails['s
 }
 
 
-export async function schedulePickupForOrder(order: FullOrderDetails): Promise<{ success: boolean; message: string }> {
+export async function schedulePickupForOrder(order: FullOrderDetails, pickupDate?: Date): Promise<{ success: boolean; message: string }> {
     if (!order.shipment_id) {
         return { success: false, message: "Invalid Shipment ID." };
     }
 
-    // Calculate pickup date: 2 days after order creation
-    const orderDate = new Date(order.created_at);
-    const pickupDate = new Date(orderDate);
-    pickupDate.setDate(orderDate.getDate() + 2);
+    let finalPickupDate: Date;
+    if (pickupDate) {
+        finalPickupDate = pickupDate;
+    } else {
+        // Default to 2 days after order creation if no date is provided
+        const orderDate = new Date(order.created_at);
+        finalPickupDate = new Date(orderDate);
+        finalPickupDate.setDate(orderDate.getDate() + 2);
+    }
     
     // Format date as YYYY-MM-DD for the API
-    const formattedPickupDate = format(pickupDate, 'yyyy-MM-dd');
+    const formattedPickupDate = format(finalPickupDate, 'yyyy-MM-dd');
 
     // 1. Call Shiprocket to schedule the pickup
     const pickupResult = await requestShipmentPickup([order.shipment_id], formattedPickupDate);
