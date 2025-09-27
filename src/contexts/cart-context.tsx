@@ -7,6 +7,7 @@ import {
   useContext,
   useReducer,
   type ReactNode,
+  useEffect,
 } from "react";
 
 export type CartItem = {
@@ -27,7 +28,8 @@ type CartAction =
       type: "UPDATE_QUANTITY";
       payload: { productId: string; size: string; color: string; quantity: number };
     }
-  | { type: "CLEAR_CART" };
+  | { type: "CLEAR_CART" }
+  | { type: "SET_STATE"; payload: CartState };
 
 const initialState: CartState = {
   items: [],
@@ -72,6 +74,8 @@ function cartReducer(state: CartState, action: CartAction): CartState {
     }
     case "CLEAR_CART":
       return { ...state, items: [] };
+    case "SET_STATE":
+      return action.payload;
     default:
       return state;
   }
@@ -86,6 +90,29 @@ const CartContext = createContext<CartContextType | undefined>(undefined);
 
 export function CartProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(cartReducer, initialState);
+  
+  useEffect(() => {
+    try {
+      const storedState = localStorage.getItem("edenstore-cart");
+      if (storedState) {
+        dispatch({ type: "SET_STATE", payload: JSON.parse(storedState) });
+      }
+    } catch (error) {
+        console.error("Failed to parse cart state from localStorage", error);
+    }
+  }, []);
+
+  useEffect(() => {
+    // This effect runs only when state.items changes, preventing writes on initial load
+    if (state !== initialState) {
+        try {
+            localStorage.setItem("edenstore-cart", JSON.stringify(state));
+        } catch (error) {
+            console.error("Failed to save cart state to localStorage", error);
+        }
+    }
+  }, [state]);
+
 
   return (
     <CartContext.Provider value={{ state, dispatch }}>
