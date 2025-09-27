@@ -141,7 +141,7 @@ export default function TrackOrderPage() {
                           <div className="relative">
                             <div className="absolute left-0 top-4 h-0.5 w-full bg-border" />
                             <div
-                                className="absolute left-0 top-4 h-0.5 bg-primary transition-all duration-500"
+                                className="absolute left-0 top-4 h-0.5 bg-green-500 transition-all duration-500"
                                 style={{ width: `${(currentStatusIndex / (statusSteps.length - 1)) * 100}%` }}
                             />
                             <div className="flex justify-between relative">
@@ -150,7 +150,7 @@ export default function TrackOrderPage() {
                                     const Icon = step.icon;
                                     return (
                                         <div key={step.name} className="flex flex-col items-center gap-2 z-10 w-24">
-                                            <div className={`flex h-8 w-8 items-center justify-center rounded-full transition-colors ${isActive ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'}`}>
+                                            <div className={`flex h-8 w-8 items-center justify-center rounded-full transition-colors ${isActive ? 'bg-green-500 text-white' : 'bg-muted text-muted-foreground'}`}>
                                                <Icon className='h-5 w-5' />
                                             </div>
                                             <p className={`text-sm font-medium ${isActive ? 'text-foreground' : 'text-muted-foreground'}`}>{step.name}</p>
