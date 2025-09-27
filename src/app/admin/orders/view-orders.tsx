@@ -96,7 +96,11 @@ export function ViewOrders({ orders, onStatusUpdated }: ViewOrdersProps) {
                                 {order.items.map(item => (
                                     <TableRow key={item.product.id}>
                                         <TableCell className="flex items-center gap-4">
-                                            <Image src={item.product.images[0].url} alt={item.product.name} width={50} height={62} className="rounded-md object-cover"/>
+                                            {item.product.images && item.product.images.length > 0 ? (
+                                                <Image src={item.product.images[0].url} alt={item.product.name} width={50} height={62} className="rounded-md object-cover"/>
+                                            ) : (
+                                                <div className="w-[50px] h-[62px] bg-muted rounded-md flex items-center justify-center text-xs text-muted-foreground">No Img</div>
+                                            )}
                                             <span>{item.product.name}</span>
                                         </TableCell>
                                         <TableCell>
@@ -146,5 +150,3 @@ export function ViewOrders({ orders, onStatusUpdated }: ViewOrdersProps) {
     </Accordion>
   );
 }
-
-    
