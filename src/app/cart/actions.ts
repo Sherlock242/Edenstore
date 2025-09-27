@@ -6,12 +6,6 @@ import { cookies } from 'next/headers';
 import type { CartItem } from '@/contexts/cart-context';
 import type { Product } from '@/app/actions';
 
-type ServerResponse<T> = {
-  success: boolean;
-  message: string;
-  data?: T;
-};
-
 // This admin client is used for fetching product details, as cart items only store product IDs.
 // We need a server-side client with elevated privileges to join tables.
 const supabaseAdmin = createClient(
@@ -28,20 +22,9 @@ function createSupabaseServerClient() {
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
-      auth: {
-        persistSession: true,
-        autoRefreshToken: true,
-        detectSessionInUrl: true,
-      },
       cookies: {
         get(name: string) {
           return cookieStore.get(name)?.value;
-        },
-        set(name: string, value: string, options: any) {
-          cookieStore.set({ name, value, ...options });
-        },
-        remove(name: string, options: any) {
-          cookieStore.set({ name, value: '', ...options });
         },
       },
     }
@@ -137,57 +120,36 @@ export async function addCartItem(payload: AddItemPayload): Promise<{ success: b
     return { success: false, message: 'You must be logged in.' };
   }
 
-  // First, check if the item already exists
-  const { data: existingItem, error: findError } = await supabase
-    .from('cart_items')
-    .select('id, quantity')
-    .eq('user_id', user.id)
-    .eq('product_id', payload.product.id)
-    .eq('size', payload.size)
-    .eq('color', payload.color)
-    .single();
-  
-  if (findError && findError.code !== 'PGRST116') { // PGRST116: row not found
-      console.error('Error checking for existing cart item:', findError);
+  // Use an "upsert" operation to either insert a new item or update the quantity of an existing one.
+  // The `onConflict` part tells Supabase what to do if an item with the same user_id, product_id, size, and color already exists.
+  const { data, error } = await supabase.rpc('upsert_cart_item', {
+      p_user_id: user.id,
+      p_product_id: payload.product.id,
+      p_size: payload.size,
+      p_color: payload.color,
+      p_quantity: payload.quantity
+  }).select().single();
+
+
+  if (error) {
+      console.error('Error in upsert_cart_item:', error);
+      // Handle specific error for unique constraint violation if needed, though upsert should prevent it.
+      if (error.code === '23505') { // unique_violation
+          return { success: false, message: 'This item is already in your cart. Quantity was not updated.' };
+      }
       return { success: false, message: 'Could not add item to cart.' };
   }
+ 
+  // We need to fetch the full product again to return the full CartItem
+  // This is a simplified approach. For better performance, we could pass the full product back from the RPC.
+  const { items } = await getCartItems();
+  const addedItem = items?.find(i => i.product.id === payload.product.id && i.size === payload.size && i.color === payload.color);
 
-  if (existingItem) {
-    // Item exists, so update the quantity
-    const newQuantity = existingItem.quantity + payload.quantity;
-    const { data: updatedData, error: updateError } = await supabase
-        .from('cart_items')
-        .update({ quantity: newQuantity })
-        .eq('id', existingItem.id)
-        .select()
-        .single();
-    
-    if (updateError) {
-        console.error('Error updating cart quantity:', updateError);
-        return { success: false, message: 'Could not update item quantity.' };
-    }
-    return { success: true, item: { ...payload, quantity: updatedData.quantity }, message: 'Item quantity updated in cart.' };
-
-  } else {
-    // Item does not exist, so insert it
-    const { data, error } = await supabase
-        .from('cart_items')
-        .insert({
-            user_id: user.id,
-            product_id: payload.product.id,
-            size: payload.size,
-            color: payload.color,
-            quantity: payload.quantity,
-        })
-        .select()
-        .single();
-
-    if (error) {
-        console.error('Error inserting new cart item:', error);
-        return { success: false, message: 'Could not add new item to cart.' };
-    }
-     return { success: true, item: { ...payload, quantity: data.quantity }, message: 'Item added to cart.' };
+  if (!addedItem) {
+      return { success: false, message: 'Could not retrieve the added item.' };
   }
+
+  return { success: true, item: addedItem, message: 'Item added/updated in cart.' };
 }
 
 
@@ -251,3 +213,4 @@ export async function removeCartItem(payload: RemoveItemPayload): Promise<{ succ
 
     return { success: true, message: 'Item removed.' };
 }
+

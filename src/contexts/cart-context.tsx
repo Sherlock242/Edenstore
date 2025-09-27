@@ -9,7 +9,6 @@ import {
   type ReactNode,
   useEffect,
   useCallback,
-  useState,
 } from 'react';
 import { useAuth } from './auth-context';
 import {
@@ -82,7 +81,6 @@ function cartReducer(state: CartState, action: CartAction): CartState {
 
 type CartContextType = {
   state: CartState;
-  dispatch: React.Dispatch<CartAction>;
   addToCart: (item: Omit<CartItem, 'quantity'> & { quantity?: number }) => Promise<void>;
   updateQuantity: (productId: string, size: string, color: string, quantity: number) => Promise<void>;
   removeFromCart: (productId: string, size: string, color: string) => Promise<void>;
@@ -117,15 +115,28 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   const addToCart = async (item: Omit<CartItem, 'quantity'> & { quantity?: number }) => {
     if (!user) {
-      toast({ variant: 'destructive', title: 'Please log in', description: 'You must be logged in to add items to your cart.' });
+      toast({ variant: 'destructive', title: 'Error', description: 'You must be logged in to add items to your cart.' });
       return;
     }
     const quantity = item.quantity || 1;
+    
+    // Find if the item already exists to determine if we should say "added" or "updated"
+    const existingItem = state.items.find(
+      i =>
+        i.product.id === item.product.id &&
+        i.size === item.size &&
+        i.color === item.color
+    );
+
     const result = await addCartItem({ ...item, quantity });
 
     if (result.success && result.item) {
       dispatch({ type: 'ADD_OR_UPDATE_ITEM', payload: result.item });
-      toast({ title: 'Added to cart!', description: `${item.product.name} is now in your shopping cart.` });
+      if (existingItem) {
+          toast({ title: 'Cart updated!', description: `Quantity for ${item.product.name} is now ${result.item.quantity}.` });
+      } else {
+          toast({ title: 'Added to cart!', description: `${item.product.name} is now in your cart.` });
+      }
     } else {
       toast({ variant: 'destructive', title: 'Error', description: result.message });
     }
@@ -156,7 +167,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
      }
   };
 
-  const value = { state, dispatch, addToCart, updateQuantity, removeFromCart };
+  const value = { state, addToCart, updateQuantity, removeFromCart };
 
   return (
     <CartContext.Provider value={value}>

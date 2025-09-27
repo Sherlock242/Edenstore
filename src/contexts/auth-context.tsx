@@ -37,44 +37,43 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isadmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
-    const getInitialSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      setUser(session?.user ?? null);
-      if (session?.user) {
-        const { data: profile } = await supabase
-          .from('users')
-          .select('*')
-          .eq('id', session.user.id)
-          .single();
-        setUserProfile(profile);
-        setIsAdmin(profile?.role === 'admin');
-      } else {
-        setUserProfile(null);
-        setIsAdmin(false);
-      }
-      setLoading(false);
-    };
-
-    getInitialSession();
-
     const { data: authListener } = supabase.auth.onAuthStateChange(
       async (_event, session) => {
-        setUser(session?.user ?? null);
-        if (session?.user) {
-             const { data: profile } = await supabase
-                .from('users')
-                .select('*')
-                .eq('id', session.user.id)
-                .single();
-            setUserProfile(profile);
-            setIsAdmin(profile?.role === 'admin');
+        setLoading(true);
+        const currentUser = session?.user ?? null;
+        setUser(currentUser);
+        if (currentUser) {
+          const { data: profile } = await supabase
+            .from('users')
+            .select('*')
+            .eq('id', currentUser.id)
+            .single();
+          setUserProfile(profile);
+          setIsAdmin(profile?.role === 'admin');
         } else {
-            setUserProfile(null);
-            setIsAdmin(false);
+          setUserProfile(null);
+          setIsAdmin(false);
         }
         setLoading(false);
       }
     );
+
+    // This handles the initial session check on component mount.
+    const checkInitialSession = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+         setUser(session.user);
+         const { data: profile } = await supabase
+            .from('users')
+            .select('*')
+            .eq('id', session.user.id)
+            .single();
+          setUserProfile(profile);
+          setIsAdmin(profile?.role === 'admin');
+      }
+      setLoading(false);
+    }
+    checkInitialSession();
 
     return () => {
       authListener?.subscription.unsubscribe();
