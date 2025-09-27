@@ -179,7 +179,6 @@ export async function verifyPaymentAndCreateOrder(payload: VerifyPaymentPayload)
         .update({
           shipment_id: shipmentResult.payload.shipment_id,
           shiprocket_order_id: shipmentResult.payload.order_id,
-          tracking_id: shipmentResult.payload.awb_code,
         })
         .eq('id', newOrder.id);
       

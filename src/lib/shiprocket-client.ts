@@ -1,3 +1,4 @@
+
 // src/lib/shiprocket-client.ts
 'use server';
 
@@ -188,16 +189,21 @@ export async function getShippingRates(payload: ShippingRatePayload): Promise<{ 
 }
 
 
-// You can add more functions here to track shipments, cancel orders, etc.
-// For example:
-export async function trackShipmentByAWB(awb: string) {
+export async function trackShipmentById(shipmentId: string) {
     const token = await getShiprocketToken();
     if (!token) return null;
 
     try {
-        const response = await fetch(`${SHIPROCKET_API_URL}/tracking/${awb}`, {
-             headers: { 'Authorization': `Bearer ${token}` }
+        const response = await fetch(`${SHIPROCKET_API_URL}/tracking/${shipmentId}`, {
+             headers: { 
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}` 
+            }
         });
+        if (!response.ok) {
+            console.error("Shiprocket Tracking Error:", await response.json());
+            return null;
+        }
         return await response.json();
     } catch (error) {
         console.error("Error tracking shipment:", error);

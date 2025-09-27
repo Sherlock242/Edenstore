@@ -1,3 +1,4 @@
+
 // src/app/track/page.tsx
 "use client";
 
@@ -5,11 +6,11 @@ import { useEffect, useState } from "react";
 import { useSearchParams } from 'next/navigation';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { CheckCircle, Loader, Package, Truck, Calendar, Hash } from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Loader, Package, MapPin, Calendar, Hash, Milestone } from "lucide-react";
 import { getOrderDetails, type OrderDetails } from "./actions";
 import Image from "next/image";
-import { addDays, format } from "date-fns";
+import { format } from "date-fns";
 
 export default function TrackOrderPage() {
     const searchParams = useSearchParams();
@@ -54,15 +55,9 @@ export default function TrackOrderPage() {
         handleTrackOrder(orderId);
     }
     
-    const estimatedDeliveryDate = order ? addDays(new Date(order.created_at), 7) : null;
-
-    const statusSteps = [
-        { name: "Order Placed", status: "processing", icon: CheckCircle },
-        { name: "Shipped", status: "shipped", icon: Truck },
-        { name: "Delivered", status: "delivered", icon: CheckCircle },
-    ];
-    const currentStatusIndex = order ? statusSteps.findIndex(s => s.status === order.status) : -1;
-
+    const trackingDetails = order?.tracking_data?.tracking_data;
+    const trackingHistory = trackingDetails?.shipment_track_activities || [];
+    const latestActivity = trackingHistory[0];
 
     return (
         <div className="container mx-auto max-w-4xl px-4 py-8 md:py-12">
@@ -110,54 +105,56 @@ export default function TrackOrderPage() {
               ) : order ? (
                   <Card>
                       <CardHeader>
-                          <CardTitle>Order Status</CardTitle>
+                          <CardTitle>Order #{order.razorpay_order_id.replace('order_', '')}</CardTitle>
+                          <CardDescription>
+                              {trackingDetails?.awb_code ? `AWB #${trackingDetails.awb_code}` : 'Awaiting shipment details...'}
+                          </CardDescription>
                       </CardHeader>
                       <CardContent className="space-y-8">
-                           <div className="flex flex-col sm:flex-row gap-6 items-center">
+                           <div className="flex flex-col sm:flex-row gap-6 items-center border-b pb-6">
                               <Image 
                                   src={order.items[0].product.images[0].url}
                                   alt={order.items[0].product.name}
-                                  width={120}
-                                  height={150}
+                                  width={100}
+                                  height={125}
                                   className="rounded-lg object-cover"
                                   data-ai-hint={order.items[0].product.images[0].hint}
                               />
                               <div className="flex-grow space-y-2 text-center sm:text-left">
-                                  <div className="flex items-center justify-center sm:justify-start gap-2">
-                                    <Hash className="w-5 h-5 text-muted-foreground" />
-                                    <p className="font-mono text-sm text-muted-foreground break-all">Order ID: {order.razorpay_order_id}</p>
-                                  </div>
                                   <h3 className="text-xl font-bold">{order.items.length > 1 ? `${order.items[0].product.name} and ${order.items.length - 1} other item(s)` : order.items[0].product.name}</h3>
-                                  <div className="flex items-center justify-center sm:justify-start gap-2">
-                                      <Calendar className="w-5 h-5 text-muted-foreground" />
-                                      {estimatedDeliveryDate && (
-                                        <p>Estimated Delivery: <span className="font-semibold">{format(estimatedDeliveryDate, 'MMMM dd, yyyy')}</span></p>
-                                      )}
+                                  <div className="flex items-center justify-center sm:justify-start gap-2 text-muted-foreground">
+                                      <Calendar className="w-4 h-4" />
+                                      <p>Placed on: <span className="font-medium text-foreground">{format(new Date(order.created_at), 'MMM dd, yyyy')}</span></p>
+                                  </div>
+                                  <div className="flex items-center justify-center sm:justify-start gap-2 text-muted-foreground">
+                                      <MapPin className="w-4 h-4" />
+                                      <p>Current Status: <span className="font-medium text-primary">{latestActivity?.activity || trackingDetails?.current_status || 'Processing'}</span></p>
                                   </div>
                               </div>
                            </div>
 
-                          {/* Status Timeline */}
-                          <div className="relative">
-                            <div className="absolute left-0 top-4 h-0.5 w-full bg-border" />
-                            <div
-                                className="absolute left-0 top-4 h-0.5 bg-green-500 transition-all duration-500"
-                                style={{ width: `${(currentStatusIndex / (statusSteps.length - 1)) * 100}%` }}
-                            />
-                            <div className="flex justify-between relative">
-                                {statusSteps.map((step, index) => {
-                                    const isActive = index <= currentStatusIndex;
-                                    const Icon = step.icon;
-                                    return (
-                                        <div key={step.name} className="flex flex-col items-center gap-2 z-10 w-20 sm:w-24 text-center">
-                                            <div className={`flex h-8 w-8 items-center justify-center rounded-full transition-colors ${isActive ? 'bg-green-500 text-white' : 'bg-muted text-muted-foreground'}`}>
-                                               <Icon className='h-5 w-5' />
+                          {/* Tracking History */}
+                          <div className="space-y-6">
+                            <h4 className="font-semibold text-lg">Tracking History</h4>
+                            {trackingHistory.length > 0 ? (
+                                <div className="relative pl-6">
+                                     <div className="absolute left-[9px] top-0 h-full w-0.5 bg-border -translate-x-1/2"></div>
+                                    {trackingHistory.map((activity: any, index: number) => (
+                                        <div key={index} className="relative flex items-start gap-6 pb-6">
+                                            <div className="flex h-5 w-5 items-center justify-center rounded-full bg-primary mt-1.5 z-10">
+                                                <Milestone className="h-3 w-3 text-primary-foreground" />
                                             </div>
-                                            <p className={`text-xs sm:text-sm font-medium ${isActive ? 'text-foreground' : 'text-muted-foreground'}`}>{step.name}</p>
+                                            <div className="flex-grow">
+                                                <p className="font-semibold">{activity.activity}</p>
+                                                <p className="text-sm text-muted-foreground">{activity.location}</p>
+                                                <p className="text-xs text-muted-foreground">{format(new Date(activity.date), 'MMM dd, yyyy, h:mm a')}</p>
+                                            </div>
                                         </div>
-                                    )
-                                })}
-                            </div>
+                                    ))}
+                                </div>
+                            ): (
+                                <p className="text-muted-foreground text-sm">No tracking history available yet. Please check back later.</p>
+                            )}
                           </div>
                       </CardContent>
                   </Card>
@@ -166,5 +163,3 @@ export default function TrackOrderPage() {
         </div>
     )
 }
-
-    

@@ -4,6 +4,7 @@
 
 import { createClient as createAdminClient } from '@supabase/supabase-js';
 import type { Product } from '@/app/actions';
+import { trackShipmentById } from '@/lib/shiprocket-client';
 
 // Admin client to securely fetch all order data
 const supabaseAdmin = createAdminClient(
@@ -26,7 +27,10 @@ export type OrderDetails = {
     status: 'processing' | 'shipped' | 'delivered';
     shipping_address: any;
     razorpay_order_id: string;
+    shipment_id: number | null;
+    shiprocket_order_id: number | null;
     items: OrderItem[];
+    tracking_data?: any; // To hold live tracking info from Shiprocket
 };
 
 export async function getOrderDetails(razorpayOrderId: string): Promise<{ success: boolean; order?: OrderDetails; message: string }> {
@@ -37,7 +41,7 @@ export async function getOrderDetails(razorpayOrderId: string): Promise<{ succes
     // 1. Fetch the main order details using the Razorpay order ID
     const { data: orderData, error: orderError } = await supabaseAdmin
         .from('orders')
-        .select('id, created_at, status, shipping_address, razorpay_order_id')
+        .select('id, created_at, status, shipping_address, razorpay_order_id, shipment_id, shiprocket_order_id')
         .eq('razorpay_order_id', razorpayOrderId)
         .single();
 
@@ -106,6 +110,12 @@ export async function getOrderDetails(razorpayOrderId: string): Promise<{ succes
     if (fullOrderItems.length === 0) {
         return { success: false, message: "Could not find product details for items in this order." };
     }
+    
+    // 6. Fetch live tracking data from Shiprocket if a shipment ID exists
+    let trackingData = null;
+    if (orderData.shipment_id) {
+        trackingData = await trackShipmentById(orderData.shipment_id.toString());
+    }
 
     const orderDetails: OrderDetails = {
         id: orderData.id,
@@ -113,7 +123,10 @@ export async function getOrderDetails(razorpayOrderId: string): Promise<{ succes
         status: orderData.status as OrderDetails['status'],
         shipping_address: orderData.shipping_address,
         razorpay_order_id: orderData.razorpay_order_id,
-        items: fullOrderItems
+        shipment_id: orderData.shipment_id,
+        shiprocket_order_id: orderData.shiprocket_order_id,
+        items: fullOrderItems,
+        tracking_data: trackingData,
     };
 
     return { success: true, order: orderDetails, message: 'Order details fetched successfully.' };
