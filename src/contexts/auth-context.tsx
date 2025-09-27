@@ -9,7 +9,7 @@ import {
   type ReactNode,
 } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { type User } from "@supabase/supabase-js";
+import { type User, type AuthError } from "@supabase/supabase-js";
 import { useRouter } from "next/navigation";
 
 
@@ -25,6 +25,8 @@ type AuthContextType = {
   userProfile: UserProfile | null;
   loading: boolean;
   isadmin: boolean;
+  signInWithEmail: (email: string, password: string) => Promise<{ error: AuthError | null }>;
+  signUpWithEmail: (email: string, password: string) => Promise<{ error: AuthError | null }>;
 };
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -85,8 +87,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       authListener?.subscription.unsubscribe();
     };
   }, [supabase, router]);
+  
+  const signInWithEmail = async (email: string, password: string) => {
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    return { error };
+  };
 
-  const value = { user, userProfile, loading, isadmin };
+  const signUpWithEmail = async (email: string, password: string) => {
+    const origin = window.location.origin;
+    const { error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        emailRedirectTo: `${origin}/auth/callback`,
+      },
+    });
+    return { error };
+  };
+
+  const value = { user, userProfile, loading, isadmin, signInWithEmail, signUpWithEmail };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

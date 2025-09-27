@@ -19,13 +19,14 @@ import {
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { signup } from '@/app/auth/actions';
+import { useAuth } from '@/contexts/auth-context';
 import { signupSchema } from '@/lib/zod-schemas';
 
 
 export default function SignupPage() {
   const router = useRouter();
   const { toast } = useToast();
+  const { signUpWithEmail } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
 
   const form = useForm<z.infer<typeof signupSchema>>({
@@ -39,18 +40,18 @@ export default function SignupPage() {
 
   async function onSubmit(values: z.infer<typeof signupSchema>) {
     setIsLoading(true);
-    const result = await signup(values);
+    const { error } = await signUpWithEmail(values.email, values.password);
 
-    if (!result.success) {
+    if (error) {
       toast({
         variant: 'destructive',
         title: 'Signup Failed',
-        description: result.message,
+        description: error.message,
       });
     } else {
       toast({
         title: 'Account Created!',
-        description: result.message,
+        description: "Check your email to continue the sign-up process.",
       });
       router.push('/login');
     }

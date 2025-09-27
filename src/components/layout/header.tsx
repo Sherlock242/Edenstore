@@ -54,7 +54,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Separator } from "../ui/separator";
 import { Input } from "../ui/input";
 import { Skeleton } from "../ui/skeleton";
-import { logout } from "@/app/auth/actions";
+import { createClient } from "@/lib/supabase/client";
 
 const navLinks = [
   { href: "/products", label: "T-Shirts" },
@@ -91,6 +91,13 @@ export function Header() {
     return `https://www.gravatar.com/avatar/${hash}?d=mp`;
   }
   
+  const handleLogout = async () => {
+    const supabase = createClient();
+    await supabase.auth.signOut();
+    router.push('/login');
+    router.refresh();
+  };
+
   const handleDeleteAccount = async () => {
     startTransition(async () => {
       const result = await deleteUserAccount();
@@ -195,12 +202,10 @@ export function Header() {
                               </div>
                           </div>
                           <Separator />
-                            <form action={logout}>
-                               <Button variant="ghost" className="w-full justify-start">
+                            <Button variant="ghost" className="w-full justify-start" onClick={handleLogout}>
                                 <LogOut className="mr-2 h-4 w-4" />
                                 <span>Log out</span>
-                               </Button>
-                            </form>
+                            </Button>
                           <Button
                               variant="ghost"
                               className="w-full justify-start text-red-500 hover:bg-red-500/10 hover:text-red-600"
@@ -303,14 +308,10 @@ export function Header() {
                                 <span>Wishlist</span>
                             </DropdownMenuItem>
                             <DropdownMenuSeparator />
-                             <form action={logout}>
-                                <DropdownMenuItem asChild>
-                                   <button type="submit" className="w-full">
-                                     <LogOut className="mr-2 h-4 w-4" />
-                                     <span>Log out</span>
-                                   </button>
-                                </DropdownMenuItem>
-                             </form>
+                            <DropdownMenuItem onClick={handleLogout}>
+                                <LogOut className="mr-2 h-4 w-4" />
+                                <span>Log out</span>
+                            </DropdownMenuItem>
                             <DropdownMenuSeparator />
                             <DropdownMenuItem
                                 className="text-red-500 focus:bg-red-500/10 focus:text-red-600"

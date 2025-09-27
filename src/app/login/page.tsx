@@ -19,13 +19,14 @@ import {
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { login } from '@/app/auth/actions';
+import { useAuth } from '@/contexts/auth-context';
 import { loginSchema } from '@/lib/zod-schemas';
 
 
 export default function LoginPage() {
   const router = useRouter();
   const { toast } = useToast();
+  const { signInWithEmail } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
 
   const form = useForm<z.infer<typeof loginSchema>>({
@@ -38,13 +39,13 @@ export default function LoginPage() {
 
   async function onSubmit(values: z.infer<typeof loginSchema>) {
     setIsLoading(true);
-    const result = await login(values);
+    const { error } = await signInWithEmail(values.email, values.password);
 
-    if (!result.success) {
+    if (error) {
       toast({
         variant: 'destructive',
         title: 'Login Failed',
-        description: result.message,
+        description: error.message,
       });
     } else {
       toast({
@@ -52,7 +53,6 @@ export default function LoginPage() {
         description: "You've successfully logged in.",
       });
       router.push('/');
-      router.refresh(); // Force a layout refresh to update user state in header
     }
     setIsLoading(false);
   }
