@@ -19,7 +19,7 @@ type CreateOrderPayload = {
 export async function createRazorpayOrder(payload: CreateOrderPayload): Promise<{success: boolean; order?: any; message: string}> {
     try {
         const instance = new Razorpay({
-            key_id: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID!,
+            key_id: process.env.RAZORPAY_KEY_ID!,
             key_secret: process.env.RAZORPAY_KEY_SECRET!,
         });
 
@@ -49,11 +49,10 @@ type VerifyPaymentPayload = {
     razorpay_order_id: string;
     razorpay_payment_id: string;
     razorpay_signature: string;
-    totalAmount: number;
     shippingAddress: any;
 }
-export async function verifyPaymentAndCreateOrder(payload: VerifyPaymentPayload): Promise<{success: boolean; message: string; orderId?: string}> {
-    const { razorpay_order_id, razorpay_payment_id, razorpay_signature, totalAmount, shippingAddress } = payload;
+export async function verifyPaymentAndCreateOrder(payload: VerifyPaymentPayload): Promise<{success: boolean; message: string; razorpayOrderId?: string}> {
+    const { razorpay_order_id, razorpay_payment_id, razorpay_signature, shippingAddress } = payload;
     const key_secret = process.env.RAZORPAY_KEY_SECRET!;
 
     const body = razorpay_order_id + "|" + razorpay_payment_id;
@@ -87,7 +86,6 @@ export async function verifyPaymentAndCreateOrder(payload: VerifyPaymentPayload)
         .from('orders')
         .insert({
             user_id: user.id,
-            // total_amount: totalAmount, // This line is removed as requested.
             status: 'processing',
             shipping_address: JSON.stringify(shippingAddress),
             razorpay_order_id: razorpay_order_id,
@@ -131,5 +129,5 @@ export async function verifyPaymentAndCreateOrder(payload: VerifyPaymentPayload)
         // Don't fail the whole process if cart clearing fails, just log it.
     }
     
-    return { success: true, message: "Payment verified and order created successfully.", orderId: newOrder.id };
+    return { success: true, message: "Payment verified and order created successfully.", razorpayOrderId: newOrder.razorpay_order_id };
 }

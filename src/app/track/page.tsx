@@ -125,7 +125,7 @@ export default function TrackOrderPage() {
                               <div className="flex-grow space-y-2 text-center sm:text-left">
                                   <div className="flex items-center justify-center sm:justify-start gap-2">
                                     <Hash className="w-5 h-5 text-muted-foreground" />
-                                    <p className="font-mono text-sm text-muted-foreground">Order ID: {order.id}</p>
+                                    <p className="font-mono text-sm text-muted-foreground">Order ID: {order.razorpay_order_id}</p>
                                   </div>
                                   <h3 className="text-xl font-bold">{order.items.length > 1 ? `${order.items[0].product.name} and ${order.items.length - 1} other item(s)` : order.items[0].product.name}</h3>
                                   <div className="flex items-center justify-center sm:justify-start gap-2">

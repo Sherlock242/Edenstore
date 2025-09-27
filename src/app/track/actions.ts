@@ -23,19 +23,20 @@ export type OrderDetails = {
     created_at: string;
     status: 'processing' | 'shipped' | 'delivered';
     shipping_address: any;
+    razorpay_order_id: string;
     items: OrderItem[];
 };
 
-export async function getOrderDetails(orderId: string): Promise<{ success: boolean; order?: OrderDetails; message: string }> {
-    if (!orderId) {
+export async function getOrderDetails(razorpayOrderId: string): Promise<{ success: boolean; order?: OrderDetails; message: string }> {
+    if (!razorpayOrderId) {
         return { success: false, message: 'Order ID is required.' };
     }
 
-    // 1. Fetch the main order details
+    // 1. Fetch the main order details using the Razorpay order ID
     const { data: orderData, error: orderError } = await supabaseAdmin
         .from('orders')
-        .select('id, created_at, status, shipping_address')
-        .eq('id', orderId)
+        .select('id, created_at, status, shipping_address, razorpay_order_id')
+        .eq('razorpay_order_id', razorpayOrderId)
         .single();
 
     if (orderError || !orderData) {
@@ -47,7 +48,7 @@ export async function getOrderDetails(orderId: string): Promise<{ success: boole
     const { data: orderItemsData, error: itemsError } = await supabaseAdmin
         .from('order_items')
         .select('product_id, quantity, size, color')
-        .eq('order_id', orderId);
+        .eq('order_id', orderData.id);
 
     if (itemsError || !orderItemsData) {
         console.error('Error fetching order items:', itemsError);
@@ -107,6 +108,7 @@ export async function getOrderDetails(orderId: string): Promise<{ success: boole
         created_at: orderData.created_at,
         status: orderData.status as OrderDetails['status'],
         shipping_address: orderData.shipping_address,
+        razorpay_order_id: orderData.razorpay_order_id,
         items: fullOrderItems
     };
 

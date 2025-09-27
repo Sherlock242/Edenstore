@@ -10,7 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import Script from 'next/script';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { createRazorpayOrder, verifyPaymentAndCreateOrder } from './actions';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/auth-context';
@@ -24,13 +24,21 @@ export default function CheckoutPage() {
   const [isProcessing, setIsProcessing] = useState(false);
   
   // State for shipping information
-  const [email, setEmail] = useState(user?.email || '');
+  const [email, setEmail] = useState('');
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [address, setAddress] = useState('');
   const [city, setCity] = useState('');
   const [country, setCountry] = useState('');
+  const [phone, setPhone] = useState('');
 
+
+  useEffect(() => {
+    if (user) {
+      setEmail(user.email || '');
+      // You can add more pre-filled data here if you store it in your user profile
+    }
+  }, [user]);
 
   const subtotal = state.items.reduce(
     (acc, item) => acc + item.product.price * item.quantity,
@@ -48,16 +56,16 @@ export default function CheckoutPage() {
        toast({
             variant: 'destructive',
             title: 'Configuration Error',
-            description: 'Razorpay Key ID is not set. Please restart the server after setting environment variables.',
+            description: 'Razorpay Key ID is not set.',
         });
         return;
     }
 
-    if (!firstName || !address || !city || !country) {
+    if (!firstName || !address || !city || !country || !phone || !email) {
         toast({
             variant: 'destructive',
             title: 'Missing Information',
-            description: 'Please fill out all shipping fields.',
+            description: 'Please fill out all shipping and contact fields.',
         });
         return;
     }
@@ -95,6 +103,7 @@ export default function CheckoutPage() {
         city,
         country,
         email,
+        phone,
     };
 
     const options = {
@@ -109,18 +118,17 @@ export default function CheckoutPage() {
                 razorpay_order_id: response.razorpay_order_id,
                 razorpay_payment_id: response.razorpay_payment_id,
                 razorpay_signature: response.razorpay_signature,
-                totalAmount: total,
                 shippingAddress: shippingAddress
              });
 
-            if (verificationResult.success) {
+            if (verificationResult.success && verificationResult.razorpayOrderId) {
                 toast({
                     title: 'Payment Successful!',
                     description: 'Your order has been placed.',
                 });
                 // Clear the client-side cart
                 dispatch({ type: 'SET_ITEMS', payload: [] });
-                router.push(`/track?order_id=${verificationResult.orderId}`);
+                router.push(`/track?order_id=${verificationResult.razorpayOrderId}`);
 
             } else {
                  toast({
@@ -134,7 +142,7 @@ export default function CheckoutPage() {
         prefill: {
             name: `${firstName} ${lastName}`,
             email: email,
-            contact: user.phone || '9999999999',
+            contact: phone,
         },
         theme: {
             color: '#F97316',
@@ -184,6 +192,10 @@ export default function CheckoutPage() {
                 <div className="md:col-span-2">
                   <Label htmlFor="email">Email Address</Label>
                   <Input id="email" type="email" placeholder="you@example.com" value={email} onChange={(e) => setEmail(e.target.value)} required/>
+                </div>
+                 <div className="md:col-span-2">
+                  <Label htmlFor="phone">Phone Number</Label>
+                  <Input id="phone" type="tel" placeholder="Your phone number" value={phone} onChange={(e) => setPhone(e.target.value)} required/>
                 </div>
                 <div>
                   <Label htmlFor="first-name">First Name</Label>
