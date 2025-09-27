@@ -6,6 +6,7 @@ import crypto from 'crypto';
 import { createClient as createAdminClient } from '@supabase/supabase-js';
 import { createClient } from '@/lib/supabase/server';
 import { getCartItems } from '../cart/actions';
+import { createShipment } from '@/lib/shiprocket-client';
 
 const supabaseAdmin = createAdminClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -87,6 +88,8 @@ export async function verifyPaymentAndCreateOrder(payload: VerifyPaymentPayload)
     if (!cart.success || !cart.items || cart.items.length === 0) {
         return { success: false, message: "Cart is empty or could not be fetched. Cannot create order." };
     }
+
+    const totalAmount = cart.items.reduce((acc, item) => acc + item.product.price * item.quantity, 0);
     
     // 4. Insert into 'orders' table
     const { data: newOrder, error: orderError } = await supabaseAdmin
@@ -105,6 +108,54 @@ export async function verifyPaymentAndCreateOrder(payload: VerifyPaymentPayload)
         console.error("Error creating order:", orderError);
         return { success: false, message: `Failed to save order to the database. Reason: ${orderError?.message || 'Unknown error'}` };
     }
+
+    const orderItemsForShipment = cart.items.map(item => ({
+      name: item.product.name,
+      sku: `${item.product.id}-${item.size}-${item.color}`,
+      units: item.quantity,
+      selling_price: item.product.price,
+      hsn: 49011010, // Example HSN, can be made dynamic later
+    }));
+
+    // *** AUTOMATION STEP: Create Shipment with Shiprocket ***
+    const shipmentResult = await createShipment({
+      order_id: newOrder.id,
+      order_date: newOrder.created_at,
+      billing_customer_name: `${shippingAddress.firstName} ${shippingAddress.lastName || ''}`,
+      billing_last_name: shippingAddress.lastName || shippingAddress.firstName,
+      billing_address: shippingAddress.address,
+      billing_city: shippingAddress.city,
+      billing_state: "N/A", // Shiprocket requires a state
+      billing_country: shippingAddress.country,
+      billing_pincode: "000000", // And a pincode
+      billing_email: shippingAddress.email,
+      billing_phone: shippingAddress.phone,
+      order_items: orderItemsForShipment,
+      payment_method: 'Prepaid',
+      sub_total: totalAmount,
+      length: 10,
+      breadth: 10,
+      height: 2,
+      weight: 0.5,
+    });
+
+    if (shipmentResult.success && shipmentResult.payload) {
+      // Save shipment details to our order
+      const { error: updateError } = await supabaseAdmin
+        .from('orders')
+        .update({
+          shipment_id: shipmentResult.payload.shipment_id,
+          shiprocket_order_id: shipmentResult.payload.order_id,
+          tracking_id: shipmentResult.payload.awb_code,
+        })
+        .eq('id', newOrder.id);
+      
+      if(updateError) console.error("Failed to save shipment details to order:", updateError.message);
+    } else {
+        // Log if shipment creation fails but don't fail the entire order
+        console.error("Shiprocket shipment creation failed:", shipmentResult.message);
+    }
+
 
     // 5. Insert into 'order_items' table
     const orderItemsToInsert = cart.items.map(item => ({
