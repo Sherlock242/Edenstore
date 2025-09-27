@@ -1,44 +1,23 @@
 
 'use server';
 
-import { createClient } from '@supabase/supabase-js';
-import { cookies } from 'next/headers';
+import { createClient as createAdminClient } from '@supabase/supabase-js';
+import { createClient } from '@/lib/supabase/server';
 import type { CartItem } from '@/contexts/cart-context';
 import type { Product } from '@/app/actions';
 
+
 // This admin client is used for fetching product details, as cart items only store product IDs.
 // We need a server-side client with elevated privileges to join tables.
-const supabaseAdmin = createClient(
+const supabaseAdmin = createAdminClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!,
   { auth: { persistSession: false } }
 );
 
-// This function creates a Supabase client for the current user, using their auth cookie.
-// It's the standard way to interact with Supabase on behalf of a logged-in user in Server Actions.
-function createSupabaseServerClient() {
-  const cookieStore = cookies();
-  return createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        get(name: string) {
-          return cookieStore.get(name)?.value;
-        },
-        set(name: string, value: string, options: any) {
-          cookieStore.set({ name, value, ...options });
-        },
-        remove(name: string, options: any) {
-          cookieStore.set({ name, value: '', ...options });
-        },
-      },
-    }
-  );
-}
 
 export async function getCartItems(): Promise<{ success: boolean; items?: CartItem[]; message: string }> {
-  const supabase = createSupabaseServerClient();
+  const supabase = createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
   if (!user) {
@@ -119,7 +98,7 @@ type AddItemPayload = {
 };
 
 export async function addCartItem(payload: AddItemPayload): Promise<{ success: boolean; item?: CartItem; message: string }> {
-  const supabase = createSupabaseServerClient();
+  const supabase = createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
   if (!user) {
@@ -170,6 +149,7 @@ export async function addCartItem(payload: AddItemPayload): Promise<{ success: b
           const finalItem: CartItem = { ...payload, quantity: updatedData.quantity };
           return { success: true, item: finalItem, message: 'Cart updated.' };
       }
+      console.error('Error adding cart item:', error);
       return { success: false, message: 'Could not add item to cart.' };
   }
  
@@ -191,7 +171,7 @@ type UpdateQuantityPayload = {
     quantity: number;
 }
 export async function updateCartItemQuantity(payload: UpdateQuantityPayload): Promise<{ success: boolean; message: string }> {
-     const supabase = createSupabaseServerClient();
+     const supabase = createClient();
      const { data: { user } } = await supabase.auth.getUser();
      if (!user) return { success: false, message: 'You must be logged in.' };
 
@@ -219,7 +199,7 @@ type RemoveItemPayload = {
 }
 
 export async function removeCartItem(payload: RemoveItemPayload): Promise<{ success: boolean; message: string }> {
-    const supabase = createSupabaseServerClient();
+    const supabase = createClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return { success: false, message: 'You must be logged in.' };
     
