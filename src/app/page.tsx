@@ -25,11 +25,6 @@ export default async function Home() {
         )}
         <div className="absolute inset-0 bg-black/50" />
         <div className="relative z-10 flex h-full flex-col items-center justify-center gap-6 text-center">
-          <div>
-            <Button asChild size="lg" className="bg-gradient-to-r from-orange-500 to-yellow-400 text-black font-bold hover:opacity-90 transition-opacity">
-              <Link href="/products">Shop All</Link>
-            </Button>
-          </div>
         </div>
       </section>
 
