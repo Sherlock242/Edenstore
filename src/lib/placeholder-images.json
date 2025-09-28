@@ -2,9 +2,9 @@
   "placeholderImages": [
     {
       "id": "hero-1",
-      "description": "A vibrant and dynamic anime-style city street at night, with neon signs.",
-      "imageUrl": "https://images.unsplash.com/photo-1758496679785-257271f05454?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw1fHxhbmltZSUyMGNpdHlzY2FwZXxlbnwwfHx8fDE3NTg5MDMzNDd8MA&ixlib=rb-4.1.0&q=80&w=1080",
-      "imageHint": "anime cityscape"
+      "description": "A wide, cinematic shot of a neon-lit anime city street at night.",
+      "imageUrl": "https://images.unsplash.com/photo-1480796927426-f609979314bd?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw5fHxhbmltZSUyMGNpdHl8ZW58MHx8fHwxNzU4OTkwMjQ0fDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "anime city"
     },
     {
       "id": "product-1",

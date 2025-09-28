@@ -12,7 +12,7 @@ export default async function Home() {
 
   return (
     <div className="flex flex-col gap-16 md:gap-24">
-      <section className="relative h-[60vh] w-full text-white">
+      <section className="relative h-[45vh] md:h-[55vh] w-full text-white">
         {heroImage && (
             <Image
                 src={heroImage.imageUrl}
