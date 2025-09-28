@@ -156,16 +156,25 @@ export function Header() {
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="container mx-auto flex h-16 max-w-7xl items-center justify-between px-4">
-        {/* Left Section (Mobile Menu & Desktop Nav) */}
-        <div className="flex items-center gap-2 md:gap-4">
+      <div className="container mx-auto flex h-16 max-w-7xl items-center px-4">
+
+        {/* Desktop: Left side */}
+        <div className="hidden flex-1 items-center justify-start md:flex">
+             <Link href="/" className="flex items-center space-x-2">
+              <span className="font-bold font-headline text-lg uppercase bg-gradient-to-r from-orange-600 to-yellow-400 bg-clip-text text-transparent">
+                EDENSTORE
+              </span>
+            </Link>
+        </div>
+
+        {/* Mobile: Left side */}
+        <div className="flex flex-1 items-center justify-start md:hidden">
            <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
             <SheetTrigger asChild>
               <Button
                 variant="ghost"
                 size="icon"
                 aria-label="Toggle navigation menu"
-                className="md:hidden"
               >
                 <Menu className="h-5 w-5" />
               </Button>
@@ -253,17 +262,11 @@ export function Header() {
               </SheetFooter>
             </SheetContent>
           </Sheet>
-           <div className="hidden md:flex">
-             <Link href="/" className="flex items-center space-x-2">
-              <span className="font-bold font-headline text-lg uppercase bg-gradient-to-r from-orange-600 to-yellow-400 bg-clip-text text-transparent">
-                EDENSTORE
-              </span>
-            </Link>
-           </div>
         </div>
 
+
         {/* Center Section (Logo on mobile, nav on desktop) */}
-        <div className="flex items-center justify-center md:flex-1">
+        <div className="flex items-center justify-center">
             <div className="md:hidden">
               <Link href="/" className="flex items-center space-x-2">
                 <span className="font-bold font-headline text-lg uppercase bg-gradient-to-r from-orange-600 to-yellow-400 bg-clip-text text-transparent">
@@ -286,7 +289,7 @@ export function Header() {
 
 
         {/* Right Section (Icons) */}
-        <div className="flex items-center justify-end gap-2 md:gap-4">
+        <div className="flex flex-1 items-center justify-end gap-2 md:gap-4">
             {isadmin && (
               <div className="hidden items-center md:flex">
                   {adminLinks.map(link => (
