@@ -24,8 +24,8 @@ export function ProductCard({ product }: ProductCardProps) {
   const handleAddToCart = () => {
     addToCart({
       product,
-      size: product.sizes[0],
-      color: product.colors[0],
+      size: product.sizes[0]?.size || 'M',
+      color: product.colors[0] || 'Black',
     });
   };
 
@@ -49,15 +49,15 @@ export function ProductCard({ product }: ProductCardProps) {
   return (
     <Card className="group w-full overflow-hidden border-2 border-transparent transition-all hover:border-primary">
       <CardContent className="p-0">
-        <div className="relative overflow-hidden">
+        <div className="relative overflow-hidden aspect-[4/5]">
           <Link href={`/products/${product.id}`}>
             <Image
               src={product.images[0].url}
               alt={product.name}
-              width={400}
-              height={500}
-              className="h-auto w-full object-cover transition-transform duration-300 group-hover:scale-105"
+              fill
+              className="object-cover transition-transform duration-300 group-hover:scale-105"
               data-ai-hint={product.images[0].hint}
+              sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 25vw"
             />
           </Link>
           <div className="absolute bottom-2 left-2 right-2 flex translate-y-16 items-center justify-center gap-2 transition-transform duration-300 group-hover:translate-y-0">
