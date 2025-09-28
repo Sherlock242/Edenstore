@@ -50,7 +50,6 @@ import { useAuth } from "@/contexts/auth-context";
 import { CartSheetContent } from "../cart-sheet";
 import { usePathname, useRouter } from 'next/navigation';
 import { cn } from "@/lib/utils";
-import md5 from "md5";
 import { deleteUserAccount } from "@/app/actions";
 import { useToast } from "@/hooks/use-toast";
 import { Separator } from "../ui/separator";
@@ -89,11 +88,6 @@ export function Header() {
     return email[0].toUpperCase();
   };
 
-  const getGravatarUrl = (email: string | null | undefined) => {
-    if (!email) return '';
-    const hash = md5(email.trim().toLowerCase());
-    return `https://www.gravatar.com/avatar/${hash}?d=mp`;
-  }
   
   const handleLogout = async () => {
     const supabase = createClient();
@@ -229,7 +223,7 @@ export function Header() {
                       <div className="flex w-full flex-col gap-4">
                           <div className="flex items-center gap-3">
                                 <Avatar className="h-9 w-9">
-                                  <AvatarImage src={user.user_metadata?.avatar_url || getGravatarUrl(user.email)} alt={user.email || 'User'} />
+                                  <AvatarImage src={user.user_metadata?.avatar_url} alt={user.email || 'User'} />
                                   <AvatarFallback>{getAvatarFallback(user.email)}</AvatarFallback>
                               </Avatar>
                                 <div className="flex flex-col space-y-1">
@@ -330,7 +324,7 @@ export function Header() {
                         <DropdownMenuTrigger asChild>
                             <Button variant="ghost" className="relative hidden h-9 w-9 rounded-full md:flex">
                                 <Avatar className="h-9 w-9">
-                                    <AvatarImage src={user.user_metadata?.avatar_url || getGravatarUrl(user.email)} alt={user.email || 'User'} />
+                                    <AvatarImage src={user.user_metadata?.avatar_url} alt={user.email || 'User'} />
                                     <AvatarFallback>{getAvatarFallback(user.email)}</AvatarFallback>
                                 </Avatar>
                             </Button>
