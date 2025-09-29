@@ -252,7 +252,7 @@ export function Header() {
                           </Button>
                       </div>
                   ) : (
-                      <Button asChild className="w-full" onClick={() => setIsMobileMenuOpen(false)}>
+                      <Button asChild className="w-full bg-gradient-to-r from-orange-500 to-yellow-400 text-white" onClick={() => setIsMobileMenuOpen(false)}>
                           <Link href="/login">
                             <LogIn className="mr-2 h-4 w-4"/>
                             Login
@@ -425,3 +425,5 @@ export function Header() {
     </header>
   );
 }
+
+    
