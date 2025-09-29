@@ -142,7 +142,7 @@ export default function CartPage() {
                   <span>Total</span>
                   <span>₹{subtotal.toFixed(2)}</span>
                 </div>
-                <Button asChild size="lg" className="w-full bg-gradient-to-r from-orange-500 to-yellow-400 text-black font-bold hover:opacity-90 transition-opacity">
+                <Button asChild size="lg" className="w-full bg-gradient-to-r from-red-600 to-red-500 text-white font-bold hover:opacity-90 transition-opacity">
                     <Link href="/checkout">Proceed to Checkout</Link>
                 </Button>
               </CardContent>

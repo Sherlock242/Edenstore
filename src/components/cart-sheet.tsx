@@ -132,7 +132,7 @@ export function CartSheetContent({ setSheetOpen }: CartSheetContentProps) {
                 <span>₹{subtotal.toFixed(2)}</span>
               </div>
               <p className="text-xs text-muted-foreground">Shipping and taxes will be calculated at checkout.</p>
-              <Button asChild size="lg" className="w-full bg-gradient-to-r from-orange-500 to-yellow-400 text-black font-bold hover:opacity-90 transition-opacity" onClick={() => setSheetOpen(false)}>
+              <Button asChild size="lg" className="w-full bg-gradient-to-r from-red-600 to-red-500 text-white font-bold hover:opacity-90 transition-opacity" onClick={() => setSheetOpen(false)}>
                 <Link href="/checkout">Proceed to Checkout</Link>
               </Button>
               <Button variant="outline" asChild onClick={() => setSheetOpen(false)}>

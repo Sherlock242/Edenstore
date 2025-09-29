@@ -188,7 +188,7 @@ export default function CheckoutPage() {
             contact: phone,
         },
         theme: {
-            color: '#F97316',
+            color: '#DC2626',
         },
     };
 
@@ -271,7 +271,7 @@ export default function CheckoutPage() {
               </CardContent>
             </Card>
 
-            <Button size="lg" className="w-full bg-gradient-to-r from-orange-500 to-red-600 text-white font-bold hover:opacity-90 transition-opacity" onClick={handlePlaceOrder} disabled={isProcessing || isFetchingRate}>
+            <Button size="lg" className="w-full bg-gradient-to-r from-red-600 to-red-500 text-white font-bold hover:opacity-90 transition-opacity" onClick={handlePlaceOrder} disabled={isProcessing || isFetchingRate}>
                {isProcessing ? 'Processing...' : `Place Order - ₹${total.toFixed(2)}`}
             </Button>
           </div>
