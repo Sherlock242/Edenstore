@@ -271,7 +271,7 @@ export default function CheckoutPage() {
               </CardContent>
             </Card>
 
-            <Button size="lg" className="w-full bg-gradient-to-r from-red-600 to-red-500 text-white font-bold hover:opacity-90 transition-opacity" onClick={handlePlaceOrder} disabled={isProcessing || isFetchingRate}>
+            <Button size="lg" className="w-full bg-primary text-primary-foreground font-bold hover:opacity-90 transition-opacity" onClick={handlePlaceOrder} disabled={isProcessing || isFetchingRate}>
                {isProcessing ? 'Processing...' : `Place Order - ₹${total.toFixed(2)}`}
             </Button>
           </div>
@@ -288,9 +288,15 @@ export default function CheckoutPage() {
                       <div className="flex flex-col gap-4">
                         {state.items.map(item => (
                           <div key={`${item.product.id}-${item.size}-${item.color}`} className="flex items-center gap-4">
-                            <div className="relative">
-                              <Image src={item.product.images[0].url} alt={item.product.name} width={64} height={80} className="rounded-md object-cover" data-ai-hint={item.product.images[0].hint} />
-                              <span className="absolute -right-2 -top-2 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-xs text-primary-foreground">{item.quantity}</span>
+                            <div className="relative w-16 h-20 flex-shrink-0">
+                                <Image 
+                                    src={item.product.images[0].url} 
+                                    alt={item.product.name} 
+                                    fill
+                                    className="rounded-md object-cover" 
+                                    data-ai-hint={item.product.images[0].hint} 
+                                />
+                                <span className="absolute -right-2 -top-2 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-xs text-primary-foreground">{item.quantity}</span>
                             </div>
                             <div className="flex-grow">
                               <p className="font-semibold">{item.product.name}</p>
