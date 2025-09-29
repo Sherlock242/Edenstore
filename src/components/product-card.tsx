@@ -6,10 +6,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import Image from "next/image";
 import Link from "next/link";
 import { Button } from "./ui/button";
-import { Heart, ShoppingCart } from "lucide-react";
+import { ShoppingCart } from "lucide-react";
 import { useCart } from "@/contexts/cart-context";
-import { useWishlist } from "@/contexts/wishlist-context";
-import { useToast } from "@/hooks/use-toast";
 
 type ProductCardProps = {
   product: Product;
@@ -17,9 +15,6 @@ type ProductCardProps = {
 
 export function ProductCard({ product }: ProductCardProps) {
   const { addToCart } = useCart();
-  const { dispatch: wishlistDispatch, isInWishlist } = useWishlist();
-  const { toast } = useToast();
-  const inWishlist = isInWishlist(product.id);
 
   const handleAddToCart = () => {
     addToCart({
@@ -28,23 +23,6 @@ export function ProductCard({ product }: ProductCardProps) {
       color: product.colors[0] || 'Black',
     });
   };
-
-  const handleWishlistToggle = () => {
-    if (inWishlist) {
-      wishlistDispatch({ type: 'REMOVE_ITEM', payload: { productId: product.id } });
-       toast({
-        title: "Removed from Wishlist",
-        description: `${product.name} has been removed from your wishlist.`,
-      });
-    } else {
-      wishlistDispatch({ type: 'ADD_ITEM', payload: product });
-       toast({
-        title: "Added to Wishlist!",
-        description: `${product.name} has been added to your wishlist.`,
-      });
-    }
-  };
-
 
   return (
     <Card className="group w-full overflow-hidden border-2 border-transparent transition-all hover:border-primary">
@@ -63,9 +41,6 @@ export function ProductCard({ product }: ProductCardProps) {
           <div className="absolute bottom-0 left-0 right-0 flex items-center justify-center gap-2 p-2 opacity-0 transition-all duration-300 group-hover:opacity-100 group-hover:bottom-2">
             <Button size="sm" className="flex-grow bg-accent text-accent-foreground hover:bg-accent/90" onClick={handleAddToCart}>
               <ShoppingCart className="mr-2 h-4 w-4" /> Add to Cart
-            </Button>
-            <Button size="icon" variant="secondary" onClick={handleWishlistToggle}>
-              <Heart className={`h-4 w-4 ${inWishlist ? 'fill-red-500 text-red-500' : ''}`} />
             </Button>
           </div>
         </div>
