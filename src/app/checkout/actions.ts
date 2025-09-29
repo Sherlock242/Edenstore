@@ -20,9 +20,12 @@ export async function fetchShippingRatesAction(pincode: string): Promise<{succes
         return { success: false, message: 'Invalid Pincode.' };
     }
 
-    const pickupPostcode = process.env.SHIPROCKET_PICKUP_POSTCODE;
+    // Use environment variable or a default placeholder.
+    // IMPORTANT: The user should set SHIPROCKET_PICKUP_POSTCODE in their environment.
+    const pickupPostcode = process.env.SHIPROCKET_PICKUP_POSTCODE || "110011"; 
+    
     if (!pickupPostcode) {
-        console.error("SHIPROCKET_PICKUP_POSTCODE is not set in .env");
+        console.error("SHIPROCKET_PICKUP_POSTCODE is not set in .env and no default is provided.");
         return { success: false, message: 'Server configuration error.' };
     }
 
@@ -37,7 +40,7 @@ export async function fetchShippingRatesAction(pincode: string): Promise<{succes
     const result = await getShippingRates({
         pickup_postcode: pickupPostcode,
         delivery_postcode: pincode,
-        weight: totalWeight,
+        weight: totalWeight > 0 ? totalWeight : 0.1, // Ensure weight is not zero
         cod: 0 // Assuming prepaid for rate calculation. Shiprocket often has the same rate for both.
     });
 
