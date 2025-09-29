@@ -60,7 +60,7 @@ export function ProductCard({ product }: ProductCardProps) {
               sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 25vw"
             />
           </Link>
-          <div className="absolute bottom-2 left-2 right-2 flex translate-y-16 items-center justify-center gap-2 transition-transform duration-300 group-hover:translate-y-0">
+          <div className="absolute bottom-0 left-0 right-0 flex items-center justify-center gap-2 p-2 opacity-0 transition-all duration-300 group-hover:opacity-100 group-hover:bottom-2">
             <Button size="sm" className="flex-grow bg-accent text-accent-foreground hover:bg-accent/90" onClick={handleAddToCart}>
               <ShoppingCart className="mr-2 h-4 w-4" /> Add to Cart
             </Button>
