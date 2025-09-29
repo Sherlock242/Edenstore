@@ -252,7 +252,7 @@ export function Header() {
                           </Button>
                       </div>
                   ) : (
-                      <Button asChild className="w-full bg-gradient-to-r from-orange-500 to-yellow-400 text-white" onClick={() => setIsMobileMenuOpen(false)}>
+                      <Button asChild className="w-full bg-gradient-to-r from-orange-600 to-yellow-500 text-white" onClick={() => setIsMobileMenuOpen(false)}>
                           <Link href="/login">
                             <LogIn className="mr-2 h-4 w-4"/>
                             Login
@@ -269,7 +269,7 @@ export function Header() {
         <div className="flex items-center justify-center">
             <div className="md:hidden">
               <Link href="/" className="flex items-center space-x-2">
-                <span className="bg-gradient-to-r from-orange-500 to-yellow-400 bg-clip-text font-headline text-lg font-bold uppercase text-transparent">
+                <span className="bg-gradient-to-r from-yellow-400 to-orange-500 bg-clip-text font-headline text-lg font-bold uppercase text-transparent">
                   EDENSTORE
                 </span>
               </Link>
@@ -425,5 +425,6 @@ export function Header() {
     </header>
   );
 }
+
 
     
