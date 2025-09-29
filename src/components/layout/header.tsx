@@ -161,7 +161,7 @@ export function Header() {
         {/* Desktop: Left side */}
         <div className="hidden flex-1 items-center justify-start md:flex">
              <Link href="/" className="flex items-center space-x-2">
-              <span className="bg-gradient-to-r from-yellow-400 to-orange-500 bg-clip-text font-headline text-lg font-bold uppercase text-transparent">
+              <span className="bg-gradient-to-r from-orange-500 to-yellow-400 bg-clip-text font-headline text-lg font-bold uppercase text-transparent">
                 EDENSTORE
               </span>
             </Link>
@@ -183,7 +183,7 @@ export function Header() {
               <SheetHeader>
                   <SheetTitle>
                     <Link href="/" onClick={() => setIsMobileMenuOpen(false)} className="mb-6 flex items-center space-x-2">
-                      <span className="bg-gradient-to-r from-yellow-400 to-orange-500 bg-clip-text font-headline text-lg font-bold uppercase text-transparent">
+                      <span className="bg-gradient-to-r from-orange-500 to-yellow-400 bg-clip-text font-headline text-lg font-bold uppercase text-transparent">
                         EDENSTORE
                       </span>
                     </Link>
@@ -269,7 +269,7 @@ export function Header() {
         <div className="flex items-center justify-center">
             <div className="md:hidden">
               <Link href="/" className="flex items-center space-x-2">
-                <span className="bg-gradient-to-r from-yellow-400 to-orange-500 bg-clip-text font-headline text-lg font-bold uppercase text-transparent">
+                <span className="bg-gradient-to-r from-orange-500 to-yellow-400 bg-clip-text font-headline text-lg font-bold uppercase text-transparent">
                   EDENSTORE
                 </span>
               </Link>
