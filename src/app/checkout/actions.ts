@@ -22,7 +22,7 @@ export async function fetchShippingRatesAction(pincode: string): Promise<{succes
 
     // Use environment variable or a default placeholder.
     // IMPORTANT: The user should set SHIPROCKET_PICKUP_POSTCODE in their environment.
-    const pickupPostcode = process.env.SHIPROCKET_PICKUP_POSTCODE || "110011"; 
+    const pickupPostcode = process.env.SHIPROCKET_PICKUP_POSTCODE || "160015"; 
     
     if (!pickupPostcode) {
         console.error("SHIPROCKET_PICKUP_POSTCODE is not set in .env and no default is provided.");
