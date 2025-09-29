@@ -13,6 +13,8 @@ import { Star } from "lucide-react";
 import { ProductDetailsClient } from "@/components/product-details-client";
 import { ProductCard } from "@/components/product-card";
 
+export const dynamic = 'force-dynamic';
+
 export default async function ProductPage({ params }: { params: { id: string } }) {
   const products = await getProducts();
   const product = products.find((p) => p.id === params.id);
