@@ -17,27 +17,49 @@ import {
 } from '@/components/ui/table';
 import { format } from 'date-fns';
 import { Badge } from '@/components/ui/badge';
+import { createClient } from '@/lib/supabase/client';
 
 export default function AdminUsersPage() {
   const { loading: authLoading, isadmin } = useAuth();
   const router = useRouter();
   const [users, setUsers] = useState<UserProfileInfo[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const supabase = createClient();
 
   useEffect(() => {
     if (!authLoading) {
       if (!isadmin) {
         router.push('/');
       } else {
+        // Initial fetch of users
         getAllUsers().then(result => {
           if (result.success && result.users) {
             setUsers(result.users);
           }
           setIsLoading(false);
         });
+
+        // Set up real-time subscription
+        const channel = supabase
+          .channel('realtime-users')
+          .on(
+            'postgres_changes',
+            { event: 'INSERT', schema: 'public', table: 'users' },
+            (payload) => {
+              const newUser = payload.new as UserProfileInfo;
+              // Add the new user to the state, keeping the list sorted by creation date
+              setUsers(currentUsers => [newUser, ...currentUsers]);
+            }
+          )
+          .subscribe();
+
+        // Cleanup subscription on component unmount
+        return () => {
+          supabase.removeChannel(channel);
+        };
       }
     }
-  }, [authLoading, isadmin, router]);
+  }, [authLoading, isadmin, router, supabase]);
 
   if (authLoading || isLoading) {
     return (
