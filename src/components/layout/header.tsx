@@ -65,7 +65,8 @@ const navLinks = [
 
 const adminLinks = [
     { href: "/admin/add-product", label: "Manage Products", icon: PlusCircle },
-    { href: "/admin/orders", label: "Customer Orders", icon: Users },
+    { href: "/admin/orders", label: "Customer Orders", icon: Package },
+    { href: "/admin/users", label: "Manage Users", icon: Users },
 ]
 
 export function Header() {
@@ -294,7 +295,7 @@ export function Header() {
               <div className="hidden items-center md:flex">
                   {adminLinks.map(link => (
                       <Button variant="ghost" size="sm" asChild key={link.href}>
-                          <Link href={link.href} className="flex items-center gap-1">
+                          <Link href={link.href} className={cn("flex items-center gap-1", pathname === link.href ? "text-foreground" : "text-foreground/60")}>
                               <link.icon className="h-4 w-4" />
                               {link.label}
                           </Link>
@@ -425,6 +426,3 @@ export function Header() {
     </header>
   );
 }
-
-
-    
