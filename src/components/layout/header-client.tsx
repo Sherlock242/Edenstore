@@ -29,6 +29,7 @@ import md5 from 'md5';
 import { MobileMenuSheet } from './mobile-menu';
 import { CartSheet } from '../cart-sheet';
 import { SearchSheet } from './search-sheet';
+import { useState } from 'react';
 
 const navLinks = [
   { href: '/products', label: 'T-Shirts' },
@@ -60,6 +61,7 @@ type HeaderClientProps = {
 };
 
 export function HeaderClient({ user, userProfile, isadmin }: HeaderClientProps) {
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container mx-auto flex h-16 max-w-7xl items-center px-4">
@@ -75,7 +77,7 @@ export function HeaderClient({ user, userProfile, isadmin }: HeaderClientProps) 
 
         {/* Mobile: Left side */}
         <div className="flex flex-1 items-center justify-start md:hidden">
-           <Sheet>
+           <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
             <SheetTrigger asChild>
               <Button
                 variant="ghost"
@@ -85,7 +87,7 @@ export function HeaderClient({ user, userProfile, isadmin }: HeaderClientProps) 
                 <Menu className="h-5 w-5" />
               </Button>
             </SheetTrigger>
-            <MobileMenuSheet user={user} userProfile={userProfile} isadmin={isadmin} />
+            <MobileMenuSheet user={user} userProfile={userProfile} isadmin={isadmin} setOpen={setIsMobileMenuOpen} />
           </Sheet>
         </div>
 

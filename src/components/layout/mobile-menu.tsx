@@ -27,6 +27,7 @@ type MobileMenuSheetProps = {
   user: User | null;
   userProfile: UserProfile | null;
   isadmin: boolean;
+  setOpen: (open: boolean) => void;
 };
 
 const navLinks = [
@@ -46,12 +47,12 @@ const getGravatarUrl = (email: string | null | undefined) => {
 }
 
 
-export function MobileMenuSheet({ user, userProfile, isadmin }: MobileMenuSheetProps) {
+export function MobileMenuSheet({ user, userProfile, isadmin, setOpen }: MobileMenuSheetProps) {
   return (
     <SheetContent side="left" className="flex flex-col">
       <SheetHeader>
         <SheetTitle>
-          <Link href="/" className="mb-6 flex items-center space-x-2">
+          <Link href="/" onClick={() => setOpen(false)} className="mb-6 flex items-center space-x-2">
             <span className="bg-gradient-to-r from-orange-500 to-yellow-400 bg-clip-text font-headline text-lg font-bold uppercase text-transparent">
               EDENSTORE
             </span>
@@ -63,17 +64,19 @@ export function MobileMenuSheet({ user, userProfile, isadmin }: MobileMenuSheetP
           <Link
             key={link.href}
             href={link.href}
+            onClick={() => setOpen(false)}
             className="transition-colors hover:text-foreground/80 text-foreground/60"
           >
             {link.label}
           </Link>
         ))}
-        <Link href="/wishlist" className="transition-colors hover:text-foreground/80 text-foreground/60">Wishlist</Link>
-        <Link href="/my-orders" className="transition-colors hover:text-foreground/80 text-foreground/60">My Orders</Link>
+        <Link href="/wishlist" onClick={() => setOpen(false)} className="transition-colors hover:text-foreground/80 text-foreground/60">Wishlist</Link>
+        <Link href="/my-orders" onClick={() => setOpen(false)} className="transition-colors hover:text-foreground/80 text-foreground/60">My Orders</Link>
         {isadmin && (
           <div className="pt-4 mt-4 border-t">
             <Link
                 href="/admin"
+                onClick={() => setOpen(false)}
                 className="flex items-center gap-2 text-foreground/60 transition-colors hover:text-foreground/80 py-2"
             >
                 <Shield className="h-4 w-4" />
@@ -106,6 +109,7 @@ export function MobileMenuSheet({ user, userProfile, isadmin }: MobileMenuSheetP
               asChild
               variant="ghost"
               className="w-full justify-start text-red-500 hover:bg-red-500/10 hover:text-red-600"
+              onClick={() => setOpen(false)}
             >
               <Link href="/account/delete">
                   <Trash2 className="mr-2 h-4 w-4" />
@@ -114,7 +118,7 @@ export function MobileMenuSheet({ user, userProfile, isadmin }: MobileMenuSheetP
             </Button>
           </div>
         ) : (
-          <Button asChild className="w-full bg-gradient-to-r from-orange-600 to-yellow-500 text-white">
+          <Button asChild className="w-full bg-gradient-to-r from-orange-600 to-yellow-500 text-white" onClick={() => setOpen(false)}>
             <Link href="/login">
               <LogIn className="mr-2 h-4 w-4" />
               Login
