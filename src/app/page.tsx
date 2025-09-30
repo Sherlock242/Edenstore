@@ -16,7 +16,7 @@ export default async function Home() {
 
   return (
     <div className="flex flex-col gap-16 md:gap-24">
-      <section className="relative h-[60vh] w-full text-white md:h-[75vh]">
+      <section className="relative h-[50vh] w-full text-white md:h-[60vh]">
         <Image
             src={heroImageUrl}
             alt="A dynamic anime poster for the hero section."
@@ -43,7 +43,7 @@ export default async function Home() {
         <div className="mb-12 text-center">
             <h2 className="font-headline text-3xl font-bold tracking-tighter md:text-4xl">Featured Products</h2>
             <p className="mt-2 text-muted-foreground max-w-2xl mx-auto">
-                Hand-picked designs that you won&apos;t find anywhere else.
+                Hand-picked designs that you won't find anywhere else.
             </p>
         </div>
         <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4 md:gap-6">
