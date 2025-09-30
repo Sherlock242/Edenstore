@@ -5,19 +5,40 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 
+// Using an API that provides random SFW (Safe for Work) anime-style images.
+const ANIME_IMAGE_API = "https://api.waifu.pics/sfw/waifu";
+
+type WaifuPicsResponse = {
+  url: string;
+}
+
 export default async function Home() {
   const products = await getProducts();
+  let heroImageUrl = "https://images.unsplash.com/photo-1616461932644-16a8a3832c3f?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"; // Fallback image
+  let heroImageHint = "demon fire";
+
+  try {
+    const response = await fetch(ANIME_IMAGE_API, { cache: 'no-store' });
+    if (response.ok) {
+      const data: WaifuPicsResponse = await response.json();
+      heroImageUrl = data.url;
+      heroImageHint = "anime character";
+    }
+  } catch (error) {
+    console.error("Failed to fetch anime image, using fallback.", error);
+  }
+
 
   return (
     <div className="flex flex-col gap-16 md:gap-24">
       <section className="relative h-[60vh] md:h-[75vh] w-full text-white">
         <Image
-            src="https://images.unsplash.com/photo-1616461932644-16a8a3832c3f?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
-            alt="A demonic character in a fiery setting."
+            src={heroImageUrl}
+            alt="A dynamic anime-style hero image."
             fill
             className="object-cover"
             priority
-            data-ai-hint="demon fire"
+            data-ai-hint={heroImageHint}
         />
         <div className="absolute inset-0 bg-black/50" />
         <div className="relative z-10 flex h-full flex-col items-center justify-center gap-6 text-center px-4">
