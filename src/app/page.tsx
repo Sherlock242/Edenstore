@@ -26,9 +26,8 @@ export default async function Home() {
             data-ai-hint={heroImageHint}
         />
         <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/30 to-transparent" />
-        <div className="relative z-10 flex h-full flex-col items-center justify-end p-8 text-center">
-            <div className="flex flex-col items-center gap-4">
-                
+        <div className="relative z-10 flex h-full w-full flex-col items-center justify-end p-4 text-center md:p-8">
+            <div className="absolute bottom-10">
                 <Button size="lg" asChild className="bg-primary hover:bg-primary/90 text-primary-foreground font-bold">
                     <Link href="/products">Shop Now</Link>
                 </Button>
