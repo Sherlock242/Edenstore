@@ -13,7 +13,7 @@ export default async function Home() {
     <div className="flex flex-col gap-16 md:gap-24">
       <section className="relative h-[60vh] md:h-[75vh] w-full text-white">
         <Image
-            src="/demon.jpg"
+            src="https://images.unsplash.com/photo-1616461932644-16a8a3832c3f?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
             alt="A demonic character in a fiery setting."
             fill
             className="object-cover"
