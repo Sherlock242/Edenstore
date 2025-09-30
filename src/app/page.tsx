@@ -12,12 +12,12 @@ export default async function Home() {
   let heroImageHint = "sung jin woo";
 
   try {
-    // Fetching data for Demon Slayer (Kimetsu no Yaiba) which has an ID of 38000 on MyAnimeList
-    const response = await fetch('https://api.jikan.moe/v4/anime/38000');
+    // Fetching data for Solo Leveling (Ore dake Level Up na Ken) which has an ID of 52299 on MyAnimeList
+    const response = await fetch('https://api.jikan.moe/v4/anime/52299');
     if (response.ok) {
         const animeData = await response.json();
         heroImageUrl = animeData.data.images.jpg.large_image_url;
-        heroImageHint = "demon slayer poster";
+        heroImageHint = "solo leveling poster";
     }
   } catch (error) {
     console.error("Failed to fetch hero image, using fallback.", error);
