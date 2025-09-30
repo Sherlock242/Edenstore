@@ -7,28 +7,8 @@ import { Button } from '@/components/ui/button';
 
 export default async function Home() {
   const products = await getProducts();
-  let heroImageUrl = "https://images.unsplash.com/photo-1579546929518-9e396f3cc809?q=80&w=2070&auto=format&fit=crop"; // Fallback image
-  let heroImageHint = "abstract gradient";
-
-  try {
-    // Fetch a random horizontal anime wallpaper from Unsplash
-    const response = await fetch(`https://api.unsplash.com/photos/random?query=anime-wallpaper&orientation=landscape&client_id=${process.env.UNSPLASH_ACCESS_KEY}`, { cache: 'no-store' });
-    if (response.ok) {
-      const data = await response.json();
-      if (data.urls?.regular) {
-        heroImageUrl = data.urls.regular;
-        heroImageHint = "anime wallpaper";
-      }
-    } else {
-       // Fallback to a pre-selected high-quality image if the API fails
-       heroImageUrl = "https://images.unsplash.com/photo-1608889476518-738c9b1dcb40?q=80&w=2070&auto=format&fit=crop";
-       heroImageHint = "anime character close up";
-    }
-  } catch (error) {
-    console.error("Failed to fetch anime poster, using fallback.", error);
-    heroImageUrl = "https://images.unsplash.com/photo-1612036782150-1d8ba08f3a74?q=80&w=2070&auto=format&fit=crop";
-    heroImageHint = "abstract anime explosion";
-  }
+  const heroImageUrl = "https://images.unsplash.com/photo-1711732734189-b86588856234?q=80&w=2070&auto=format&fit=crop";
+  const heroImageHint = "sung jin woo";
 
 
   return (
@@ -36,7 +16,7 @@ export default async function Home() {
       <section className="relative h-[40vh] w-full text-white">
         <Image
             src={heroImageUrl}
-            alt="A dynamic anime wallpaper."
+            alt="A dynamic anime wallpaper of Sung Jin-Woo."
             fill
             className="object-cover"
             priority
