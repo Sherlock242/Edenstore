@@ -13,16 +13,14 @@ export default async function Home() {
   return (
     <div className="flex flex-col gap-16 md:gap-24">
       <section className="relative h-[60vh] md:h-[75vh] w-full text-white">
-        {heroImage && (
-            <Image
-                src={heroImage.imageUrl}
-                alt={heroImage.description}
-                fill
-                className="object-cover"
-                priority
-                data-ai-hint={heroImage.imageHint}
-            />
-        )}
+        <Image
+            src="https://images.unsplash.com/photo-1531844251246-9a1bfaae09fc?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxfHxibHVycnklMjBuaWdodCUyMGNpdHl8ZW58MHx8fHwxNzU4OTkzOTM4fDA&ixlib=rb-4.1.0&q=80&w=1920"
+            alt="A person with an umbrella in a neon-lit city at night."
+            fill
+            className="object-cover"
+            priority
+            data-ai-hint="blurry night city"
+        />
         <div className="absolute inset-0 bg-black/50" />
         <div className="relative z-10 flex h-full flex-col items-center justify-center gap-6 text-center px-4">
             <h1 className="text-4xl md:text-6xl font-extrabold font-headline tracking-tighter drop-shadow-lg">
