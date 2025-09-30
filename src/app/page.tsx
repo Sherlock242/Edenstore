@@ -5,27 +5,35 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 
-// Using an API that provides random SFW (Safe for Work) anime-style images.
-const ANIME_IMAGE_API = "https://api.waifu.pics/sfw/waifu";
+const ANIME_POSTER_API = "https://api.jikan.moe/v4/random/anime";
 
-type WaifuPicsResponse = {
-  url: string;
+type JikanResponse = {
+  data: {
+    images: {
+      jpg: {
+        large_image_url: string;
+      }
+    }
+  }
 }
 
 export default async function Home() {
   const products = await getProducts();
-  let heroImageUrl = "https://images.unsplash.com/photo-1616461932644-16a8a3832c3f?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"; // Fallback image
-  let heroImageHint = "demon fire";
+  let heroImageUrl = "https://images.unsplash.com/photo-1579546929518-9e396f3cc809?q=80&w=2070&auto=format&fit=crop"; // Fallback image
+  let heroImageHint = "abstract gradient";
 
   try {
-    const response = await fetch(ANIME_IMAGE_API, { cache: 'no-store' });
+    // Fetch a random anime from Jikan API
+    const response = await fetch(ANIME_POSTER_API, { cache: 'no-store' });
     if (response.ok) {
-      const data: WaifuPicsResponse = await response.json();
-      heroImageUrl = data.url;
-      heroImageHint = "anime character";
+      const data: JikanResponse = await response.json();
+      if (data.data?.images?.jpg?.large_image_url) {
+        heroImageUrl = data.data.images.jpg.large_image_url;
+        heroImageHint = "anime poster";
+      }
     }
   } catch (error) {
-    console.error("Failed to fetch anime image, using fallback.", error);
+    console.error("Failed to fetch anime poster, using fallback.", error);
   }
 
 
@@ -34,7 +42,7 @@ export default async function Home() {
       <section className="relative h-[40vh] w-full text-white">
         <Image
             src={heroImageUrl}
-            alt="A dynamic anime-style hero image."
+            alt="A dynamic anime poster."
             fill
             className="object-cover"
             priority
