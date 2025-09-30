@@ -1,42 +1,26 @@
-'use client';
 
-import { useEffect, useState, useTransition } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { useAuth } from '@/contexts/auth-context';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { getUserOrders, type OrderSummary } from './actions';
 import { format } from 'date-fns';
-import { Loader2, PackageSearch } from 'lucide-react';
+import { PackageSearch } from 'lucide-react';
+import { createClient } from '@/lib/supabase/server';
+import { redirect } from 'next/navigation';
 
-export default function MyOrdersPage() {
-  const { user, loading: authLoading } = useAuth();
-  const [orders, setOrders] = useState<OrderSummary[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (!authLoading) {
-      if (user) {
-        setIsLoading(true);
-        getUserOrders()
-          .then(result => {
-            if (result.success && result.orders) {
-              setOrders(result.orders);
-            } else {
-              setError(result.message);
-            }
-          })
-          .finally(() => setIsLoading(false));
-      } else {
-        setIsLoading(false); // Not logged in, so not loading
-      }
-    }
-  }, [user, authLoading]);
+export default async function MyOrdersPage() {
+  const supabase = createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  
+  if (!user) {
+    redirect('/login?message=You must be logged in to view your orders.');
+  }
+
+  const { orders, message } = await getUserOrders();
 
   const getStatusInfo = (status: OrderSummary['status']) => {
     switch (status) {
@@ -50,33 +34,12 @@ export default function MyOrdersPage() {
   const calculateOrderTotal = (order: OrderSummary) => {
     return order.items.reduce((total, item) => total + (item.price_at_purchase * item.quantity), 0);
   }
-
-  if (authLoading || isLoading) {
-    return (
-      <div className="container mx-auto flex min-h-[60vh] max-w-7xl items-center justify-center px-4 py-8 text-center md:py-12">
-        <Loader2 className="h-12 w-12 animate-spin text-muted-foreground" />
-      </div>
-    );
-  }
-
-  if (!user) {
-    return (
-      <div className="container mx-auto flex min-h-[60vh] max-w-4xl flex-col items-center justify-center gap-4 px-4 py-8 text-center md:py-12">
-        <h1 className="font-headline text-3xl font-bold">Access Denied</h1>
-        <p className="text-muted-foreground">You must be logged in to view your order history.</p>
-        <Button asChild>
-          <Link href="/login">Log In</Link>
-        </Button>
-      </div>
-    );
-  }
   
-  if (error) {
+  if (!orders && message) {
      return (
         <div className="container mx-auto flex min-h-[60vh] max-w-4xl flex-col items-center justify-center gap-4 px-4 py-8 text-center md:py-12">
             <h1 className="font-headline text-3xl font-bold text-destructive">An Error Occurred</h1>
-            <p className="text-muted-foreground">{error}</p>
-            <Button variant="outline" onClick={() => window.location.reload()}>Try Again</Button>
+            <p className="text-muted-foreground">{message}</p>
         </div>
      );
   }
@@ -88,7 +51,7 @@ export default function MyOrdersPage() {
         <p className="text-muted-foreground">View the history of all your purchases.</p>
       </div>
 
-      {orders.length > 0 ? (
+      {orders && orders.length > 0 ? (
         <div className="space-y-6">
           {orders.map(order => {
             const statusInfo = getStatusInfo(order.status);

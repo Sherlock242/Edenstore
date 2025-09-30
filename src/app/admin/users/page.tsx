@@ -1,9 +1,7 @@
 
 'use client';
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { useAuth } from '@/contexts/auth-context';
 import type { UserProfileInfo } from './actions';
 import { getAllUsers } from './actions';
 import { Loader2, Users } from 'lucide-react';
@@ -20,60 +18,44 @@ import { Badge } from '@/components/ui/badge';
 import { createClient } from '@/lib/supabase/client';
 
 export default function AdminUsersPage() {
-  const { loading: authLoading, isadmin } = useAuth();
-  const router = useRouter();
   const [users, setUsers] = useState<UserProfileInfo[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const supabase = createClient();
 
   useEffect(() => {
-    if (!authLoading) {
-      if (!isadmin) {
-        router.push('/');
-      } else {
-        // Initial fetch of users
-        getAllUsers().then(result => {
-          if (result.success && result.users) {
-            setUsers(result.users);
-          }
-          setIsLoading(false);
-        });
-
-        // Set up real-time subscription
-        const channel = supabase
-          .channel('realtime-users')
-          .on(
-            'postgres_changes',
-            { event: 'INSERT', schema: 'public', table: 'users' },
-            (payload) => {
-              const newUser = payload.new as UserProfileInfo;
-              // Add the new user to the state, keeping the list sorted by creation date
-              setUsers(currentUsers => [newUser, ...currentUsers]);
-            }
-          )
-          .subscribe();
-
-        // Cleanup subscription on component unmount
-        return () => {
-          supabase.removeChannel(channel);
-        };
+    // Initial fetch of users
+    getAllUsers().then(result => {
+      if (result.success && result.users) {
+        setUsers(result.users);
       }
-    }
-  }, [authLoading, isadmin, router, supabase]);
+      setIsLoading(false);
+    });
 
-  if (authLoading || isLoading) {
+    // Set up real-time subscription
+    const channel = supabase
+      .channel('realtime-users')
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'users' },
+        (payload) => {
+          const newUser = payload.new as UserProfileInfo;
+          // Add the new user to the state, keeping the list sorted by creation date
+          setUsers(currentUsers => [newUser, ...currentUsers]);
+        }
+      )
+      .subscribe();
+
+    // Cleanup subscription on component unmount
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [supabase]);
+
+  if (isLoading) {
     return (
       <div className="container mx-auto flex min-h-[60vh] max-w-7xl items-center justify-center px-4 py-8 text-center md:py-12">
         <Loader2 className="h-12 w-12 animate-spin text-muted-foreground" />
         <p className="sr-only">Loading users...</p>
-      </div>
-    );
-  }
-
-  if (!isadmin) {
-    return (
-      <div className="container mx-auto max-w-7xl px-4 py-8 md:py-12 text-center">
-        <p>Unauthorized access.</p>
       </div>
     );
   }

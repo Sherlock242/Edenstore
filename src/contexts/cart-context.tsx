@@ -10,7 +10,6 @@ import {
   useEffect,
   useCallback,
 } from 'react';
-import { useAuth } from './auth-context';
 import {
   getCartItems,
   addCartItem,
@@ -18,6 +17,7 @@ import {
   removeCartItem,
 } from '@/app/cart/actions';
 import { useToast } from '@/hooks/use-toast';
+import { createClient } from '@/lib/supabase/client';
 
 export type CartItem = {
   product: Product;
@@ -103,10 +103,11 @@ const CartContext = createContext<CartContextType | undefined>(undefined);
 
 export function CartProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(cartReducer, initialState);
-  const { user, loading: authLoading } = useAuth();
   const { toast } = useToast();
+  const supabase = createClient();
 
   const loadCart = useCallback(async () => {
+    const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
       dispatch({ type: 'SET_ITEMS', payload: [] });
       return;
@@ -118,15 +119,26 @@ export function CartProvider({ children }: { children: ReactNode }) {
     } else {
       dispatch({ type: 'SET_ITEMS', payload: [] });
     }
-  }, [user]);
+  }, [supabase]);
 
   useEffect(() => {
-    if (!authLoading) {
-      loadCart();
-    }
-  }, [user, authLoading, loadCart]);
+    loadCart();
+
+    const { data: authListener } = supabase.auth.onAuthStateChange(
+      (event, session) => {
+        if (event === 'SIGNED_IN' || event === 'SIGNED_OUT' || event === 'USER_DELETED') {
+          loadCart();
+        }
+      }
+    );
+
+    return () => {
+      authListener?.subscription.unsubscribe();
+    };
+  }, [loadCart, supabase]);
 
   const addToCart = async (item: Omit<CartItem, 'quantity'> & { quantity?: number }) => {
+    const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
       toast({ variant: 'destructive', title: 'Error', description: 'You must be logged in to add items to your cart.' });
       return;
@@ -155,6 +167,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
   };
 
   const updateQuantity = async (productId: string, size: string, color: string, quantity: number) => {
+     const { data: { user } } = await supabase.auth.getUser();
      if (!user) return;
      
      if (quantity > 0) {
@@ -172,6 +185,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
   };
 
   const removeFromCart = async (productId: string, size: string, color: string) => {
+     const { data: { user } } = await supabase.auth.getUser();
      if (!user) return;
      // Optimistically update UI
      const itemToRemove = state.items.find(i => i.product.id === productId && i.size === size && i.color === color);

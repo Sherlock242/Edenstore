@@ -1,12 +1,8 @@
 
-'use client';
-
-import { useState } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
+import { headers } from 'next/headers';
+import { createClient } from '@/lib/supabase/server';
+import { redirect } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import {
   Form,
@@ -18,86 +14,79 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
-import { useToast } from '@/hooks/use-toast';
-import { useAuth } from '@/contexts/auth-context';
-import { loginSchema } from '@/lib/zod-schemas';
 
+export default function LoginPage({ searchParams }: { searchParams: { message: string } }) {
 
-export default function LoginPage() {
-  const router = useRouter();
-  const { toast } = useToast();
-  const { signInWithEmail } = useAuth();
-  const [isLoading, setIsLoading] = useState(false);
+  const signIn = async (formData: FormData) => {
+    'use server'
 
-  const form = useForm<z.infer<typeof loginSchema>>({
-    resolver: zodResolver(loginSchema),
-    defaultValues: {
-      email: '',
-      password: '',
-    },
-  });
+    const email = formData.get('email') as string
+    const password = formData.get('password') as string
+    const supabase = createClient()
 
-  async function onSubmit(values: z.infer<typeof loginSchema>) {
-    setIsLoading(true);
-    const { error } = await signInWithEmail(values.email, values.password);
+    const { error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    })
 
     if (error) {
-      toast({
-        variant: 'destructive',
-        title: 'Login Failed',
-        description: error.message,
-      });
-    } else {
-      toast({
-        title: 'Success!',
-        description: "You've successfully logged in.",
-      });
-      router.push('/');
+      return redirect(`/login?message=Could not authenticate user: ${error.message}`)
     }
-    setIsLoading(false);
+
+    return redirect('/')
+  }
+
+  const signUp = async (formData: FormData) => {
+    'use server'
+
+    const origin = headers().get('origin')
+    const email = formData.get('email') as string
+    const password = formData.get('password') as string
+    const supabase = createClient()
+
+    const { error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        emailRedirectTo: `${origin}/auth/callback`,
+      },
+    })
+
+    if (error) {
+      return redirect('/login?message=Could not authenticate user')
+    }
+
+    return redirect('/login?message=Check email to continue sign in process')
   }
 
   return (
     <div className="container mx-auto flex min-h-[80vh] items-center justify-center px-4 py-8 md:py-12">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
-          <CardTitle>Welcome Back!</CardTitle>
+          <CardTitle>Welcome!</CardTitle>
           <CardDescription>Sign in to continue to your account.</CardDescription>
         </CardHeader>
         <CardContent>
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-              <FormField
-                control={form.control}
-                name="email"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Email Address</FormLabel>
-                    <FormControl>
-                      <Input type="email" placeholder="you@example.com" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="password"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Password</FormLabel>
-                    <FormControl>
-                      <Input type="password" placeholder="••••••••" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <Button type="submit" className="w-full" disabled={isLoading}>
-                {isLoading ? 'Signing In...' : 'Sign In'}
-              </Button>
-            </form>
-          </Form>
+          <form className="space-y-6">
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="email">Email Address</Label>
+                <Input id="email" name="email" type="email" placeholder="you@example.com" required />
+              </div>
+              <div>
+                <Label htmlFor="password">Password</Label>
+                <Input id="password" name="password" type="password" placeholder="••••••••" required />
+              </div>
+            </div>
+            <Button formAction={signIn} className="w-full">
+              Sign In
+            </Button>
+            {searchParams?.message && (
+              <p className="mt-4 p-4 bg-foreground/10 text-foreground text-center">
+                {searchParams.message}
+              </p>
+            )}
+          </form>
         </CardContent>
         <CardFooter className="flex flex-col gap-4">
           <p className="text-center text-sm text-muted-foreground">
@@ -111,5 +100,3 @@ export default function LoginPage() {
     </div>
   );
 }
-
-    

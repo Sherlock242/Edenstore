@@ -1,11 +1,9 @@
-// src/app/admin/page.tsx
-'use client';
-import { useEffect } from 'react';
+
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import { Card, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { useAuth } from '@/contexts/auth-context';
 import { PlusCircle, Package, Users, Settings, ArrowRight } from 'lucide-react';
+import { createClient } from '@/lib/supabase/server';
+import { redirect } from 'next/navigation';
 
 const adminLinks = [
     { href: "/admin/add-product", label: "Manage Products", description: "Add, edit, and remove products.", icon: PlusCircle },
@@ -14,23 +12,22 @@ const adminLinks = [
     { href: "/admin/settings", label: "Site Settings", description: "Manage global site settings.", icon: Settings },
 ];
 
-export default function AdminDashboardPage() {
-  const { user, loading, isadmin } = useAuth();
-  const router = useRouter();
+export default async function AdminDashboardPage() {
+  const supabase = createClient();
+  const { data: { user } } = await supabase.auth.getUser();
 
-  useEffect(() => {
-    if (!loading && !isadmin) {
-      router.push('/');
-    }
-  }, [user, loading, isadmin, router]);
+  if (!user) {
+    redirect('/login');
+  }
 
+  const { data: profile } = await supabase
+    .from('users')
+    .select('role, email')
+    .eq('id', user.id)
+    .single();
 
-  if (loading || !isadmin) {
-    return (
-      <div className="container mx-auto max-w-7xl px-4 py-8 md:py-12 text-center">
-        <p>Loading or unauthorized...</p>
-      </div>
-    );
+  if (profile?.role !== 'admin') {
+      redirect('/');
   }
 
   return (

@@ -1,7 +1,6 @@
-// src/app/admin/settings/page.tsx
+
 'use client';
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -18,7 +17,6 @@ import {
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { useAuth } from '@/contexts/auth-context';
 import { getHeroImageUrl, updateHeroImage } from './actions';
 import Image from 'next/image';
 import { Upload } from 'lucide-react';
@@ -37,8 +35,6 @@ const formSchema = z.object({
 });
 
 export default function SiteSettingsPage() {
-  const { user, loading, isadmin } = useAuth();
-  const router = useRouter();
   const { toast } = useToast();
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -49,12 +45,6 @@ export default function SiteSettingsPage() {
       heroImage: undefined,
     },
   });
-
-  useEffect(() => {
-    if (!loading && !isadmin) {
-      router.push('/');
-    }
-  }, [user, loading, isadmin, router]);
   
   useEffect(() => {
       // Fetch the current hero image on component mount
@@ -88,14 +78,6 @@ export default function SiteSettingsPage() {
       });
     }
     setIsSubmitting(false);
-  }
-
-  if (loading || !isadmin) {
-    return (
-      <div className="container mx-auto max-w-7xl px-4 py-8 md:py-12 text-center">
-        <p>Loading or unauthorized...</p>
-      </div>
-    );
   }
 
   return (

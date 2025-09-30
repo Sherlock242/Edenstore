@@ -1,5 +1,4 @@
 
-// src/app/checkout/page.tsx
 'use client';
 
 import { useCart } from '@/contexts/cart-context';
@@ -11,18 +10,19 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import Script from 'next/script';
-import { useState, useEffect, useTransition, useCallback } from 'react';
+import { useState, useEffect, useTransition } from 'react';
 import { createRazorpayOrder, verifyPaymentAndCreateOrder, fetchShippingRatesAction } from './actions';
 import { useToast } from '@/hooks/use-toast';
-import { useAuth } from '@/contexts/auth-context';
 import { useRouter } from 'next/navigation';
 import { Loader2 } from 'lucide-react';
+import { createClient } from '@/lib/supabase/client';
+import type { User } from '@supabase/supabase-js';
 
 export default function CheckoutPage() {
   const { state, dispatch } = useCart();
-  const { user } = useAuth();
   const { toast } = useToast();
   const router = useRouter();
+  const [user, setUser] = useState<User | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   
   // State for shipping information
@@ -43,10 +43,14 @@ export default function CheckoutPage() {
 
 
   useEffect(() => {
-    if (user) {
-      setEmail(user.email || '');
-    }
-  }, [user]);
+    const supabase = createClient();
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      setUser(user);
+      if (user) {
+        setEmail(user.email || '');
+      }
+    })
+  }, []);
   
   // Debounce pincode input
   useEffect(() => {

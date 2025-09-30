@@ -1,61 +1,41 @@
 
-'use client';
-
-import { useState } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
+import { headers } from 'next/headers';
+import { createClient } from '@/lib/supabase/server';
+import { redirect } from 'next/navigation';
 import { Button } from '@/components/ui/button';
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
-import { useToast } from '@/hooks/use-toast';
-import { useAuth } from '@/contexts/auth-context';
-import { signupSchema } from '@/lib/zod-schemas';
 
+export default function SignupPage({ searchParams }: { searchParams: { message: string } }) {
 
-export default function SignupPage() {
-  const router = useRouter();
-  const { toast } = useToast();
-  const { signUpWithEmail } = useAuth();
-  const [isLoading, setIsLoading] = useState(false);
+  const signUp = async (formData: FormData) => {
+    'use server'
 
-  const form = useForm<z.infer<typeof signupSchema>>({
-    resolver: zodResolver(signupSchema),
-    defaultValues: {
-      email: '',
-      password: '',
-      confirmPassword: ''
-    },
-  });
+    const origin = headers().get('origin')
+    const email = formData.get('email') as string
+    const password = formData.get('password') as string
+    const confirmPassword = formData.get('confirmPassword') as string
+    const supabase = createClient()
 
-  async function onSubmit(values: z.infer<typeof signupSchema>) {
-    setIsLoading(true);
-    const { error } = await signUpWithEmail(values.email, values.password);
+    if (password !== confirmPassword) {
+        return redirect('/signup?message=Passwords do not match');
+    }
+
+    const { error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        emailRedirectTo: `${origin}/auth/callback`,
+      },
+    })
 
     if (error) {
-      toast({
-        variant: 'destructive',
-        title: 'Signup Failed',
-        description: error.message,
-      });
-    } else {
-      toast({
-        title: 'Account Created!',
-        description: "Check your email to continue the sign-up process.",
-      });
-      router.push('/login');
+      return redirect(`/signup?message=Could not create user: ${error.message}`)
     }
-    setIsLoading(false);
+
+    return redirect('/login?message=Check your email to confirm sign up.')
   }
 
   return (
@@ -66,52 +46,30 @@ export default function SignupPage() {
           <CardDescription>Join our community of anime lovers.</CardDescription>
         </CardHeader>
         <CardContent>
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-              <FormField
-                control={form.control}
-                name="email"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Email Address</FormLabel>
-                    <FormControl>
-                      <Input type="email" placeholder="you@example.com" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="password"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Password</FormLabel>
-                    <FormControl>
-                      <Input type="password" placeholder="••••••••" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-               <FormField
-                control={form.control}
-                name="confirmPassword"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Confirm Password</FormLabel>
-                    <FormControl>
-                      <Input type="password" placeholder="••••••••" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <Button type="submit" className="w-full" disabled={isLoading}>
-                 {isLoading ? 'Creating Account...' : 'Create Account'}
-              </Button>
-            </form>
-          </Form>
+          <form className="space-y-6">
+            <div className="space-y-4">
+                <div>
+                    <Label htmlFor="email">Email Address</Label>
+                    <Input id="email" name="email" type="email" placeholder="you@example.com" required />
+                </div>
+                <div>
+                    <Label htmlFor="password">Password</Label>
+                    <Input id="password" name="password" type="password" placeholder="••••••••" required />
+                </div>
+                <div>
+                    <Label htmlFor="confirmPassword">Confirm Password</Label>
+                    <Input id="confirmPassword" name="confirmPassword" type="password" placeholder="••••••••" required />
+                </div>
+            </div>
+            <Button formAction={signUp} className="w-full">
+                Create Account
+            </Button>
+            {searchParams?.message && (
+                <p className="mt-4 p-4 bg-foreground/10 text-foreground text-center">
+                    {searchParams.message}
+                </p>
+            )}
+          </form>
         </CardContent>
         <CardFooter className="flex flex-col gap-4">
           <p className="text-center text-sm text-muted-foreground">

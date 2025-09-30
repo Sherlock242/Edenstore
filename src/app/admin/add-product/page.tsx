@@ -1,25 +1,15 @@
-// src/app/admin/add-product/page.tsx
+
 'use client';
-import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { useAuth } from '@/contexts/auth-context';
 import { AddProductForm } from '@/app/admin/add-product/add-product-form';
 import { ManageProducts } from '@/app/admin/add-product/manage-products';
 import type { Product } from '@/app/actions';
 
 export default function AddProductPage() {
-  const { user, loading, isadmin } = useAuth();
-  const router = useRouter();
   const [activeTab, setActiveTab] = useState('add');
   const [productToEdit, setProductToEdit] = useState<Product | null>(null);
-
-  useEffect(() => {
-    if (!loading && !isadmin) {
-      router.push('/');
-    }
-  }, [user, loading, isadmin, router]);
 
   const handleEditProduct = (product: Product) => {
     setProductToEdit(product);
@@ -30,14 +20,6 @@ export default function AddProductPage() {
     setProductToEdit(null);
     // We can optionally switch back to the manage tab after an update
     // setActiveTab('manage');
-  }
-
-  if (loading || !isadmin) {
-    return (
-      <div className="container mx-auto max-w-7xl px-4 py-8 md:py-12 text-center">
-        <p>Loading or unauthorized...</p>
-      </div>
-    );
   }
 
   return (
