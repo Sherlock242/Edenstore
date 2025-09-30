@@ -4,29 +4,19 @@ import { ProductCard } from '@/components/product-card';
 import Link from 'next/link';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
+import { getHeroImageUrl } from '@/app/admin/settings/actions';
 
 export default async function Home() {
   const products = await getProducts();
-  
-  let heroImageUrl = "https://images.unsplash.com/photo-1711732734189-b86588856234?q=80&w=2070&auto=format&fit=crop";
-  let heroImageHint = "sung jin woo";
+  const heroImageResult = await getHeroImageUrl();
 
-  try {
-    // Fetching data for Solo Leveling (Ore dake Level Up na Ken) which has an ID of 52299 on MyAnimeList
-    const response = await fetch('https://api.jikan.moe/v4/anime/52299');
-    if (response.ok) {
-        const animeData = await response.json();
-        heroImageUrl = animeData.data.images.jpg.large_image_url;
-        heroImageHint = "solo leveling poster";
-    }
-  } catch (error) {
-    console.error("Failed to fetch hero image, using fallback.", error);
-  }
+  let heroImageUrl = heroImageResult.success && heroImageResult.url ? heroImageResult.url : "https://images.unsplash.com/photo-1711732734189-b86588856234?q=80&w=2070&auto=format&fit=crop";
+  let heroImageHint = "sung jin woo";
 
 
   return (
     <div className="flex flex-col gap-16 md:gap-24">
-      <section className="relative h-[40vh] w-full text-white">
+      <section className="relative h-[60vh] w-full text-white md:h-[75vh]">
         <Image
             src={heroImageUrl}
             alt="A dynamic anime poster for the hero section."
@@ -37,6 +27,15 @@ export default async function Home() {
         />
         <div className="absolute inset-0 bg-black/50" />
         <div className="relative z-10 flex h-full flex-col items-center justify-center gap-6 text-center px-4">
+            <h1 className="text-4xl md:text-6xl font-extrabold font-headline tracking-tighter drop-shadow-lg">
+                Your Style, Your Story
+            </h1>
+            <p className="max-w-xl text-lg text-white/80">
+                Discover exclusive, high-quality t-shirts inspired by your favorite anime.
+            </p>
+            <Button size="lg" asChild className="bg-primary hover:bg-primary/90 text-primary-foreground font-bold">
+                <Link href="/products">Shop Now</Link>
+            </Button>
         </div>
       </section>
 
@@ -44,7 +43,7 @@ export default async function Home() {
         <div className="mb-12 text-center">
             <h2 className="font-headline text-3xl font-bold tracking-tighter md:text-4xl">Featured Products</h2>
             <p className="mt-2 text-muted-foreground max-w-2xl mx-auto">
-                
+                Hand-picked designs that you won&apos;t find anywhere else.
             </p>
         </div>
         <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4 md:gap-6">

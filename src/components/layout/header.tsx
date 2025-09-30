@@ -17,6 +17,7 @@ import {
   Package,
   Users,
   Loader2,
+  Settings,
 } from "lucide-react";
 import Image from "next/image";
 import { useDebounce } from 'use-debounce';
@@ -71,6 +72,7 @@ const adminLinks = [
     { href: "/admin/add-product", label: "Manage Products", icon: PlusCircle },
     { href: "/admin/orders", label: "Customer Orders", icon: Package },
     { href: "/admin/users", label: "Manage Users", icon: Users },
+    { href: "/admin/settings", label: "Site Settings", icon: Settings },
 ]
 
 export function Header() {
@@ -445,38 +447,40 @@ export function Header() {
                 </div>
             </form>
              {searchQuery && (
-              <div className="absolute top-full mt-2 w-full max-w-7xl left-1/2 -translate-x-1/2 px-4">
-                <div className="bg-background border rounded-md shadow-lg">
-                  <ScrollArea className="max-h-[50vh]">
-                    {isFetchingSuggestions && (
-                      <div className="p-4 text-center text-sm text-muted-foreground">
-                        <Loader2 className="h-5 w-5 animate-spin inline-block mr-2" />
-                        Loading...
-                      </div>
-                    )}
-                    {!isFetchingSuggestions && suggestions.length > 0 && (
-                      <div className="flex flex-col">
-                        {suggestions.map(product => (
-                          <div 
-                            key={product.id}
-                            onClick={() => handleSuggestionClick(product.id)}
-                            className="flex items-center gap-4 p-3 hover:bg-accent cursor-pointer"
-                          >
-                            <Image src={product.image.url} alt={product.name} width={40} height={50} className="rounded-md object-cover" />
-                            <div className="flex flex-col">
-                                <p className="font-semibold text-sm">{product.name}</p>
-                                <p className="text-xs text-muted-foreground">{product.category}</p>
+              <div className="absolute top-full mt-2 w-full left-0 px-4">
+                <div className="container mx-auto max-w-7xl">
+                    <div className="bg-background border rounded-md shadow-lg">
+                    <ScrollArea className="max-h-[50vh]">
+                        {isFetchingSuggestions && (
+                        <div className="p-4 text-center text-sm text-muted-foreground">
+                            <Loader2 className="h-5 w-5 animate-spin inline-block mr-2" />
+                            Loading...
+                        </div>
+                        )}
+                        {!isFetchingSuggestions && suggestions.length > 0 && (
+                        <div className="flex flex-col">
+                            {suggestions.map(product => (
+                            <div 
+                                key={product.id}
+                                onClick={() => handleSuggestionClick(product.id)}
+                                className="flex items-center gap-4 p-3 hover:bg-accent cursor-pointer"
+                            >
+                                <Image src={product.image.url} alt={product.name} width={40} height={50} className="rounded-md object-cover" />
+                                <div className="flex flex-col">
+                                    <p className="font-semibold text-sm">{product.name}</p>
+                                    <p className="text-xs text-muted-foreground">{product.category}</p>
+                                </div>
                             </div>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                    {!isFetchingSuggestions && debouncedSearchQuery && suggestions.length === 0 && (
-                      <div className="p-4 text-center text-sm text-muted-foreground">
-                        No results found for &quot;{debouncedSearchQuery}&quot;
-                      </div>
-                    )}
-                  </ScrollArea>
+                            ))}
+                        </div>
+                        )}
+                        {!isFetchingSuggestions && debouncedSearchQuery && suggestions.length === 0 && (
+                        <div className="p-4 text-center text-sm text-muted-foreground">
+                            No results found for &quot;{debouncedSearchQuery}&quot;
+                        </div>
+                        )}
+                    </ScrollArea>
+                    </div>
                 </div>
               </div>
             )}
