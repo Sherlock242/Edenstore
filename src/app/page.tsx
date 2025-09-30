@@ -7,8 +7,21 @@ import { Button } from '@/components/ui/button';
 
 export default async function Home() {
   const products = await getProducts();
-  const heroImageUrl = "https://images.unsplash.com/photo-1711732734189-b86588856234?q=80&w=2070&auto=format&fit=crop";
-  const heroImageHint = "sung jin woo";
+  
+  let heroImageUrl = "https://images.unsplash.com/photo-1711732734189-b86588856234?q=80&w=2070&auto=format&fit=crop";
+  let heroImageHint = "sung jin woo";
+
+  try {
+    // Fetching data for Demon Slayer (Kimetsu no Yaiba) which has an ID of 38000 on MyAnimeList
+    const response = await fetch('https://api.jikan.moe/v4/anime/38000');
+    if (response.ok) {
+        const animeData = await response.json();
+        heroImageUrl = animeData.data.images.jpg.large_image_url;
+        heroImageHint = "demon slayer poster";
+    }
+  } catch (error) {
+    console.error("Failed to fetch hero image, using fallback.", error);
+  }
 
 
   return (
@@ -16,7 +29,7 @@ export default async function Home() {
       <section className="relative h-[40vh] w-full text-white">
         <Image
             src={heroImageUrl}
-            alt="A dynamic anime wallpaper of Sung Jin-Woo."
+            alt="A dynamic anime poster for the hero section."
             fill
             className="object-cover"
             priority
