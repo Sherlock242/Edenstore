@@ -30,9 +30,6 @@ export default async function Home() {
             <h1 className="text-4xl md:text-6xl font-extrabold font-headline tracking-tighter drop-shadow-lg">
                 Your Style, Your Story
             </h1>
-            <p className="max-w-xl text-lg text-white/80">
-                Discover exclusive, high-quality t-shirts inspired by your favorite anime.
-            </p>
             <Button size="lg" asChild className="bg-primary hover:bg-primary/90 text-primary-foreground font-bold">
                 <Link href="/products">Shop Now</Link>
             </Button>
