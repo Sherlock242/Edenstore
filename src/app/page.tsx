@@ -28,9 +28,6 @@ export default async function Home() {
             <h1 className="text-4xl md:text-6xl font-extrabold font-headline tracking-tighter drop-shadow-lg">
                 Your Style, Your Story
             </h1>
-            <p className="text-lg md:text-xl text-muted-foreground bg-black/30 px-4 py-2 rounded-md backdrop-blur-sm">
-                The Ultimate Destination for Anime T-Shirts
-            </p>
             <Button size="lg" asChild className="bg-primary hover:bg-primary/90 text-primary-foreground font-bold">
                 <Link href="/products">Shop Now</Link>
             </Button>
@@ -40,7 +37,6 @@ export default async function Home() {
       <section id="products" className="container mx-auto px-4 pb-16">
         <div className="mb-12 text-center">
             <h2 className="font-headline text-3xl font-bold tracking-tighter md:text-4xl">Featured Products</h2>
-            <p className="mx-auto mt-2 max-w-2xl text-muted-foreground">Hand-picked collection of our best-selling anime apparel.</p>
         </div>
         <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4 md:gap-6">
           {products.slice(0, 8).map((product) => (
