@@ -18,6 +18,7 @@ import {
   Users,
   Loader2,
   Settings,
+  Shield,
 } from "lucide-react";
 import Image from "next/image";
 import { useDebounce } from 'use-debounce';
@@ -69,10 +70,7 @@ const navLinks = [
 ];
 
 const adminLinks = [
-    { href: "/admin/add-product", label: "Manage Products", icon: PlusCircle },
-    { href: "/admin/orders", label: "Customer Orders", icon: Package },
-    { href: "/admin/users", label: "Manage Users", icon: Users },
-    { href: "/admin/settings", label: "Site Settings", icon: Settings },
+    { href: "/admin", label: "Admin", icon: Shield },
 ]
 
 export function Header() {
@@ -252,7 +250,6 @@ export function Header() {
                   <Link href="/my-orders" onClick={() => setIsMobileMenuOpen(false)} className="transition-colors hover:text-foreground/80 text-foreground/60">My Orders</Link>
                 {isadmin && (
                   <div className="pt-4 mt-4 border-t">
-                  <p className="px-2 py-1 text-xs font-semibold text-muted-foreground">Admin</p>
                   {adminLinks.map(link => (
                       <Link
                           key={link.href}
