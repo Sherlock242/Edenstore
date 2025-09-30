@@ -2,9 +2,9 @@
   "placeholderImages": [
     {
       "id": "hero-1",
-      "description": "A wide, cinematic shot of a neon-lit anime city street at night.",
-      "imageUrl": "https://images.unsplash.com/photo-1480796927426-f609979314bd?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw5fHxhbmltZSUyMGNpdHl8ZW58MHx8fHwxNzU4OTkwMjQ0fDA&ixlib=rb-4.1.0&q=80&w=1080",
-      "imageHint": "anime city"
+      "description": "A wide, cinematic shot of a neon-lit anime city street at night, with a person walking under an umbrella.",
+      "imageUrl": "https://images.unsplash.com/photo-1531844251246-9a1bfaae09fc?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxfHxibHVycnklMjBuaWdodCUyMGNpdHl8ZW58MHx8fHwxNzU4OTkzOTM4fDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "blurry night city"
     },
     {
       "id": "carousel-1",
