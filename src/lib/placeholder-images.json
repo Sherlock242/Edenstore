@@ -7,6 +7,24 @@
       "imageHint": "anime city"
     },
     {
+      "id": "carousel-1",
+      "description": "A stylish anime character posing in a vibrant t-shirt against a colorful background, representing a sale.",
+      "imageUrl": "https://images.unsplash.com/photo-1629838029587-23b6329c3132?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1920&q=80",
+      "imageHint": "anime character sale"
+    },
+    {
+      "id": "carousel-2",
+      "description": "A dynamic shot of a futuristic, sprawling sci-fi city with flying vehicles, representing new arrivals.",
+      "imageUrl": "https://images.unsplash.com/photo-1534796636912-3b95b3ab5986?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1920&q=80",
+      "imageHint": "sci-fi city new"
+    },
+    {
+      "id": "carousel-3",
+      "description": "A breathtaking fantasy landscape with a character looking over a valley, symbolizing exploration and free shipping.",
+      "imageUrl": "https://images.unsplash.com/photo-1506748686214-e9df14d4d9d0?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3-D%3D&auto=format&fit=crop&w=1920&q=80",
+      "imageHint": "fantasy landscape shipping"
+    },
+    {
       "id": "product-1",
       "description": "Gojo's Infinity Tee",
       "imageUrl": "https://images.unsplash.com/photo-1630710478039-9c680b99f800?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwyfHxhbmltZSUyMGNoYXJhY3RlcnxlbnwwfHx8fDE3NTg5MDY2OTd8MA&ixlib=rb-4.1.0&q=80&w=1080",
