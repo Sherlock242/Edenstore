@@ -5,35 +5,29 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 
-const ANIME_POSTER_API = "https://api.jikan.moe/v4/random/anime";
-
-type JikanResponse = {
-  data: {
-    images: {
-      jpg: {
-        large_image_url: string;
-      }
-    }
-  }
-}
-
 export default async function Home() {
   const products = await getProducts();
   let heroImageUrl = "https://images.unsplash.com/photo-1579546929518-9e396f3cc809?q=80&w=2070&auto=format&fit=crop"; // Fallback image
   let heroImageHint = "abstract gradient";
 
   try {
-    // Fetch a random anime from Jikan API
-    const response = await fetch(ANIME_POSTER_API, { cache: 'no-store' });
+    // Fetch a random horizontal anime wallpaper from Unsplash
+    const response = await fetch(`https://api.unsplash.com/photos/random?query=anime-wallpaper&orientation=landscape&client_id=${process.env.UNSPLASH_ACCESS_KEY}`, { cache: 'no-store' });
     if (response.ok) {
-      const data: JikanResponse = await response.json();
-      if (data.data?.images?.jpg?.large_image_url) {
-        heroImageUrl = data.data.images.jpg.large_image_url;
-        heroImageHint = "anime poster";
+      const data = await response.json();
+      if (data.urls?.regular) {
+        heroImageUrl = data.urls.regular;
+        heroImageHint = "anime wallpaper";
       }
+    } else {
+       // Fallback to a pre-selected high-quality image if the API fails
+       heroImageUrl = "https://images.unsplash.com/photo-1608889476518-738c9b1dcb40?q=80&w=2070&auto=format&fit=crop";
+       heroImageHint = "anime character close up";
     }
   } catch (error) {
     console.error("Failed to fetch anime poster, using fallback.", error);
+    heroImageUrl = "https://images.unsplash.com/photo-1612036782150-1d8ba08f3a74?q=80&w=2070&auto=format&fit=crop";
+    heroImageHint = "abstract anime explosion";
   }
 
 
@@ -42,7 +36,7 @@ export default async function Home() {
       <section className="relative h-[40vh] w-full text-white">
         <Image
             src={heroImageUrl}
-            alt="A dynamic anime poster."
+            alt="A dynamic anime wallpaper."
             fill
             className="object-cover"
             priority
@@ -50,15 +44,6 @@ export default async function Home() {
         />
         <div className="absolute inset-0 bg-black/50" />
         <div className="relative z-10 flex h-full flex-col items-center justify-center gap-6 text-center px-4">
-            <h1 className="text-4xl md:text-6xl font-extrabold font-headline tracking-tighter drop-shadow-lg">
-                Your Style, Your Story
-            </h1>
-            <p className="max-w-xl text-lg text-white/80">
-                
-            </p>
-            <Button size="lg" asChild className="bg-primary hover:bg-primary/90 text-primary-foreground font-bold">
-                <Link href="/products">Shop Now</Link>
-            </Button>
         </div>
       </section>
 
