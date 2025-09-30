@@ -25,14 +25,16 @@ export default async function Home() {
             priority
             data-ai-hint={heroImageHint}
         />
-        <div className="absolute inset-0 bg-black/50" />
-        <div className="relative z-10 flex h-full flex-col items-center justify-center gap-6 text-center px-4">
-            <h1 className="text-4xl md:text-6xl font-extrabold font-headline tracking-tighter drop-shadow-lg">
-                Your Style, Your Story
-            </h1>
-            <Button size="lg" asChild className="bg-primary hover:bg-primary/90 text-primary-foreground font-bold">
-                <Link href="/products">Shop Now</Link>
-            </Button>
+        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/30 to-transparent" />
+        <div className="relative z-10 flex h-full flex-col items-center justify-end p-8 text-center">
+            <div className="flex flex-col items-center gap-4">
+                <h1 className="text-4xl md:text-6xl font-extrabold font-headline tracking-tighter drop-shadow-lg">
+                    Your Style, Your Story
+                </h1>
+                <Button size="lg" asChild className="bg-primary hover:bg-primary/90 text-primary-foreground font-bold">
+                    <Link href="/products">Shop Now</Link>
+                </Button>
+            </div>
         </div>
       </section>
 
