@@ -74,6 +74,38 @@ export const getProducts = async (): Promise<Product[]> => {
     }));
 };
 
+export type SearchProduct = Pick<Product, 'id' | 'name' | 'category'> & { image: Product['images'][0] };
+
+export const getProductsForSearch = async (): Promise<SearchProduct[]> => {
+    const { data: productsData, error } = await supabaseAdmin
+      .from('products')
+      .select(`
+        id,
+        name,
+        category,
+        product_images ( url, hint )
+      `)
+      .order('created_at', { ascending: false });
+
+    if (error) {
+        console.error('Error fetching products for search:', error);
+        return [];
+    }
+    
+    // Transform data to a lighter format for search suggestions
+    return productsData.map((p: any) => ({
+        id: p.id.toString(),
+        name: p.name,
+        category: p.category,
+        image: {
+            id: '', // Not needed for search
+            url: p.product_images[0]?.url || '',
+            hint: p.product_images[0]?.hint || '',
+        }
+    }));
+}
+
+
 export type ProductFormValues = {
   name: string;
   description: string;

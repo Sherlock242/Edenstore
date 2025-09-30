@@ -2,7 +2,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState, useTransition, useEffect, useRef } from "react";
+import { useState, useTransition, useEffect, useRef, useCallback } from "react";
 import {
   Menu,
   ShoppingBag,
@@ -16,7 +16,10 @@ import {
   Heart,
   Package,
   Users,
+  Loader2,
 } from "lucide-react";
+import Image from "next/image";
+import { useDebounce } from 'use-debounce';
 import { Button } from "@/components/ui/button";
 import {
   Sheet,
@@ -51,12 +54,13 @@ import { CartSheetContent } from "../cart-sheet";
 import { usePathname, useRouter } from 'next/navigation';
 import { cn } from "@/lib/utils";
 import md5 from "md5";
-import { deleteUserAccount } from "@/app/actions";
+import { deleteUserAccount, getProductsForSearch, type SearchProduct } from "@/app/actions";
 import { useToast } from "@/hooks/use-toast";
 import { Separator } from "../ui/separator";
 import { Input } from "../ui/input";
 import { Skeleton } from "../ui/skeleton";
 import { createClient } from "@/lib/supabase/client";
+import { ScrollArea } from "../ui/scroll-area";
 
 const navLinks = [
   { href: "/products", label: "T-Shirts" },
@@ -79,9 +83,15 @@ export function Header() {
   const [isPending, startTransition] = useTransition();
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [debouncedSearchQuery] = useDebounce(searchQuery, 300);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isCartOpen, setIsCartOpen] = useState(false);
   const searchRef = useRef<HTMLDivElement>(null);
+  
+  const [allProducts, setAllProducts] = useState<SearchProduct[]>([]);
+  const [suggestions, setSuggestions] = useState<SearchProduct[]>([]);
+  const [isFetchingSuggestions, setIsFetchingSuggestions] = useState(false);
+
 
   const cartItemCount = cartState.items.reduce((acc, item) => acc + item.quantity, 0);
   
@@ -122,23 +132,32 @@ export function Header() {
       setIsDeleteAlertOpen(false);
     });
   };
-
+  
   const handleSearchSubmit = (e: React.FormEvent) => {
       e.preventDefault();
       if (searchQuery.trim()) {
           router.push(`/products?q=${encodeURIComponent(searchQuery.trim())}`);
-          setIsSearchOpen(false);
-          setSearchQuery('');
+          closeAndResetSearch();
       }
   }
+
+  const closeAndResetSearch = () => {
+    setIsSearchOpen(false);
+    setSearchQuery('');
+    setSuggestions([]);
+  }
+  
+  const handleSuggestionClick = (productId: string) => {
+      router.push(`/products/${productId}`);
+      closeAndResetSearch();
+  };
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (searchRef.current && !searchRef.current.contains(event.target as Node)) {
-        // Check if the click was on the search trigger button itself
         const searchTrigger = document.querySelector('[data-search-trigger]');
         if (searchTrigger && !searchTrigger.contains(event.target as Node)) {
-          setIsSearchOpen(false);
+          closeAndResetSearch();
         }
       }
     };
@@ -153,6 +172,32 @@ export function Header() {
       document.removeEventListener('mousedown', handleClickOutside);
     };
   }, [isSearchOpen]);
+  
+  
+  // Effect to fetch all products for searching
+  useEffect(() => {
+    if (isSearchOpen && allProducts.length === 0) {
+      setIsFetchingSuggestions(true);
+      getProductsForSearch().then(products => {
+        setAllProducts(products);
+        setIsFetchingSuggestions(false);
+      });
+    }
+  }, [isSearchOpen, allProducts.length]);
+
+  // Effect to filter products based on debounced search query
+  useEffect(() => {
+    if (debouncedSearchQuery) {
+      const lowercasedQuery = debouncedSearchQuery.toLowerCase();
+      const filtered = allProducts.filter(product => 
+        product.name.toLowerCase().includes(lowercasedQuery) ||
+        product.category.toLowerCase().includes(lowercasedQuery)
+      );
+      setSuggestions(filtered);
+    } else {
+      setSuggestions([]);
+    }
+  }, [debouncedSearchQuery, allProducts]);
 
 
   return (
@@ -378,8 +423,8 @@ export function Header() {
       <div
         ref={searchRef}
         className={cn(
-          "absolute top-full left-0 w-full bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 transition-[max-height,opacity] duration-300 ease-in-out overflow-hidden",
-          isSearchOpen ? "max-h-40 opacity-100" : "max-h-0 opacity-0"
+          "absolute top-full left-0 w-full bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 transition-[opacity] duration-300 ease-in-out",
+          isSearchOpen ? "opacity-100" : "opacity-0 pointer-events-none"
         )}
       >
         <div className="p-4 border-b">
@@ -393,12 +438,48 @@ export function Header() {
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                 />
-                <Button variant="ghost" size="icon" className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8" onClick={() => setIsSearchOpen(false)}>
+                <Button variant="ghost" size="icon" className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8" onClick={closeAndResetSearch}>
                     <X className="h-5 w-5" />
                     <span className="sr-only">Close search</span>
                 </Button>
                 </div>
             </form>
+             {searchQuery && (
+              <div className="absolute top-full mt-2 w-full max-w-7xl left-1/2 -translate-x-1/2 px-4">
+                <div className="bg-background border rounded-md shadow-lg">
+                  <ScrollArea className="max-h-[50vh]">
+                    {isFetchingSuggestions && (
+                      <div className="p-4 text-center text-sm text-muted-foreground">
+                        <Loader2 className="h-5 w-5 animate-spin inline-block mr-2" />
+                        Loading...
+                      </div>
+                    )}
+                    {!isFetchingSuggestions && suggestions.length > 0 && (
+                      <div className="flex flex-col">
+                        {suggestions.map(product => (
+                          <div 
+                            key={product.id}
+                            onClick={() => handleSuggestionClick(product.id)}
+                            className="flex items-center gap-4 p-3 hover:bg-accent cursor-pointer"
+                          >
+                            <Image src={product.image.url} alt={product.name} width={40} height={50} className="rounded-md object-cover" />
+                            <div className="flex flex-col">
+                                <p className="font-semibold text-sm">{product.name}</p>
+                                <p className="text-xs text-muted-foreground">{product.category}</p>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    {!isFetchingSuggestions && debouncedSearchQuery && suggestions.length === 0 && (
+                      <div className="p-4 text-center text-sm text-muted-foreground">
+                        No results found for &quot;{debouncedSearchQuery}&quot;
+                      </div>
+                    )}
+                  </ScrollArea>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>
