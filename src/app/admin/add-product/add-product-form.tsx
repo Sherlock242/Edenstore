@@ -19,7 +19,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { addProduct, updateProduct, type Product } from '@/app/actions';
-import { Upload, X } from 'lucide-react';
+import { Plus, Upload, X } from 'lucide-react';
 import Image from 'next/image';
 
 const sizeSchema = z.object({
@@ -27,31 +27,26 @@ const sizeSchema = z.object({
   quantity: z.coerce.number().min(0, 'Quantity must be 0 or more.'),
 });
 
-const formSchema = z.object({
-  id: z.string().optional(),
-  name: z.string().min(2, {
-    message: 'Product name must be at least 2 characters.',
-  }),
-  description: z.string().min(10, {
-    message: 'Description must be at least 10 characters.',
-  }),
-  price: z.coerce.number().positive({message: 'Price must be a positive number.'}),
-  category: z.string().min(2, {
-    message: 'Category must be at least 2 characters.',
-  }),
-  weight: z.coerce.number().positive({message: 'Weight must be a positive number (in kg).'}),
-  imageHint: z.string().optional(),
-  image: z
-    .custom<File>(v => v instanceof File, 'Image is required.')
-    .refine(
-      file => file.size <= 5000000,
-      `Max file size is 5MB.`
-    )
+const imageSchema = z.object({
+  file: z.custom<File>(v => v instanceof File, 'Image file is required.')
+    .refine(file => file.size <= 5000000, `Max file size is 5MB.`)
     .refine(
       file => ['image/jpeg', 'image/png', 'image/webp'].includes(file.type),
       'Only .jpg, .png, and .webp formats are supported.'
-    ).optional(),
+    ),
+  hint: z.string().min(1, 'Hint is required.'),
+  preview: z.string().optional()
+});
+
+const formSchema = z.object({
+  id: z.string().optional(),
+  name: z.string().min(2, 'Product name must be at least 2 characters.'),
+  description: z.string().min(10, 'Description must be at least 10 characters.'),
+  price: z.coerce.number().positive('Price must be a positive number.'),
+  category: z.string().min(2, 'Category must be at least 2 characters.'),
+  weight: z.coerce.number().positive('Weight must be a positive number (in kg).'),
   sizes: z.array(sizeSchema).min(1, 'At least one size is required.'),
+  images: z.array(imageSchema).min(1, 'At least one image is required.'),
 });
 
 type AddProductFormProps = {
@@ -60,8 +55,7 @@ type AddProductFormProps = {
 }
 
 export function AddProductForm({ productToEdit, onProductAddedOrUpdated }: AddProductFormProps) {
-  const [imagePreview, setImagePreview] = useState<string | null>(null);
-  const {toast} = useToast();
+  const { toast } = useToast();
   const isEditMode = !!productToEdit;
 
   const form = useForm<z.infer<typeof formSchema>>({
@@ -73,15 +67,19 @@ export function AddProductForm({ productToEdit, onProductAddedOrUpdated }: AddPr
       price: undefined,
       category: '',
       weight: undefined,
-      imageHint: '',
-      image: undefined,
       sizes: [{ size: 'S', quantity: 10 }],
+      images: [{ hint: '' }],
     },
   });
   
-  const { fields, append, remove } = useFieldArray({
+  const { fields: sizeFields, append: appendSize, remove: removeSize } = useFieldArray({
     control: form.control,
     name: "sizes"
+  });
+  
+  const { fields: imageFields, append: appendImage, remove: removeImage } = useFieldArray({
+    control: form.control,
+    name: "images"
   });
 
   useEffect(() => {
@@ -93,11 +91,13 @@ export function AddProductForm({ productToEdit, onProductAddedOrUpdated }: AddPr
               price: productToEdit.price,
               category: productToEdit.category,
               weight: productToEdit.weight,
-              image: undefined, // Clear image input on edit
-              imageHint: productToEdit.images[0]?.hint || '',
               sizes: productToEdit.sizes,
+              images: productToEdit.images.map(img => ({
+                file: new File([], ""), // Can't repopulate file input, but schema needs it
+                hint: img.hint,
+                preview: img.url
+              })),
           });
-          setImagePreview(productToEdit.images[0]?.url || null);
       } else {
           form.reset({
             id: '',
@@ -106,18 +106,13 @@ export function AddProductForm({ productToEdit, onProductAddedOrUpdated }: AddPr
             price: undefined,
             category: '',
             weight: undefined,
-            imageHint: '',
-            image: undefined,
             sizes: [{size: 'S', quantity: 10}, {size: 'M', quantity: 10}],
+            images: [{ hint: '' }],
           });
-          setImagePreview(null);
       }
   }, [productToEdit, form]);
 
-  const imageRef = form.register('image');
-
   async function onSubmit(values: z.infer<typeof formSchema>) {
-    
     let result;
 
     if (isEditMode && values.id) {
@@ -128,21 +123,19 @@ export function AddProductForm({ productToEdit, onProductAddedOrUpdated }: AddPr
             price: values.price,
             category: values.category,
             weight: values.weight,
-            image: values.image || null,
-            sizes: values.sizes
+            sizes: values.sizes,
+            // Filter out images that don't have a new file, as we are not handling replacements yet
+            images: values.images.filter(img => img.file.size > 0),
         };
         result = await updateProduct(updateValues);
     } else {
-       if (!values.image) {
-            form.setError('image', { type: 'manual', message: 'Image is required for a new product.' });
-            return;
-       }
-        // Ensure imageHint is present for new products, even though it's optional in the schema for edit mode
         const addValues = {
             ...values,
-            imageHint: values.imageHint || values.name,
-            image: values.image,
-            sizes: values.sizes
+            images: values.images.filter(img => img.file.size > 0), // Ensure we only send images with files
+        };
+         if (addValues.images.length === 0) {
+            form.setError('images', { type: 'manual', message: 'At least one image file is required.' });
+            return;
         }
         result = await addProduct(addValues);
     }
@@ -153,7 +146,6 @@ export function AddProductForm({ productToEdit, onProductAddedOrUpdated }: AddPr
         description: result.message,
       });
       form.reset();
-      setImagePreview(null);
       onProductAddedOrUpdated();
     } else {
       let errorMessage = 'Something went wrong.';
@@ -244,7 +236,7 @@ export function AddProductForm({ productToEdit, onProductAddedOrUpdated }: AddPr
             <FormLabel>Sizes & Inventory</FormLabel>
             <FormDescription>Add the sizes available and their stock quantity.</FormDescription>
             <div className="space-y-4 mt-4">
-                {fields.map((field, index) => (
+                {sizeFields.map((field, index) => (
                     <div key={field.id} className="flex items-center gap-4">
                         <FormField
                             control={form.control}
@@ -270,95 +262,93 @@ export function AddProductForm({ productToEdit, onProductAddedOrUpdated }: AddPr
                                 </FormItem>
                             )}
                         />
-                        <Button type="button" variant="destructive" size="icon" onClick={() => remove(index)}>
+                        <Button type="button" variant="destructive" size="icon" onClick={() => removeSize(index)}>
                             <X className="h-4 w-4" />
                         </Button>
                     </div>
                 ))}
-                <Button type="button" variant="outline" size="sm" onClick={() => append({ size: "", quantity: 0 })}>
+                <Button type="button" variant="outline" size="sm" onClick={() => appendSize({ size: "", quantity: 0 })}>
                     Add Size
                 </Button>
-                 {form.formState.errors.sizes && <p className="text-sm font-medium text-destructive">{form.formState.errors.sizes.message}</p>}
+                 {form.formState.errors.sizes && <p className="text-sm font-medium text-destructive">{form.formState.errors.sizes.root?.message}</p>}
             </div>
         </div>
 
+        {/* Product Images */}
+        <div>
+            <FormLabel>Product Images</FormLabel>
+            <FormDescription>Add one or more images for the product.</FormDescription>
+            <div className="space-y-6 mt-4">
+                {imageFields.map((field, index) => {
+                    const imageValue = form.watch(`images.${index}`);
+                    return (
+                        <div key={field.id} className="p-4 border rounded-md space-y-4 relative">
+                           <Button type="button" variant="destructive" size="icon" className="absolute -top-3 -right-3 h-7 w-7" onClick={() => removeImage(index)}><X className="h-4 w-4" /></Button>
+                            <FormField
+                                control={form.control}
+                                name={`images.${index}.file`}
+                                render={({ field: { onChange, ...fieldProps } }) => (
+                                <FormItem>
+                                    <FormLabel>Image File</FormLabel>
+                                    <FormControl>
+                                    <div className="flex w-full items-center justify-center">
+                                        <label htmlFor={`image-upload-${index}`} className="flex h-48 w-full cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-border bg-card hover:bg-muted">
+                                        {imageValue.preview ? (
+                                            <Image src={imageValue.preview} alt="Preview" width={150} height={150} className="h-full w-full object-contain" />
+                                        ) : (
+                                            <div className="flex flex-col items-center justify-center pb-6 pt-5">
+                                            <Upload className="mb-4 h-8 w-8 text-muted-foreground" />
+                                            <p className="text-xs text-muted-foreground">Click or drag to upload</p>
+                                            </div>
+                                        )}
+                                        <Input
+                                            id={`image-upload-${index}`} type="file" className="hidden" accept="image/png, image/jpeg, image/webp"
+                                            {...fieldProps}
+                                            onChange={event => {
+                                                const file = event.target.files?.[0];
+                                                if (file) {
+                                                    onChange(file);
+                                                    const reader = new FileReader();
+                                                    reader.onloadend = () => {
+                                                        form.setValue(`images.${index}.preview`, reader.result as string)
+                                                    };
+                                                    reader.readAsDataURL(file);
+                                                }
+                                            }}
+                                        />
+                                        </label>
+                                    </div>
+                                    </FormControl>
+                                    {isEditMode && imageValue.preview && (
+                                        <FormDescription>Leave blank to keep current image. Uploading a new file will add it to the product.</FormDescription>
+                                    )}
+                                    <FormMessage />
+                                </FormItem>
+                                )}
+                            />
+                             <FormField
+                                control={form.control}
+                                name={`images.${index}.hint`}
+                                render={({field}) => (
+                                    <FormItem>
+                                    <FormLabel>Image Hint</FormLabel>
+                                    <FormControl>
+                                        <Input placeholder="e.g., anime character posing" {...field} />
+                                    </FormControl>
+                                    <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                        </div>
+                    )
+                })}
+                 <Button type="button" variant="outline" size="sm" onClick={() => appendImage({ hint: '', file: new File([], "") })}>
+                    <Plus className="mr-2 h-4 w-4" /> Add Image
+                </Button>
+                 {form.formState.errors.images && <p className="text-sm font-medium text-destructive">{form.formState.errors.images.root?.message}</p>}
+            </div>
+        </div>
 
-        <FormField
-          control={form.control}
-          name="image"
-          render={({field: { onChange, value, ...fieldProps }}) => (
-            <FormItem>
-              <FormLabel>Product Image</FormLabel>
-              <FormControl>
-                <div className="flex w-full items-center justify-center">
-                  <label
-                    htmlFor="image-upload"
-                    className="flex h-64 w-full cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-border bg-card hover:bg-muted"
-                  >
-                    {imagePreview ? (
-                      <Image
-                        src={imagePreview}
-                        alt="Image preview"
-                        width={200}
-                        height={200}
-                        className="h-full w-full object-contain"
-                      />
-                    ) : (
-                      <div className="flex flex-col items-center justify-center pb-6 pt-5">
-                        <Upload className="mb-4 h-8 w-8 text-muted-foreground" />
-                        <p className="mb-2 text-sm text-muted-foreground">
-                          <span className="font-semibold">Click to upload</span> or drag
-                          and drop
-                        </p>
-                        <p className="text-xs text-muted-foreground">
-                          PNG, JPG, or WEBP (MAX. 5MB)
-                        </p>
-                      </div>
-                    )}
-                    <Input
-                      id="image-upload"
-                      type="file"
-                      className="hidden"
-                      accept="image/png, image/jpeg, image/webp"
-                      {...fieldProps}
-                      onChange={event => {
-                        const file = event.target.files?.[0];
-                        if (file) {
-                          onChange(file);
-                          const reader = new FileReader();
-                          reader.onloadend = () => {
-                            setImagePreview(reader.result as string);
-                          };
-                          reader.readAsDataURL(file);
-                        }
-                      }}
-                    />
-                  </label>
-                </div>
-              </FormControl>
-               {isEditMode && (
-                  <FormDescription>Leave blank to keep the current image. Upload a new file to replace it.</FormDescription>
-                )}
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        {!isEditMode && <FormField
-          control={form.control}
-          name="imageHint"
-          render={({field}) => (
-            <FormItem>
-              <FormLabel>Image Hint</FormLabel>
-              <FormControl>
-                <Input placeholder="e.g., anime character" {...field} />
-              </FormControl>
-              <FormDescription>
-                A fallback hint for the AI if the image cannot be used.
-              </FormDescription>
-              <FormMessage />
-            </FormItem>
-          )}
-        />}
         <Button type="submit" disabled={form.formState.isSubmitting}>
           {isEditMode ? (form.formState.isSubmitting ? 'Updating...' : 'Update Product') : (form.formState.isSubmitting ? 'Adding...' : 'Add Product')}
         </Button>
