@@ -69,7 +69,7 @@ export function HeaderClient({ user, userProfile, isadmin }: HeaderClientProps) 
         {/* Desktop: Left side */}
         <div className="hidden flex-1 items-center justify-start md:flex">
              <Link href="/" className="flex items-center space-x-2">
-              <span className="bg-gradient-to-r from-orange-500 to-yellow-400 bg-clip-text font-headline text-lg font-bold uppercase text-transparent">
+              <span className="bg-gradient-to-r from-red-500 to-red-400 bg-clip-text font-headline text-lg font-bold uppercase text-transparent">
                 ANISTORE
               </span>
             </Link>
@@ -95,7 +95,7 @@ export function HeaderClient({ user, userProfile, isadmin }: HeaderClientProps) 
         <div className="flex items-center justify-center">
             <div className="md:hidden">
               <Link href="/" className="flex items-center space-x-2">
-                <span className="bg-gradient-to-r from-yellow-400 to-orange-500 bg-clip-text font-headline text-lg font-bold uppercase text-transparent">
+                <span className="bg-gradient-to-r from-red-500 to-red-400 bg-clip-text font-headline text-lg font-bold uppercase text-transparent">
                   ANISTORE
                 </span>
               </Link>

@@ -1,4 +1,3 @@
-
 "use client";
 import {
   Sheet,
@@ -145,7 +144,7 @@ export function CartSheet() {
                         <span>₹{subtotal.toFixed(2)}</span>
                     </div>
                     <p className="text-xs text-muted-foreground">Shipping and taxes will be calculated at checkout.</p>
-                    <Button asChild size="lg" className="w-full bg-gradient-to-r from-orange-600 to-yellow-500 text-white font-bold hover:opacity-90 transition-opacity" onClick={() => setIsSheetOpen(false)}>
+                    <Button asChild size="lg" className="w-full bg-gradient-to-r from-red-600 to-red-500 text-white font-bold hover:opacity-90 transition-opacity" onClick={() => setIsSheetOpen(false)}>
                         <Link href="/checkout">Proceed to Checkout</Link>
                     </Button>
                     <Button variant="outline" asChild onClick={() => setIsSheetOpen(false)}>
@@ -167,4 +166,3 @@ export function CartSheet() {
     </Sheet>
   );
 }
-
