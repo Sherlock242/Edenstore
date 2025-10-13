@@ -31,9 +31,9 @@ const imageSchema = z.object({
   file: z.custom<File>(v => v instanceof File, 'Image file is required.')
     .refine(file => file.size <= 5000000, `Max file size is 5MB.`)
     .refine(
-      file => ['image/jpeg', 'image/png', 'image/webp'].includes(file.type),
+      file => file.type ? ['image/jpeg', 'image/png', 'image/webp'].includes(file.type) : true,
       'Only .jpg, .png, and .webp formats are supported.'
-    ),
+    ).optional(),
   hint: z.string().min(1, 'Hint is required.'),
   preview: z.string().optional()
 });
@@ -68,7 +68,7 @@ export function AddProductForm({ productToEdit, onProductAddedOrUpdated }: AddPr
       category: '',
       weight: undefined,
       sizes: [{ size: 'S', quantity: 10 }],
-      images: [{ hint: '' }],
+      images: [],
     },
   });
   
@@ -93,7 +93,6 @@ export function AddProductForm({ productToEdit, onProductAddedOrUpdated }: AddPr
               weight: productToEdit.weight,
               sizes: productToEdit.sizes,
               images: productToEdit.images.map(img => ({
-                file: new File([], ""), // Can't repopulate file input, but schema needs it
                 hint: img.hint,
                 preview: img.url
               })),
@@ -114,6 +113,7 @@ export function AddProductForm({ productToEdit, onProductAddedOrUpdated }: AddPr
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     let result;
+    const imagesWithFiles = values.images.filter(img => img.file && img.file.size > 0) as { file: File; hint: string }[];
 
     if (isEditMode && values.id) {
         const updateValues = {
@@ -124,19 +124,18 @@ export function AddProductForm({ productToEdit, onProductAddedOrUpdated }: AddPr
             category: values.category,
             weight: values.weight,
             sizes: values.sizes,
-            // Filter out images that don't have a new file, as we are not handling replacements yet
-            images: values.images.filter(img => img.file.size > 0),
+            images: imagesWithFiles,
         };
         result = await updateProduct(updateValues);
     } else {
-        const addValues = {
-            ...values,
-            images: values.images.filter(img => img.file.size > 0), // Ensure we only send images with files
-        };
-         if (addValues.images.length === 0) {
-            form.setError('images', { type: 'manual', message: 'At least one image file is required.' });
+        if (imagesWithFiles.length === 0) {
+            form.setError('images', { type: 'manual', message: 'At least one new image file is required.' });
             return;
         }
+        const addValues = {
+            ...values,
+            images: imagesWithFiles,
+        };
         result = await addProduct(addValues);
     }
 
@@ -287,7 +286,7 @@ export function AddProductForm({ productToEdit, onProductAddedOrUpdated }: AddPr
                             <FormField
                                 control={form.control}
                                 name={`images.${index}.file`}
-                                render={({ field: { onChange, ...fieldProps } }) => (
+                                render={({ field: { onChange, value, ...fieldProps } }) => (
                                 <FormItem>
                                     <FormLabel>Image File</FormLabel>
                                     <FormControl>
@@ -319,8 +318,8 @@ export function AddProductForm({ productToEdit, onProductAddedOrUpdated }: AddPr
                                         </label>
                                     </div>
                                     </FormControl>
-                                    {isEditMode && imageValue.preview && (
-                                        <FormDescription>Leave blank to keep current image. Uploading a new file will add it to the product.</FormDescription>
+                                    {isEditMode && imageValue.preview && !imageValue.file && (
+                                        <FormDescription>This is the current image. To add a new one, upload a file.</FormDescription>
                                     )}
                                     <FormMessage />
                                 </FormItem>
@@ -342,10 +341,10 @@ export function AddProductForm({ productToEdit, onProductAddedOrUpdated }: AddPr
                         </div>
                     )
                 })}
-                 <Button type="button" variant="outline" size="sm" onClick={() => appendImage({ hint: '', file: new File([], "") })}>
+                 <Button type="button" variant="outline" size="sm" onClick={() => appendImage({ hint: '' })}>
                     <Plus className="mr-2 h-4 w-4" /> Add Image
                 </Button>
-                 {form.formState.errors.images && <p className="text-sm font-medium text-destructive">{form.formState.errors.images.root?.message}</p>}
+                 {form.formState.errors.images && <p className="text-sm font-medium text-destructive">{form.formState.errors.images.root?.message || form.formState.errors.images.message}</p>}
             </div>
         </div>
 
