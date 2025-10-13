@@ -16,7 +16,7 @@ export default async function Home() {
 
   return (
     <div className="flex flex-col gap-16 md:gap-24">
-      <section className="relative h-[30vh] w-full text-white md:h-[40vh]">
+      <section className="relative h-[30vh] w-full text-white md:h-[30vh]">
         <Image
             src={heroImageUrl}
             alt="A dynamic anime poster for the hero section."
