@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useCart } from '@/contexts/cart-context';
@@ -16,6 +17,7 @@ import { useRouter } from 'next/navigation';
 import { Loader2 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import type { User } from '@supabase/supabase-js';
+import { getSiteName } from '../admin/settings/actions';
 
 export default function CheckoutPage() {
   const { state, dispatch } = useCart();
@@ -23,6 +25,7 @@ export default function CheckoutPage() {
   const router = useRouter();
   const [user, setUser] = useState<User | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [siteName, setSiteName] = useState('ANISTORE');
   
   // State for shipping information
   const [email, setEmail] = useState('');
@@ -48,7 +51,10 @@ export default function CheckoutPage() {
       if (user) {
         setEmail(user.email || '');
       }
-    })
+    });
+
+    getSiteName().then(setSiteName);
+
   }, []);
   
   // Debounce pincode input
@@ -157,7 +163,7 @@ export default function CheckoutPage() {
         key: keyId,
         amount: order.amount,
         currency: order.currency,
-        name: 'ANISTORE',
+        name: siteName,
         description: 'T-Shirt Purchase',
         order_id: order.id,
         handler: async function (response: any) {

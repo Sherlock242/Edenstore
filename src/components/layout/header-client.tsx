@@ -1,3 +1,4 @@
+
 'use client';
 import Link from 'next/link';
 import {
@@ -58,9 +59,10 @@ type HeaderClientProps = {
   user: SupabaseUser | null;
   userProfile: UserProfile | null;
   isadmin: boolean;
+  siteName: string;
 };
 
-export function HeaderClient({ user, userProfile, isadmin }: HeaderClientProps) {
+export function HeaderClient({ user, userProfile, isadmin, siteName }: HeaderClientProps) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -70,7 +72,7 @@ export function HeaderClient({ user, userProfile, isadmin }: HeaderClientProps) 
         <div className="hidden flex-1 items-center justify-start md:flex">
              <Link href="/" className="flex items-center space-x-2">
               <span className="bg-gradient-to-r from-red-600 to-red-500 bg-clip-text font-headline text-lg font-bold uppercase text-transparent">
-                ANISTORE
+                {siteName}
               </span>
             </Link>
         </div>
@@ -87,7 +89,7 @@ export function HeaderClient({ user, userProfile, isadmin }: HeaderClientProps) 
                 <Menu className="h-5 w-5" />
               </Button>
             </SheetTrigger>
-            <MobileMenuSheet user={user} userProfile={userProfile} isadmin={isadmin} setOpen={setIsMobileMenuOpen} />
+            <MobileMenuSheet user={user} userProfile={userProfile} isadmin={isadmin} setOpen={setIsMobileMenuOpen} siteName={siteName} />
           </Sheet>
         </div>
 
@@ -96,7 +98,7 @@ export function HeaderClient({ user, userProfile, isadmin }: HeaderClientProps) 
             <div className="md:hidden">
               <Link href="/" className="flex items-center space-x-2">
                 <span className="bg-gradient-to-r from-red-600 to-red-500 bg-clip-text font-headline text-lg font-bold uppercase text-transparent">
-                  ANISTORE
+                  {siteName}
                 </span>
               </Link>
             </div>

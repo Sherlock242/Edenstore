@@ -1,3 +1,4 @@
+
 import { createClient } from '@/lib/supabase/server';
 import { HeaderClient } from './header-client';
 
@@ -8,7 +9,11 @@ type UserProfile = {
   display_name: string;
 }
 
-export async function Header() {
+type HeaderProps = {
+  siteName: string;
+};
+
+export async function Header({ siteName }: HeaderProps) {
   const supabase = createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
@@ -26,6 +31,6 @@ export async function Header() {
   }
 
   return (
-    <HeaderClient user={user} userProfile={userProfile} isadmin={isadmin} />
+    <HeaderClient user={user} userProfile={userProfile} isadmin={isadmin} siteName={siteName} />
   );
 }

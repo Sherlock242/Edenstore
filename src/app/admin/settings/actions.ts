@@ -11,6 +11,7 @@ const supabaseAdmin = createClient(
 );
 
 const HERO_IMAGE_KEY = 'heroImageUrl';
+const SITE_NAME_KEY = 'siteName';
 
 type ServerResponse = {
     success: boolean;
@@ -33,7 +34,6 @@ export async function getHeroImageUrl(): Promise<{ success: boolean; url?: strin
 
     return { success: true, url: data?.value, message: 'Fetched successfully.' };
 }
-
 
 export async function updateHeroImage(image: File): Promise<ServerResponse> {
     // 1. Fetch the old image URL to delete it later
@@ -101,4 +101,39 @@ export async function updateHeroImage(image: File): Promise<ServerResponse> {
         message: 'Hero image updated successfully!',
         url: newImageUrl,
     };
+}
+
+
+export async function getSiteName(): Promise<string> {
+    const { data, error } = await supabaseAdmin
+        .from('site_settings')
+        .select('value')
+        .eq('key', SITE_NAME_KEY)
+        .single();
+    
+    if (error && error.code !== 'PGRST116') {
+        console.error('Error fetching site name:', error);
+    }
+
+    return data?.value || 'ANISTORE'; // Return default if not found
+}
+
+export async function updateSiteName(newName: string): Promise<{success: boolean; message: string}> {
+    if (!newName || newName.trim().length === 0) {
+        return { success: false, message: 'Site name cannot be empty.' };
+    }
+
+    const { error } = await supabaseAdmin
+        .from('site_settings')
+        .upsert({ key: SITE_NAME_KEY, value: newName.trim() });
+
+    if (error) {
+        console.error('Error updating site name:', error);
+        return { success: false, message: 'Failed to update site name.' };
+    }
+
+    // Revalidate the entire site to reflect the new name everywhere
+    revalidatePath('/', 'layout');
+
+    return { success: true, message: 'Site name updated successfully!' };
 }

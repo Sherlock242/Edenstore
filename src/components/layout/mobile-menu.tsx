@@ -1,3 +1,4 @@
+
 'use client';
 import Link from 'next/link';
 import {
@@ -27,6 +28,7 @@ type MobileMenuSheetProps = {
   userProfile: UserProfile | null;
   isadmin: boolean;
   setOpen: (open: boolean) => void;
+  siteName: string;
 };
 
 const navLinks = [
@@ -46,14 +48,14 @@ const getGravatarUrl = (email: string | null | undefined) => {
 }
 
 
-export function MobileMenuSheet({ user, userProfile, isadmin, setOpen }: MobileMenuSheetProps) {
+export function MobileMenuSheet({ user, userProfile, isadmin, setOpen, siteName }: MobileMenuSheetProps) {
   return (
     <SheetContent side="left" className="flex flex-col">
       <SheetHeader>
         <SheetTitle>
           <Link href="/" onClick={() => setOpen(false)} className="mb-6 flex items-center space-x-2">
             <span className="bg-gradient-to-r from-red-600 to-red-500 bg-clip-text font-headline text-lg font-bold uppercase text-transparent">
-              ANISTORE
+              {siteName}
             </span>
           </Link>
         </SheetTitle>

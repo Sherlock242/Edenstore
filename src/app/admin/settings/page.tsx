@@ -17,13 +17,14 @@ import {
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { getHeroImageUrl, updateHeroImage } from './actions';
+import { getHeroImageUrl, updateHeroImage, getSiteName, updateSiteName } from './actions';
 import Image from 'next/image';
 import { Upload } from 'lucide-react';
+import { Separator } from '@/components/ui/separator';
 
-const formSchema = z.object({
+const heroImageSchema = z.object({
   heroImage: z
-    .custom<File>(v => v instanceof File, 'Image is required.')
+    .custom<File>(v => v instanceof File, { message: 'Image is required.'})
     .refine(
       file => file.size <= 5000000, // 5MB
       `Max file size is 5MB.`
@@ -34,31 +35,44 @@ const formSchema = z.object({
     )
 });
 
+const siteNameSchema = z.object({
+  siteName: z.string().min(2, { message: 'Site name must be at least 2 characters.' }),
+});
+
 export default function SiteSettingsPage() {
   const { toast } = useToast();
   const [imagePreview, setImagePreview] = useState<string | null>(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isHeroSubmitting, setIsHeroSubmitting] = useState(false);
+  const [isNameSubmitting, setIsNameSubmitting] = useState(false);
 
-  const form = useForm<z.infer<typeof formSchema>>({
-    resolver: zodResolver(formSchema),
+  const heroImageForm = useForm<z.infer<typeof heroImageSchema>>({
+    resolver: zodResolver(heroImageSchema),
     defaultValues: {
       heroImage: undefined,
     },
   });
   
+  const siteNameForm = useForm<z.infer<typeof siteNameSchema>>({
+    resolver: zodResolver(siteNameSchema),
+    defaultValues: {
+      siteName: '',
+    },
+  });
+  
   useEffect(() => {
-      // Fetch the current hero image on component mount
+      // Fetch initial data for both forms
       getHeroImageUrl().then(result => {
           if (result.success && result.url) {
               setImagePreview(result.url);
           }
+      });
+      getSiteName().then(name => {
+          siteNameForm.setValue('siteName', name);
       })
-  }, [])
+  }, [siteNameForm]);
 
-  const imageRef = form.register('heroImage');
-
-  async function onSubmit(values: z.infer<typeof formSchema>) {
-    setIsSubmitting(true);
+  const onHeroImageSubmit = async (values: z.infer<typeof heroImageSchema>) => {
+    setIsHeroSubmitting(true);
     const result = await updateHeroImage(values.heroImage);
 
     if (result.success) {
@@ -69,7 +83,7 @@ export default function SiteSettingsPage() {
       if(result.url) {
           setImagePreview(result.url);
       }
-      form.reset();
+      heroImageForm.reset();
     } else {
       toast({
         variant: 'destructive',
@@ -77,7 +91,26 @@ export default function SiteSettingsPage() {
         description: result.message,
       });
     }
-    setIsSubmitting(false);
+    setIsHeroSubmitting(false);
+  }
+
+  const onSiteNameSubmit = async (values: z.infer<typeof siteNameSchema>) => {
+      setIsNameSubmitting(true);
+      const result = await updateSiteName(values.siteName);
+
+      if (result.success) {
+          toast({
+              title: 'Success!',
+              description: result.message,
+          });
+      } else {
+          toast({
+              variant: 'destructive',
+              title: 'Error',
+              description: result.message,
+          });
+      }
+      setIsNameSubmitting(false);
   }
 
   return (
@@ -87,11 +120,38 @@ export default function SiteSettingsPage() {
           <CardTitle>Site Settings</CardTitle>
           <CardDescription>Manage global settings for your website.</CardDescription>
         </CardHeader>
-        <CardContent>
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+        <CardContent className="space-y-8">
+
+          {/* Site Name Form */}
+          <Form {...siteNameForm}>
+            <form onSubmit={siteNameForm.handleSubmit(onSiteNameSubmit)} className="space-y-4">
               <FormField
-                control={form.control}
+                control={siteNameForm.control}
+                name="siteName"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Site Name</FormLabel>
+                    <FormControl>
+                      <Input placeholder="e.g., ANISTORE" {...field} />
+                    </FormControl>
+                    <FormDescription>This is the name displayed in the header and page titles.</FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <Button type="submit" disabled={isNameSubmitting}>
+                {isNameSubmitting ? 'Updating...' : 'Update Site Name'}
+              </Button>
+            </form>
+          </Form>
+          
+          <Separator />
+
+          {/* Hero Image Form */}
+          <Form {...heroImageForm}>
+            <form onSubmit={heroImageForm.handleSubmit(onHeroImageSubmit)} className="space-y-4">
+              <FormField
+                control={heroImageForm.control}
                 name="heroImage"
                 render={({ field: { onChange, value, ...fieldProps } }) => (
                   <FormItem>
@@ -147,8 +207,8 @@ export default function SiteSettingsPage() {
                   </FormItem>
                 )}
               />
-              <Button type="submit" disabled={isSubmitting}>
-                {isSubmitting ? 'Updating...' : 'Update Hero Image'}
+              <Button type="submit" disabled={isHeroSubmitting}>
+                {isHeroSubmitting ? 'Updating...' : 'Update Hero Image'}
               </Button>
             </form>
           </Form>
