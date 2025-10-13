@@ -158,7 +158,7 @@ export default function CheckoutPage() {
         key: keyId,
         amount: order.amount,
         currency: order.currency,
-        name: 'EdenStore',
+        name: 'ANISTORE',
         description: 'T-Shirt Purchase',
         order_id: order.id,
         handler: async function (response: any) {

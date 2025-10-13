@@ -54,7 +54,7 @@ export function MobileMenuSheet({ user, userProfile, isadmin, setOpen }: MobileM
         <SheetTitle>
           <Link href="/" onClick={() => setOpen(false)} className="mb-6 flex items-center space-x-2">
             <span className="bg-gradient-to-r from-orange-500 to-yellow-400 bg-clip-text font-headline text-lg font-bold uppercase text-transparent">
-              EDENSTORE
+              ANISTORE
             </span>
           </Link>
         </SheetTitle>

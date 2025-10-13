@@ -18,7 +18,7 @@ const spaceGrotesk = Space_Grotesk({
 });
 
 export const metadata: Metadata = {
-  title: 'EdenStore',
+  title: 'ANISTORE',
   description: 'The ultimate destination for anime t-shirts.',
 };
 

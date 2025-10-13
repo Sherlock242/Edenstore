@@ -8,11 +8,11 @@ export function Footer() {
       <div className="container mx-auto flex flex-col items-center justify-between gap-6 px-4 py-8 sm:flex-row">
         <div className="flex items-center space-x-2">
           <span className="bg-gradient-to-r from-yellow-400 to-orange-500 bg-clip-text font-headline text-lg font-bold uppercase text-transparent">
-            EDENSTORE
+            ANISTORE
           </span>
         </div>
         <p className="text-sm text-muted-foreground">
-          © {new Date().getFullYear()} EdenStore. All rights reserved.
+          © {new Date().getFullYear()} ANISTORE. All rights reserved.
         </p>
         <div className="flex items-center space-x-4">
           <Link href="#" aria-label="Twitter">
