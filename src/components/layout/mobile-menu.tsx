@@ -52,7 +52,7 @@ export function MobileMenuSheet({ user, userProfile, isadmin, setOpen }: MobileM
       <SheetHeader>
         <SheetTitle>
           <Link href="/" onClick={() => setOpen(false)} className="mb-6 flex items-center space-x-2">
-            <span className="bg-gradient-to-r from-red-500 to-red-400 bg-clip-text font-headline text-lg font-bold uppercase text-transparent">
+            <span className="bg-gradient-to-r from-red-600 to-red-500 bg-clip-text font-headline text-lg font-bold uppercase text-transparent">
               ANISTORE
             </span>
           </Link>

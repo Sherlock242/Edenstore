@@ -6,7 +6,7 @@ export function Footer() {
     <footer className="border-t border-border/40 bg-background/95">
       <div className="container mx-auto flex flex-col items-center justify-between gap-6 px-4 py-8 sm:flex-row">
         <div className="flex items-center space-x-2">
-          <span className="bg-gradient-to-r from-red-500 to-red-400 bg-clip-text font-headline text-lg font-bold uppercase text-transparent">
+          <span className="bg-gradient-to-r from-red-600 to-red-500 bg-clip-text font-headline text-lg font-bold uppercase text-transparent">
             ANISTORE
           </span>
         </div>
