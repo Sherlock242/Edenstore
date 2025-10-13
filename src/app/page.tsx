@@ -21,7 +21,7 @@ export default async function Home() {
             src={heroImageUrl}
             alt="A dynamic anime poster for the hero section."
             fill
-            className="object-cover"
+            className="object-contain"
             priority
             data-ai-hint={heroImageHint}
         />
