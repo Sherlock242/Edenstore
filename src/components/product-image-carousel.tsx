@@ -7,8 +7,6 @@ import {
   Carousel,
   CarouselContent,
   CarouselItem,
-  CarouselNext,
-  CarouselPrevious,
 } from "@/components/ui/carousel"
 import { type Product } from "@/app/actions";
 
@@ -36,8 +34,6 @@ export function ProductImageCarousel({ images, productName }: ProductImageCarous
           </CarouselItem>
         ))}
       </CarouselContent>
-      <CarouselPrevious className="left-2" />
-      <CarouselNext className="right-2" />
     </Carousel>
   )
 }
