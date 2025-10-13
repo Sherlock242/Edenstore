@@ -12,6 +12,7 @@ import {
 import { Star } from "lucide-react";
 import { ProductDetailsClient } from "@/components/product-details-client";
 import { ProductCard } from "@/components/product-card";
+import { ProductImageCarousel } from "@/components/product-image-carousel";
 
 export const dynamic = 'force-dynamic';
 
@@ -31,14 +32,7 @@ export default async function ProductPage({ params }: { params: { id: string } }
     <div className="container mx-auto max-w-7xl px-4 py-8 md:py-12">
       <div className="grid gap-8 md:grid-cols-2 md:gap-12">
         <div className="flex items-start justify-center">
-            <Image
-                src={product.images[0].url}
-                alt={product.name}
-                width={500}
-                height={625}
-                className="h-auto w-full max-w-md rounded-lg object-cover shadow-2xl"
-                data-ai-hint={product.images[0].hint}
-            />
+            <ProductImageCarousel images={product.images} productName={product.name} />
         </div>
         <div className="flex flex-col gap-4">
           <h1 className="font-headline text-3xl font-bold tracking-tighter md:text-4xl">
