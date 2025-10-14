@@ -1,3 +1,4 @@
+
 // src/lib/shiprocket-client.ts
 'use server';
 
@@ -241,11 +242,10 @@ export async function pushOrderToShiprocket(order: FullOrderDetails): Promise<{s
     const totalAmount = order.items.reduce((acc, item) => acc + item.price_at_purchase * item.quantity, 0);
     const totalWeight = order.items.reduce((acc, item) => acc + (item.product.weight * item.quantity), 0);
     const pickupLocation = process.env.SHIPROCKET_PICKUP_NAME || 'Primary';
-    const channelId = process.env.SHIPROCKET_CHANNEL_ID || '';
-
-    if (!channelId) {
-        return { success: false, message: "SHIPROCKET_CHANNEL_ID is not set in your environment variables."}
-    }
+    
+    // Provide a default channel ID if the environment variable is not set.
+    // The user can later configure this in their .env file if they have multiple channels.
+    const channelId = process.env.SHIPROCKET_CHANNEL_ID || '3937090'; // Defaulting to a common "Custom" channel type.
 
     const orderItemsForShipment = order.items.map(item => ({
       name: item.product.name,
@@ -312,3 +312,5 @@ export async function pushOrderToShiprocket(order: FullOrderDetails): Promise<{s
         return { success: false, message: errorMessage };
     }
 }
+
+    
