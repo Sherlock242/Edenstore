@@ -47,7 +47,6 @@ export function ViewOrders({ orders, onStatusUpdated }: ViewOrdersProps) {
     switch (status) {
       case 'pending-shipment': return { text: 'Pending Shipment', color: 'bg-orange-500/20 text-orange-400 border-orange-500/30' };
       case 'processing': return { text: 'Processing', color: 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30' };
-      case 'pickup-scheduled': return { text: 'Pickup Scheduled', color: 'bg-cyan-500/20 text-cyan-400 border-cyan-500/30' };
       case 'shipped': return { text: 'Shipped', color: 'bg-blue-500/20 text-blue-400 border-blue-500/30' };
       case 'delivered': return { text: 'Delivered', color: 'bg-green-500/20 text-green-400 border-green-500/30' };
       default: return { text: status, color: 'bg-muted text-muted-foreground' };
@@ -75,21 +74,16 @@ export function ViewOrders({ orders, onStatusUpdated }: ViewOrdersProps) {
       startTransition(async () => {
         const result = await sendOrderToShiprocket(order);
         if (result.success && result.shipmentId && result.shiprocketOrderId) {
-            toast({ title: 'Order Pushed & Pickup Scheduled!', description: result.message });
+            toast({ title: 'Order Pushed!', description: result.message });
             const updatedOrder: FullOrderDetails = { 
                 ...order, 
                 shipment_id: result.shipmentId, 
                 shiprocket_order_id: result.shiprocketOrderId,
-                status: 'pickup-scheduled'
+                status: 'processing'
             };
-            onStatusUpdated(order.id, 'pickup-scheduled', updatedOrder); 
+            onStatusUpdated(order.id, 'processing', updatedOrder); 
         } else {
             toast({ variant: 'destructive', title: "Push Failed", description: result.message });
-            // If push succeeded but pickup failed, the status is 'processing'.
-            if (result.message.includes('auto-scheduling pickup failed')) {
-                const updatedOrder: FullOrderDetails = { ...order, status: 'processing' };
-                onStatusUpdated(order.id, 'processing', updatedOrder);
-            }
         }
         setIsPushing(null);
       });
@@ -165,7 +159,7 @@ export function ViewOrders({ orders, onStatusUpdated }: ViewOrdersProps) {
                             {order.status === 'pending-shipment' ? (
                                 <Button className="w-full" onClick={() => handlePushToShiprocket(order)} disabled={isPushing === order.id}>
                                     <Send className="mr-2 h-4 w-4" />
-                                    {isPushing === order.id ? 'Pushing...' : 'Push to Shiprocket & Schedule'}
+                                    {isPushing === order.id ? 'Pushing...' : 'Push to Shiprocket'}
                                 </Button>
                             ) : (
                                 <div className="space-y-2">
@@ -180,7 +174,6 @@ export function ViewOrders({ orders, onStatusUpdated }: ViewOrdersProps) {
                                         </SelectTrigger>
                                         <SelectContent>
                                             <SelectItem value="processing" disabled>Processing</SelectItem>
-                                            <SelectItem value="pickup-scheduled" disabled>Pickup Scheduled</SelectItem>
                                             <SelectItem value="shipped">Shipped</SelectItem>
                                             <SelectItem value="delivered">Delivered</SelectItem>
                                         </SelectContent>
