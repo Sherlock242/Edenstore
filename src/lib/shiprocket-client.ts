@@ -1,4 +1,3 @@
-
 // src/lib/shiprocket-client.ts
 'use server';
 
@@ -61,7 +60,49 @@ export type ShipmentPayload = {
     comment: string;
     billing_customer_name: string;
     billing_last_name: string;
-which are too long for Shiprocket's API
+    billing_address: string;
+    billing_address_2: string;
+    billing_city: string;
+    billing_pincode: string;
+    billing_state: string;
+    billing_country: string;
+    billing_email: string;
+    billing_phone: string;
+    shipping_is_billing: boolean;
+    order_items: ShipmentOrderItem[];
+    payment_method: 'COD' | 'Prepaid';
+    shipping_charges: number;
+    giftwrap_charges: number;
+    transaction_charges: number;
+    total_discount: number;
+    sub_total: number;
+    length: number;
+    breadth: number;
+    height: number;
+    weight: number; // in kgs
+};
+
+export async function pushOrderToShiprocket(order: FullOrderDetails): Promise<{ success: boolean; payload?: { order_id: number; shipment_id: number; }; message: string }> {
+    const token = await getShiprocketToken();
+    if (!token) {
+        return { success: false, message: "Could not authenticate with Shiprocket." };
+    }
+    
+    // Extract shipping details and handle potential parsing errors
+    let shippingDetails;
+    try {
+        shippingDetails = JSON.parse(order.shipping_address as string);
+    } catch (e) {
+        return { success: false, message: "Invalid shipping address format." };
+    }
+
+    // Split name into first and last name
+    const nameParts = shippingDetails.firstName.split(' ');
+    const lastName = nameParts.length > 1 ? nameParts.pop() : ' '; // Use a space if no last name
+    const firstName = nameParts.join(' ');
+
+
+    // Prepare order items, ensuring string lengths are within Shiprocket's API limits
     const orderItemsForShipment: ShipmentOrderItem[] = order.items.map(item => ({
         name: item.product.name.substring(0, 100), // Max length 100
         sku: `${item.product.id}-${item.size}`.substring(0, 50), // Max length 50
