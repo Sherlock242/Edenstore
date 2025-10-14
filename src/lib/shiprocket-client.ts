@@ -1,4 +1,3 @@
-
 // src/lib/shiprocket-client.ts
 'use server';
 
@@ -238,13 +237,16 @@ export async function pushOrderToShiprocket(order: FullOrderDetails): Promise<{s
         return { success: false, message: "Could not authenticate with Shiprocket." };
     }
 
+    if (!process.env.SHIPROCKET_PICKUP_NAME) {
+        return { success: false, message: "SHIPROCKET_PICKUP_NAME is not set in your environment variables. Please set it to the name of your pickup location from your Shiprocket dashboard." };
+    }
+
     const shippingAddress = JSON.parse(order.shipping_address as string);
     const totalAmount = order.items.reduce((acc, item) => acc + item.price_at_purchase * item.quantity, 0);
     const totalWeight = order.items.reduce((acc, item) => acc + (item.product.weight * item.quantity), 0);
-    const pickupLocation = process.env.SHIPROCKET_PICKUP_NAME || 'Primary';
+    const pickupLocation = process.env.SHIPROCKET_PICKUP_NAME;
     
     // Provide a default channel ID if the environment variable is not set.
-    // The user can later configure this in their .env file if they have multiple channels.
     const channelId = process.env.SHIPROCKET_CHANNEL_ID || '8434256';
 
     const orderItemsForShipment = order.items.map(item => ({
