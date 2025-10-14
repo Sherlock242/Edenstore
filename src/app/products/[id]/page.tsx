@@ -1,4 +1,5 @@
 
+
 import { getProducts } from "@/app/actions";
 import Image from "next/image";
 import { notFound } from "next/navigation";
@@ -14,6 +15,7 @@ import { ProductDetailsClient } from "@/components/product-details-client";
 import { ProductCard } from "@/components/product-card";
 import { ProductImageCarousel } from "@/components/product-image-carousel";
 import { cookies } from "next/headers";
+import { createClient } from "@/lib/supabase/server";
 
 export const dynamic = 'force-dynamic';
 
@@ -85,10 +87,15 @@ export default async function ProductPage({ params }: { params: { id: string } }
 }
 
 export async function generateStaticParams() {
-    const { cookies } = await import('next/headers');
-    const cookieStore = cookies();
-    const products = await getProducts(cookieStore);
+    // This function runs at build time, so we need a client that doesn't depend on user cookies
+    const supabase = createClient(cookies());
+    const { data: products } = await supabase.from('products').select('id');
+    
+    if (!products) {
+        return [];
+    }
+
     return products.map((product) => ({
-      id: product.id,
+      id: product.id.toString(),
     }));
 }
