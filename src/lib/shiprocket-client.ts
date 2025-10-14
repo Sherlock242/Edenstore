@@ -147,7 +147,7 @@ export async function pushOrderToShiprocket(order: FullOrderDetails): Promise<{ 
     };
 
     try {
-        const response = await fetch(`${SHIPROCKET_API_URL}/orders/create/push`, {
+        const response = await fetch(`${SHIPROCKET_API_URL}/orders/create/adhoc`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
