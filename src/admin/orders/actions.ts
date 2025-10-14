@@ -4,7 +4,7 @@
 import { createClient } from '@/lib/supabase/server';
 import type { OrderDetails } from '@/app/track/actions';
 import type { Product } from '@/app/actions';
-import { requestShipmentPickup } from '@/lib/shiprocket-client';
+import { requestShipmentPickup, pushOrderToShiprocket } from '@/lib/shiprocket-client';
 import { format } from 'date-fns';
 
 export type UserProfileInfo = {
@@ -155,4 +155,31 @@ export async function schedulePickupForOrder(order: FullOrderDetails, pickupDate
     
     const responseData = pickupResult.response?.pickup_status;
     return { success: true, message: `Pickup successfully scheduled for ${formattedPickupDate}. Status: ${responseData}` };
+}
+
+export async function sendOrderToShiprocket(order: FullOrderDetails): Promise<{ success: boolean; message: string, shipmentId?: number }> {
+    const supabase = createClient();
+    
+    const pushResult = await pushOrderToShiprocket(order);
+    if (!pushResult.success || !pushResult.payload) {
+        return { success: false, message: pushResult.message };
+    }
+
+    const { shipment_id, order_id } = pushResult.payload;
+
+    // Save shipment details to our order
+    const { error: updateError } = await supabase
+        .from('orders')
+        .update({
+          shipment_id,
+          shiprocket_order_id: order_id,
+        })
+        .eq('id', order.id);
+      
+    if(updateError) {
+        console.error("Failed to save shipment details to order:", updateError.message);
+        return { success: false, message: `Order pushed to Shiprocket, but failed to save details in local DB. Error: ${updateError.message}` };
+    }
+
+    return { success: true, message: `Order successfully pushed to Shiprocket. Shipment ID: ${shipment_id}`, shipmentId: shipment_id };
 }

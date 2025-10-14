@@ -19,7 +19,7 @@ import {
 } from '@/components/ui/accordion';
 import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
-import { updateOrderStatus, schedulePickupForOrder, type FullOrderDetails } from './actions';
+import { updateOrderStatus, schedulePickupForOrder, type FullOrderDetails, sendOrderToShiprocket } from './actions';
 import { useToast } from '@/hooks/use-toast';
 import {
   Select,
@@ -28,7 +28,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Calendar as CalendarIcon, Rocket } from 'lucide-react';
+import { Calendar as CalendarIcon, Rocket, Send } from 'lucide-react';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
@@ -46,6 +46,8 @@ export function ViewOrders({ orders, onStatusUpdated }: ViewOrdersProps) {
   const [orderIdToSchedule, setOrderIdToSchedule] = useState<string | null>(null);
   const [isScheduling, setIsScheduling] = useState(false);
   const [pickupDate, setPickupDate] = useState<Date | undefined>();
+  const [isPushing, setIsPushing] = useState<string | null>(null);
+
 
   const getStatusInfo = (status: FullOrderDetails['status']) => {
     switch (status) {
@@ -103,6 +105,21 @@ export function ViewOrders({ orders, onStatusUpdated }: ViewOrdersProps) {
           setOrderIdToSchedule(null);
           setPickupDate(undefined);
           setIsScheduling(false);
+      });
+  }
+
+  const handlePushToShiprocket = (order: FullOrderDetails) => {
+      setIsPushing(order.id);
+      startTransition(async () => {
+        const result = await sendOrderToShiprocket(order);
+        if (result.success) {
+            toast({ title: 'Order Pushed!', description: result.message });
+            // Manually update the client-side order with new shipment IDs
+            onStatusUpdated(order.id, order.status); 
+        } else {
+            toast({ variant: 'destructive', title: "Push Failed", description: result.message });
+        }
+        setIsPushing(null);
       });
   }
 
@@ -173,76 +190,83 @@ export function ViewOrders({ orders, onStatusUpdated }: ViewOrdersProps) {
                         
                         <div className="mt-4">
                             <h4 className="font-semibold mb-2">Manage Order</h4>
-                            <div className="space-y-2">
-                                <Select 
-                                    defaultValue={order.status} 
-                                    value={isSchedulingThis ? 'pickup-scheduled' : order.status}
-                                    onValueChange={(value) => handleStatusChange(order, value as FullOrderDetails['status'])}
-                                    disabled={isPending || isScheduling}
-                                >
-                                    <SelectTrigger>
-                                        <SelectValue placeholder="Change status..." />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="processing">Processing</SelectItem>
-                                        <SelectItem value="pickup-scheduled" disabled={!order.shipment_id || order.status !== 'processing'}>
-                                            Schedule Pickup
-                                        </SelectItem>
-                                        <SelectItem value="shipped">Shipped</SelectItem>
-                                        <SelectItem value="delivered">Delivered</SelectItem>
-                                    </SelectContent>
-                                </Select>
+                            {!order.shipment_id && !order.shiprocket_order_id ? (
+                                <Button className="w-full" onClick={() => handlePushToShiprocket(order)} disabled={isPushing === order.id}>
+                                    <Send className="mr-2 h-4 w-4" />
+                                    {isPushing === order.id ? 'Pushing...' : 'Push to Shiprocket'}
+                                </Button>
+                            ) : (
+                                <div className="space-y-2">
+                                    <Select 
+                                        defaultValue={order.status} 
+                                        value={isSchedulingThis ? 'pickup-scheduled' : order.status}
+                                        onValueChange={(value) => handleStatusChange(order, value as FullOrderDetails['status'])}
+                                        disabled={isPending || isScheduling}
+                                    >
+                                        <SelectTrigger>
+                                            <SelectValue placeholder="Change status..." />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="processing">Processing</SelectItem>
+                                            <SelectItem value="pickup-scheduled" disabled={!order.shipment_id || order.status !== 'processing'}>
+                                                Schedule Pickup
+                                            </SelectItem>
+                                            <SelectItem value="shipped">Shipped</SelectItem>
+                                            <SelectItem value="delivered">Delivered</SelectItem>
+                                        </SelectContent>
+                                    </Select>
 
-                                {isSchedulingThis && (
-                                    <div className="grid gap-2 pt-2 border-t mt-2">
-                                        <Popover>
-                                            <PopoverTrigger asChild>
-                                            <Button
-                                                variant={"outline"}
-                                                className={cn(
-                                                "w-full justify-start text-left font-normal",
-                                                !pickupDate && "text-muted-foreground"
-                                                )}
-                                                disabled={isScheduling}
-                                            >
-                                                <CalendarIcon className="mr-2 h-4 w-4" />
-                                                {pickupDate ? format(pickupDate, "PPP") : <span>Pick a manual date</span>}
+                                    {isSchedulingThis && (
+                                        <div className="grid gap-2 pt-2 border-t mt-2">
+                                            <Popover>
+                                                <PopoverTrigger asChild>
+                                                <Button
+                                                    variant={"outline"}
+                                                    className={cn(
+                                                    "w-full justify-start text-left font-normal",
+                                                    !pickupDate && "text-muted-foreground"
+                                                    )}
+                                                    disabled={isScheduling}
+                                                >
+                                                    <CalendarIcon className="mr-2 h-4 w-4" />
+                                                    {pickupDate ? format(pickupDate, "PPP") : <span>Pick a manual date</span>}
+                                                </Button>
+                                                </PopoverTrigger>
+                                                <PopoverContent className="w-auto p-0">
+                                                <Calendar
+                                                    mode="single"
+                                                    selected={pickupDate}
+                                                    onSelect={setPickupDate}
+                                                    initialFocus
+                                                    disabled={(date) => date < new Date() || isScheduling}
+                                                />
+                                                </PopoverContent>
+                                            </Popover>
+                                            <Button onClick={() => handleConfirmSchedule(order, pickupDate)} disabled={isScheduling || !pickupDate}>
+                                                {isScheduling ? 'Confirming...' : 'Confirm Manual Date'}
                                             </Button>
-                                            </PopoverTrigger>
-                                            <PopoverContent className="w-auto p-0">
-                                            <Calendar
-                                                mode="single"
-                                                selected={pickupDate}
-                                                onSelect={setPickupDate}
-                                                initialFocus
-                                                disabled={(date) => date < new Date() || isScheduling}
-                                            />
-                                            </PopoverContent>
-                                        </Popover>
-                                        <Button onClick={() => handleConfirmSchedule(order, pickupDate)} disabled={isScheduling || !pickupDate}>
-                                            {isScheduling ? 'Confirming...' : 'Confirm Manual Date'}
-                                        </Button>
-                                        
-                                        <div className="relative my-1">
-                                            <div className="absolute inset-0 flex items-center">
-                                                <span className="w-full border-t" />
+                                            
+                                            <div className="relative my-1">
+                                                <div className="absolute inset-0 flex items-center">
+                                                    <span className="w-full border-t" />
+                                                </div>
+                                                <div className="relative flex justify-center text-xs uppercase">
+                                                    <span className="bg-card px-2 text-muted-foreground">Or</span>
+                                                </div>
                                             </div>
-                                            <div className="relative flex justify-center text-xs uppercase">
-                                                <span className="bg-card px-2 text-muted-foreground">Or</span>
-                                            </div>
+
+                                            <Button variant="secondary" onClick={() => handleConfirmSchedule(order, undefined)} disabled={isScheduling}>
+                                                <Rocket className="mr-2 h-4 w-4" />
+                                                Auto Schedule (2 Days)
+                                            </Button>
+
+                                            <Button variant="ghost" size="sm" onClick={() => { setOrderIdToSchedule(null); onStatusUpdated(order.id, order.status); }} disabled={isScheduling}>
+                                                Cancel
+                                            </Button>
                                         </div>
-
-                                        <Button variant="secondary" onClick={() => handleConfirmSchedule(order, undefined)} disabled={isScheduling}>
-                                            <Rocket className="mr-2 h-4 w-4" />
-                                            Auto Schedule (2 Days)
-                                        </Button>
-
-                                        <Button variant="ghost" size="sm" onClick={() => { setOrderIdToSchedule(null); onStatusUpdated(order.id, order.status); }} disabled={isScheduling}>
-                                            Cancel
-                                        </Button>
-                                    </div>
-                                )}
-                            </div>
+                                    )}
+                                </div>
+                            )}
                         </div>
                     </div>
                 </div>
@@ -253,5 +277,3 @@ export function ViewOrders({ orders, onStatusUpdated }: ViewOrdersProps) {
     </Accordion>
   );
 }
-
-    

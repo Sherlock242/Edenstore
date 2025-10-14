@@ -1,4 +1,3 @@
-
 // src/app/checkout/actions.ts
 'use server';
 
@@ -6,7 +5,7 @@ import Razorpay from 'razorpay';
 import crypto from 'crypto';
 import { createClient } from '@/lib/supabase/server';
 import { getCartItems } from '../cart/actions';
-import { createShipment, getShippingRates } from '@/lib/shiprocket-client';
+import { getShippingRates } from '@/lib/shiprocket-client';
 import { randomBytes } from 'crypto';
 
 
@@ -115,9 +114,6 @@ export async function verifyPaymentAndCreateOrder(payload: VerifyPaymentPayload)
     if (!cart.success || !cart.items || !cart.items.length) {
         return { success: false, message: "Cart is empty or could not be fetched. Cannot create order." };
     }
-
-    const totalAmount = cart.items.reduce((acc, item) => acc + item.product.price * item.quantity, 0);
-    const totalWeight = cart.items.reduce((acc, item) => acc + (item.product.weight * item.quantity), 0);
     
     // 4. Insert into 'orders' table
     const { data: newOrder, error: orderError } = await supabase
@@ -137,55 +133,6 @@ export async function verifyPaymentAndCreateOrder(payload: VerifyPaymentPayload)
         console.error("Error creating order:", orderError);
         return { success: false, message: `Failed to save order to the database. Reason: ${orderError?.message || 'Unknown error'}` };
     }
-
-    const orderItemsForShipment = cart.items.map(item => ({
-      name: item.product.name,
-      sku: `${item.product.id}-${item.size}-${item.color}`,
-      units: item.quantity,
-      selling_price: item.product.price,
-      hsn: 49011010, // Example HSN, can be made dynamic later
-    }));
-
-    // *** AUTOMATION STEP: Create Shipment with Shiprocket ***
-    const shipmentResult = await createShipment({
-      order_id: newOrder.id, // Use the actual database ID
-      order_date: newOrder.created_at,
-      channel_id: "8434256", // Use the CUSTOM channel ID from your Shiprocket dashboard
-      billing_customer_name: `${shippingAddress.firstName} ${shippingAddress.lastName || ''}`,
-      billing_last_name: shippingAddress.lastName || shippingAddress.firstName,
-      billing_address: shippingAddress.address,
-      billing_city: shippingAddress.city,
-      billing_state: shippingAddress.state || "N/A", // Use state from form, fallback to N/A
-      billing_country: shippingAddress.country,
-      billing_pincode: shippingAddress.pincode || "000000", // Use pincode from form, fallback to 000000
-      billing_email: shippingAddress.email,
-      billing_phone: shippingAddress.phone,
-      order_items: orderItemsForShipment,
-      payment_method: 'Prepaid',
-      sub_total: totalAmount,
-      length: 10,
-      breadth: 10,
-      height: 2,
-      weight: totalWeight > 0 ? totalWeight : 0.1,
-    });
-
-    if (shipmentResult.success && shipmentResult.payload) {
-      console.log('Shiprocket shipment created successfully:', shipmentResult.payload);
-      // Save shipment details to our order
-      const { error: updateError } = await supabase
-        .from('orders')
-        .update({
-          shipment_id: shipmentResult.payload.shipment_id,
-          shiprocket_order_id: shipmentResult.payload.order_id,
-        })
-        .eq('id', newOrder.id);
-      
-      if(updateError) console.error("Failed to save shipment details to order:", updateError.message);
-    } else {
-        // Log if shipment creation fails but don't fail the entire order
-        console.error("Shiprocket shipment creation failed:", shipmentResult.message);
-    }
-
 
     // 5. Insert into 'order_items' table
     const orderItemsToInsert = cart.items.map(item => ({
@@ -239,8 +186,6 @@ export async function createCodOrder(payload: CreateCodOrderPayload): Promise<{s
     
     // Generate a unique, human-readable order ID for COD orders
     const codOrderId = `cod_${randomBytes(6).toString('hex')}`;
-    const totalAmount = cart.items.reduce((acc, item) => acc + item.product.price * item.quantity, 0);
-    const totalWeight = cart.items.reduce((acc, item) => acc + (item.product.weight * item.quantity), 0);
 
     // 2. Insert into 'orders' table
     const { data: newOrder, error: orderError } = await supabase
@@ -260,50 +205,7 @@ export async function createCodOrder(payload: CreateCodOrderPayload): Promise<{s
         return { success: false, message: `Failed to save order. Reason: ${orderError?.message || 'Unknown'}` };
     }
 
-    // 3. Create shipment with Shiprocket
-    const orderItemsForShipment = cart.items.map(item => ({
-        name: item.product.name,
-        sku: `${item.product.id}-${item.size}-${item.color}`,
-        units: item.quantity,
-        selling_price: item.product.price,
-        hsn: 49011010,
-    }));
-
-    const shipmentResult = await createShipment({
-      order_id: newOrder.id, // Use the actual database ID
-      order_date: newOrder.created_at,
-      channel_id: "8434256", // Use the CUSTOM channel ID from your Shiprocket dashboard
-      billing_customer_name: `${shippingAddress.firstName} ${shippingAddress.lastName || ''}`.trim(),
-      billing_last_name: shippingAddress.lastName || shippingAddress.firstName,
-      billing_address: shippingAddress.address,
-      billing_city: shippingAddress.city,
-      billing_state: shippingAddress.state || "N/A",
-      billing_country: shippingAddress.country,
-      billing_pincode: shippingAddress.pincode || "000000",
-      billing_email: shippingAddress.email,
-      billing_phone: shippingAddress.phone,
-      order_items: orderItemsForShipment,
-      payment_method: 'COD',
-      sub_total: totalAmount,
-      length: 10,
-      breadth: 10,
-      height: 2,
-      weight: totalWeight > 0 ? totalWeight : 0.1,
-    });
-
-    if (shipmentResult.success && shipmentResult.payload) {
-      await supabase
-        .from('orders')
-        .update({
-          shipment_id: shipmentResult.payload.shipment_id,
-          shiprocket_order_id: shipmentResult.payload.order_id,
-        })
-        .eq('id', newOrder.id);
-    } else {
-        console.error("Shiprocket COD shipment creation failed:", shipmentResult.message);
-    }
-
-    // 4. Insert into 'order_items' table
+    // 3. Insert into 'order_items' table
     const orderItemsToInsert = cart.items.map(item => ({
         order_id: newOrder.id,
         product_id: item.product.id,
@@ -321,10 +223,8 @@ export async function createCodOrder(payload: CreateCodOrderPayload): Promise<{s
         return { success: false, message: `Failed to save order items. Reason: ${itemsError.message}` };
     }
 
-    // 5. Clear the user's cart
+    // 4. Clear the user's cart
     await supabase.from('cart_items').delete().eq('user_id', user.id);
 
     return { success: true, message: "COD Order created successfully.", razorpayOrderId: codOrderId };
 }
-
-    

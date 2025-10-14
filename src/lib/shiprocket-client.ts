@@ -1,8 +1,7 @@
-
 // src/lib/shiprocket-client.ts
 'use server';
 
-import type { OrderDetails } from "@/app/track/actions";
+import type { FullOrderDetails } from '@/app/admin/orders/actions';
 
 const SHIPROCKET_API_URL = "https://apiv2.shiprocket.in/v1/external";
 
@@ -81,41 +80,6 @@ type ShipmentSuccessPayload = {
     awb_code: string; // This is the tracking number!
     courier_company_id: number;
     courier_name: string;
-}
-
-// Function to create a shipment
-export async function createShipment(payload: ShipmentPayload): Promise<{success: boolean; message: string; payload?: ShipmentSuccessPayload}> {
-    const token = await getShiprocketToken();
-    if (!token) {
-        return { success: false, message: "Could not authenticate with Shiprocket." };
-    }
-
-    try {
-        const response = await fetch(`${SHIPROCKET_API_URL}/orders/create/adhoc`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`,
-            },
-            body: JSON.stringify(payload),
-        });
-
-        const responseData = await response.json();
-
-        if (!response.ok || responseData.status_code !== 200) {
-            console.error("Shiprocket Shipment Creation Failed. Payload sent:", JSON.stringify(payload, null, 2));
-            console.error("Shiprocket Shipment Creation Error Response:", JSON.stringify(responseData, null, 2));
-            const errorMessage = responseData.message || (responseData.errors ? JSON.stringify(responseData.errors) : "Failed to create shipment for an unknown reason.");
-            return { success: false, message: errorMessage };
-        }
-        
-        return { success: true, message: "Shipment created successfully.", payload: responseData };
-
-    } catch (error) {
-        const errorMessage = error instanceof Error ? error.message : "An unknown error occurred.";
-        console.error("Error creating Shiprocket shipment:", error);
-        return { success: false, message: errorMessage };
-    }
 }
 
 type ShippingRatePayload = {
@@ -257,4 +221,71 @@ export async function requestShipmentPickup(shipmentIds: number[], pickupDate: s
     }
 }
 
-    
+
+export async function pushOrderToShiprocket(order: FullOrderDetails): Promise<{success: boolean; message: string; payload?: ShipmentSuccessPayload}> {
+    const token = await getShiprocketToken();
+    if (!token) {
+        return { success: false, message: "Could not authenticate with Shiprocket." };
+    }
+
+    const shippingAddress = JSON.parse(order.shipping_address as string);
+    const totalAmount = order.items.reduce((acc, item) => acc + item.price_at_purchase * item.quantity, 0);
+    const totalWeight = order.items.reduce((acc, item) => acc + (item.product.weight * item.quantity), 0);
+
+    const orderItemsForShipment = order.items.map(item => ({
+      name: item.product.name,
+      sku: `${item.product.id}-${item.size}-${item.color}`,
+      units: item.quantity,
+      selling_price: item.price_at_purchase,
+      hsn: 49011010, // Example HSN, can be made dynamic later
+    }));
+
+    const payload: ShipmentPayload = {
+        order_id: order.id,
+        order_date: order.created_at,
+        channel_id: "8434256",
+        billing_customer_name: `${shippingAddress.firstName} ${shippingAddress.lastName || ''}`.trim(),
+        billing_last_name: shippingAddress.lastName || shippingAddress.firstName,
+        billing_address: shippingAddress.address,
+        billing_city: shippingAddress.city,
+        billing_state: shippingAddress.state || "N/A",
+        billing_country: shippingAddress.country,
+        billing_pincode: shippingAddress.pincode || "000000",
+        billing_email: shippingAddress.email,
+        billing_phone: shippingAddress.phone,
+        order_items: orderItemsForShipment,
+        payment_method: order.payment_method || 'Prepaid',
+        sub_total: totalAmount,
+        length: 10,
+        breadth: 10,
+        height: 2,
+        weight: totalWeight > 0 ? totalWeight : 0.1,
+    };
+
+    try {
+        const response = await fetch(`${SHIPROCKET_API_URL}/orders/create/adhoc`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`,
+            },
+            body: JSON.stringify(payload),
+        });
+
+        const responseData = await response.json();
+
+        if (!response.ok || responseData.status_code !== 200) {
+            console.error("Shiprocket Push Order Failed. Payload sent:", JSON.stringify(payload, null, 2));
+            console.error("Shiprocket Push Order Error Response:", JSON.stringify(responseData, null, 2));
+            const errorMessage = responseData.message || (responseData.errors ? JSON.stringify(responseData.errors) : "Failed to push order for an unknown reason.");
+            return { success: false, message: errorMessage };
+        }
+        
+        return { success: true, message: "Order pushed successfully.", payload: responseData };
+
+    } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : "An unknown error occurred.";
+        console.error("Error pushing order to Shiprocket:", error);
+        return { success: false, message: errorMessage };
+    }
+}
