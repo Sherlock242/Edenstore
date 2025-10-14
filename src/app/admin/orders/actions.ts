@@ -122,7 +122,7 @@ export async function sendOrderToShiprocket(order: FullOrderDetails): Promise<{ 
     const supabase = createClient(cookieStore);
     
     const pushResult = await pushOrderToShiprocket(order);
-    if (!pushResult.success || !pushResult.payload || !pushResult.payload.order_id || !pushResult.payload.shipment_id) {
+    if (!pushResult.success || !pushResult.payload) {
         return { success: false, message: pushResult.message };
     }
 

@@ -163,6 +163,7 @@ export function ViewOrders({ orders, onStatusUpdated }: ViewOrdersProps) {
                                 </Button>
                             ) : (
                                 <div className="space-y-2">
+                                    <p className="text-xs text-muted-foreground">Shipment ID: {order.shipment_id}</p>
                                     <Select 
                                         defaultValue={order.status}
                                         value={order.status}
