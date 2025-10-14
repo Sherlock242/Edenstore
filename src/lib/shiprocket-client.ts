@@ -184,7 +184,7 @@ export async function getShippingRates(params: { pickup_postcode: string, delive
     const { pickup_postcode, delivery_postcode, weight, cod } = params;
     const subTotal = 100; // Example subtotal, as it's required by the API
 
-    const url = new URL(`${SHIPROCKET_API_URL}/courier/serviceability/`);
+    const url = new URL(`${SHIPROCKET_API_URL}/courier/serviceability`);
     url.searchParams.append('pickup_postcode', pickup_postcode);
     url.searchParams.append('delivery_postcode', delivery_postcode);
     url.searchParams.append('weight', weight.toString());
@@ -276,5 +276,3 @@ export async function trackShipmentById(shipmentId: string): Promise<any> {
         return null;
     }
 }
-
-    
