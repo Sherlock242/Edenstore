@@ -152,15 +152,11 @@ export async function pushOrderToShiprocket(order: FullOrderDetails): Promise<{ 
         
         const responseBody = await response.json();
 
-        // **FIXED LOGIC**: Check for the presence of `order_id` and `shipment_id` in the response payload.
-        // This is a more reliable indicator of success than `status_code`.
         if (response.ok && responseBody.payload?.order_id && responseBody.payload?.shipment_id) {
              return { success: true, payload: responseBody.payload, message: 'Order pushed successfully.' };
         } else {
-             // Log detailed error information for debugging
              console.error("Shiprocket Push Order Failed. Payload Sent:", JSON.stringify(payload, null, 2));
              console.error("Shiprocket Response:", JSON.stringify(responseBody, null, 2));
-             // Provide a more specific error message if available
              const errorMessage = responseBody.message || "Failed to push order for an unknown reason.";
              return { success: false, message: errorMessage };
         }
@@ -273,3 +269,5 @@ export async function trackShipmentById(shipmentId: string): Promise<any> {
         return null;
     }
 }
+
+    
