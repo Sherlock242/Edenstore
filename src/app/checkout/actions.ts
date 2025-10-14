@@ -1,3 +1,4 @@
+
 // src/app/checkout/actions.ts
 'use server';
 
@@ -29,12 +30,16 @@ export async function fetchShippingRatesAction(pincode: string, paymentMethod: '
 
     const totalWeight = cart.items.reduce((acc, item) => acc + (item.product.weight * item.quantity), 0);
     const subTotal = cart.items.reduce((acc, item) => acc + (item.product.price * item.quantity), 0);
-
+    
+    // In India, GST is typically applied on the shipping fee as well.
+    // However, Shiprocket's rate API returns the final rate inclusive of their taxes.
+    // The subTotal for `declared_value` should be the pre-tax value of goods.
     const result = await getShippingRates({
         pickup_postcode: pickupPostcode,
         delivery_postcode: pincode,
         weight: totalWeight > 0 ? totalWeight : 0.1, // Ensure weight is not zero
-        cod: paymentMethod === 'cod' ? 1 : 0
+        cod: paymentMethod === 'cod' ? 1 : 0,
+        declared_value: subTotal,
     });
 
     return result;
@@ -220,3 +225,5 @@ export async function createCodOrder(payload: CreateCodOrderPayload): Promise<{s
 
     return { success: true, message: "COD Order created successfully. Ready for shipment processing.", razorpayOrderId: codOrderId };
 }
+
+    

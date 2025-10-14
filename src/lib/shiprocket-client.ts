@@ -180,19 +180,18 @@ export async function pushOrderToShiprocket(order: FullOrderDetails): Promise<{ 
 
 
 
-export async function getShippingRates(params: { pickup_postcode: string, delivery_postcode: string, weight: number, cod: 0 | 1 }): Promise<{ success: boolean; message: string; rate?: number }> {
+export async function getShippingRates(params: { pickup_postcode: string, delivery_postcode: string, weight: number, cod: 0 | 1, declared_value: number }): Promise<{ success: boolean; message: string; rate?: number }> {
     const token = await getShiprocketToken();
     if (!token) return { success: false, message: "Could not authenticate with Shiprocket." };
 
-    const { pickup_postcode, delivery_postcode, weight, cod } = params;
-    const subTotal = 100; // Example subtotal, as it's required by the API
+    const { pickup_postcode, delivery_postcode, weight, cod, declared_value } = params;
 
     const url = new URL(`${SHIPROCKET_API_URL}/courier/serviceability`);
     url.searchParams.append('pickup_postcode', pickup_postcode);
     url.searchParams.append('delivery_postcode', delivery_postcode);
     url.searchParams.append('weight', weight.toString());
     url.searchParams.append('cod', cod.toString());
-    url.searchParams.append('declared_value', subTotal.toString());
+    url.searchParams.append('declared_value', declared_value.toString());
 
     try {
         const response = await fetch(url.toString(), {
@@ -283,3 +282,5 @@ export async function trackShipmentById(shipmentId: string): Promise<any> {
         return null;
     }
 }
+
+    

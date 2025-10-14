@@ -21,6 +21,8 @@ import { getSiteName } from '../admin/settings/actions';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { cn } from '@/lib/utils';
 
+const GST_RATE = 0.18; // 18% GST
+
 export default function CheckoutPage() {
   const { state, dispatch } = useCart();
   const { toast } = useToast();
@@ -91,7 +93,8 @@ export default function CheckoutPage() {
     0
   );
   
-  const total = subtotal + (shippingCost || 0);
+  const gstAmount = subtotal * GST_RATE;
+  const total = subtotal + gstAmount + (shippingCost || 0);
 
   const validateForm = () => {
     if (!firstName || !address || !city || !country || !phone || !email || !pincode || !stateName) {
@@ -349,6 +352,10 @@ export default function CheckoutPage() {
                   <div className="flex justify-between">
                     <span>Subtotal</span>
                     <span>₹{subtotal.toFixed(2)}</span>
+                  </div>
+                   <div className="flex justify-between">
+                    <span>GST (18%)</span>
+                    <span>₹{gstAmount.toFixed(2)}</span>
                   </div>
                   <div className="flex justify-between">
                     <span>Shipping</span>
