@@ -1,3 +1,4 @@
+
 // src/lib/shiprocket-client.ts
 'use server';
 
@@ -52,7 +53,7 @@ type ShipmentOrderItem = {
     hsn: number;
 };
 
-export type ShipmentPayload = {
+type ShipmentPayload = {
     order_id: string; // Your internal order ID
     order_date: string;
     pickup_location: string;
@@ -98,7 +99,7 @@ export async function pushOrderToShiprocket(order: FullOrderDetails): Promise<{ 
 
     // Split name into first and last name
     const nameParts = shippingDetails.firstName.split(' ');
-    const lastName = nameParts.length > 1 ? nameParts.pop() : ' '; // Use a space if no last name
+    const lastName = nameParts.length > 1 ? nameParts.pop() || ' ' : ' ';
     const firstName = nameParts.join(' ');
 
 
@@ -275,3 +276,5 @@ export async function trackShipmentById(shipmentId: string): Promise<any> {
         return null;
     }
 }
+
+    
