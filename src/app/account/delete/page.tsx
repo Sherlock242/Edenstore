@@ -4,18 +4,19 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { cookies } from "next/headers";
 
 export default function DeleteAccountPage() {
     const deleteAccount = async () => {
         "use server";
-        const supabase = createClient();
+        const cookieStore = cookies();
+        const supabase = createClient(cookieStore);
         const { data: { user } } = await supabase.auth.getUser();
 
         if (user) {
             // We need to use the service role key to delete the user from auth.users
             const adminClient = createClient(
-                process.env.NEXT_PUBLIC_SUPABASE_URL!,
-                process.env.SUPABASE_SERVICE_ROLE_KEY!
+                cookies()
             );
             const { error } = await adminClient.auth.admin.deleteUser(user.id);
             if (error) {

@@ -4,11 +4,13 @@
 import { createClient } from '@/lib/supabase/server';
 import type { Product } from '@/app/actions';
 import type { OrderDetails, OrderItem } from '@/app/track/actions';
+import { cookies } from 'next/headers';
 
 export type OrderSummary = Omit<OrderDetails, 'shipping_address'>;
 
 export async function getUserOrders(): Promise<{ success: boolean; orders?: OrderSummary[]; message: string }> {
-    const supabase = createClient();
+    const cookieStore = cookies();
+    const supabase = createClient(cookieStore);
     const { data: { user } } = await supabase.auth.getUser();
 
     if (!user) {

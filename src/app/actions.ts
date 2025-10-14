@@ -3,6 +3,7 @@
 
 import { revalidatePath } from 'next/cache';
 import { createClient } from '@/lib/supabase/server';
+import { cookies } from 'next/headers';
 
 
 export type Product = {
@@ -21,7 +22,8 @@ export type Product = {
 
 // This function now needs to fetch from Supabase
 export const getProducts = async (): Promise<Product[]> => {
-    const supabase = createClient();
+    const cookieStore = cookies();
+    const supabase = createClient(cookieStore);
     const { data: productsData, error } = await supabase
       .from('products')
       .select(`
@@ -63,7 +65,8 @@ export const getProducts = async (): Promise<Product[]> => {
 export type SearchProduct = Pick<Product, 'id' | 'name' | 'category'> & { image: Product['images'][0] };
 
 export const getProductsForSearch = async (): Promise<SearchProduct[]> => {
-    const supabase = createClient();
+    const cookieStore = cookies();
+    const supabase = createClient(cookieStore);
     const { data: productsData, error } = await supabase
       .from('products')
       .select(`
@@ -123,7 +126,8 @@ type ServerResponse = {
 }
 
 export async function addProduct(data: ProductFormValues): Promise<ServerResponse> {
-    const supabase = createClient();
+    const cookieStore = cookies();
+    const supabase = createClient(cookieStore);
     const { images, sizes, ...productData } = data;
     
     // 1. Insert product data into the 'products' table using the admin client
@@ -246,7 +250,8 @@ export async function addProduct(data: ProductFormValues): Promise<ServerRespons
 
 
 export async function updateProduct(data: UpdateProductFormValues): Promise<ServerResponse> {
-  const supabase = createClient();
+  const cookieStore = cookies();
+  const supabase = createClient(cookieStore);
   const { id, images, sizes, ...productData } = data;
 
   // Handle image replacement if new images are provided
@@ -398,7 +403,8 @@ export async function updateProduct(data: UpdateProductFormValues): Promise<Serv
 
 
 export async function deleteProduct(productId: string): Promise<ServerResponse> {
-  const supabase = createClient();
+  const cookieStore = cookies();
+  const supabase = createClient(cookieStore);
   // First, fetch the product to get the image URLs for deletion from storage
   const { data: productData, error: fetchError } = await supabase
     .from('products')
@@ -456,7 +462,8 @@ export async function deleteProduct(productId: string): Promise<ServerResponse> 
 
 
 export async function deleteUserAccount(): Promise<ServerResponse> {
-    const supabase = createClient();
+    const cookieStore = cookies();
+    const supabase = createClient(cookieStore);
     // We need the user's ID. To do this securely, we get the session on the server.
     const { data: { user } } = await supabase.auth.getUser();
 

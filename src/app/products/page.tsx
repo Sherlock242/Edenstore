@@ -1,6 +1,8 @@
 
 import { getProducts } from '@/app/actions';
 import { ProductCard } from '@/components/product-card';
+import { cookies } from 'next/headers';
+import { createClient } from '@/lib/supabase/server';
 
 type ProductsPageProps = {
   searchParams: {
@@ -46,5 +48,3 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
     </div>
   );
 }
-
-    

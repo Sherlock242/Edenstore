@@ -10,6 +10,7 @@ import { getSiteName } from './admin/settings/actions';
 import { createClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
 import MyOrdersPage from './my-orders/page';
+import { cookies } from 'next/headers';
 
 const inter = Inter({
   subsets: ['latin'],
@@ -25,7 +26,10 @@ const spaceGrotesk = Space_Grotesk({
 export async function generateMetadata(): Promise<Metadata> {
   const siteName = await getSiteName();
   return {
-    title: siteName,
+    title: {
+      default: siteName,
+      template: `%s | ${siteName}`,
+    },
     description: `The ultimate destination for anime t-shirts, powered by ${siteName}.`,
     icons: {
       icon: '/icon.png',

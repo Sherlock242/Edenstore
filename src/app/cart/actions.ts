@@ -4,9 +4,11 @@
 import { createClient } from '@/lib/supabase/server';
 import type { CartItem } from '@/contexts/cart-context';
 import type { Product } from '@/app/actions';
+import { cookies } from 'next/headers';
 
 export async function getCartItems(): Promise<{ success: boolean; items?: CartItem[]; message: string }> {
-  const supabase = createClient();
+  const cookieStore = cookies();
+  const supabase = createClient(cookieStore);
   const { data: { user } } = await supabase.auth.getUser();
 
   if (!user) {
@@ -88,7 +90,8 @@ type AddItemPayload = {
 };
 
 export async function addCartItem(payload: AddItemPayload): Promise<{ success: boolean; item?: CartItem; message: string }> {
-  const supabase = createClient();
+  const cookieStore = cookies();
+  const supabase = createClient(cookieStore);
   const { data: { user } } = await supabase.auth.getUser();
 
   if (!user) {
@@ -161,7 +164,8 @@ type UpdateQuantityPayload = {
     quantity: number;
 }
 export async function updateCartItemQuantity(payload: UpdateQuantityPayload): Promise<{ success: boolean; message: string }> {
-     const supabase = createClient();
+     const cookieStore = cookies();
+     const supabase = createClient(cookieStore);
      const { data: { user } } = await supabase.auth.getUser();
      if (!user) return { success: false, message: 'You must be logged in.' };
 
@@ -189,7 +193,8 @@ type RemoveItemPayload = {
 }
 
 export async function removeCartItem(payload: RemoveItemPayload): Promise<{ success: boolean; message: string }> {
-    const supabase = createClient();
+    const cookieStore = cookies();
+    const supabase = createClient(cookieStore);
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return { success: false, message: 'You must be logged in.' };
     

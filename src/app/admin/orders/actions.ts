@@ -6,6 +6,7 @@ import type { OrderDetails } from '@/app/track/actions';
 import type { Product } from '@/app/actions';
 import { requestShipmentPickup, pushOrderToShiprocket } from '@/lib/shiprocket-client';
 import { format } from 'date-fns';
+import { cookies } from 'next/headers';
 
 export type UserProfileInfo = {
     display_name: string;
@@ -15,7 +16,8 @@ export type UserProfileInfo = {
 export type FullOrderDetails = OrderDetails & { user: UserProfileInfo };
 
 export async function getAllOrders(): Promise<{ success: boolean; orders?: FullOrderDetails[]; message: string }> {
-    const supabase = createClient();
+    const cookieStore = cookies();
+    const supabase = createClient(cookieStore);
     // 1. Fetch all orders with their items
     const { data: ordersData, error: ordersError } = await supabase
         .from('orders')
@@ -100,7 +102,8 @@ export async function getAllOrders(): Promise<{ success: boolean; orders?: FullO
 }
 
 export async function updateOrderStatus(orderId: string, status: OrderDetails['status']): Promise<{ success: boolean; message: string }> {
-    const supabase = createClient();
+    const cookieStore = cookies();
+    const supabase = createClient(cookieStore);
     const { error } = await supabase
         .from('orders')
         .update({ status: status })
@@ -119,7 +122,8 @@ export async function schedulePickupForOrder(order: FullOrderDetails, pickupDate
     if (!order.shipment_id) {
         return { success: false, message: "Invalid Shipment ID." };
     }
-    const supabase = createClient();
+    const cookieStore = cookies();
+    const supabase = createClient(cookieStore);
 
     let finalPickupDate: Date;
     if (pickupDate) {
@@ -158,7 +162,8 @@ export async function schedulePickupForOrder(order: FullOrderDetails, pickupDate
 }
 
 export async function sendOrderToShiprocket(order: FullOrderDetails): Promise<{ success: boolean; message: string, shipmentId?: number, shiprocketOrderId?: number }> {
-    const supabase = createClient();
+    const cookieStore = cookies();
+    const supabase = createClient(cookieStore);
     
     const pushResult = await pushOrderToShiprocket(order);
     if (!pushResult.success || !pushResult.payload) {

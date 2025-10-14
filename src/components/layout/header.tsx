@@ -1,6 +1,7 @@
 
 import { createClient } from '@/lib/supabase/server';
 import { HeaderClient } from './header-client';
+import { cookies } from 'next/headers';
 
 type UserProfile = {
   id: string;
@@ -14,7 +15,8 @@ type HeaderProps = {
 };
 
 export async function Header({ siteName }: HeaderProps) {
-  const supabase = createClient();
+  const cookieStore = cookies();
+  const supabase = createClient(cookieStore);
   const { data: { user } } = await supabase.auth.getUser();
 
   let userProfile: UserProfile | null = null;

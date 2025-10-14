@@ -4,6 +4,7 @@ import { Card, CardHeader, CardTitle, CardDescription } from '@/components/ui/ca
 import { PlusCircle, Package, Users, Settings, ArrowRight } from 'lucide-react';
 import { createClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
+import { cookies } from 'next/headers';
 
 const adminLinks = [
     { href: "/admin/add-product", label: "Manage Products", description: "Add, edit, and remove products.", icon: PlusCircle },
@@ -13,7 +14,8 @@ const adminLinks = [
 ];
 
 export default async function AdminDashboardPage() {
-  const supabase = createClient();
+  const cookieStore = cookies();
+  const supabase = createClient(cookieStore);
   const { data: { user } } = await supabase.auth.getUser();
 
   if (!user) {

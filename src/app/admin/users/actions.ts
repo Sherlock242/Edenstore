@@ -2,6 +2,7 @@
 'use server';
 
 import { createClient } from '@/lib/supabase/server';
+import { cookies } from 'next/headers';
 
 export type UserProfileInfo = {
     id: string;
@@ -11,7 +12,8 @@ export type UserProfileInfo = {
 }
 
 export async function getAllUsers(): Promise<{ success: boolean; users?: UserProfileInfo[]; message: string }> {
-    const supabase = createClient();
+    const cookieStore = cookies();
+    const supabase = createClient(cookieStore);
     const { data: usersData, error: usersError } = await supabase
         .from('users')
         .select('id, display_name, email, created_at')

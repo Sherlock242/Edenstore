@@ -2,9 +2,11 @@
 import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
 import { type NextRequest, NextResponse } from 'next/server'
+import { cookies } from 'next/headers';
 
 export async function POST(req: NextRequest) {
-  const supabase = createClient()
+  const cookieStore = cookies();
+  const supabase = createClient(cookieStore);
 
   // Check if we have a session
   const {

@@ -1,6 +1,6 @@
 
 import Link from 'next/link';
-import { headers } from 'next/headers';
+import { headers, cookies } from 'next/headers';
 import { createClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
 import { Button } from '@/components/ui/button';
@@ -17,7 +17,8 @@ export default function SignupPage({ searchParams }: { searchParams: { message: 
     const email = formData.get('email') as string
     const password = formData.get('password') as string
     const confirmPassword = formData.get('confirmPassword') as string
-    const supabase = createClient()
+    const cookieStore = cookies();
+    const supabase = createClient(cookieStore);
 
     if (password !== confirmPassword) {
         return redirect('/signup?message=Passwords do not match');

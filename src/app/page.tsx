@@ -5,6 +5,8 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { getHeroImageUrl } from '@/app/admin/settings/actions';
+import { cookies } from 'next/headers';
+import { createClient } from '@/lib/supabase/server';
 
 export default async function Home() {
   const products = await getProducts();

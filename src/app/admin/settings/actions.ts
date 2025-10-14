@@ -3,6 +3,7 @@
 
 import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
+import { cookies } from 'next/headers';
 
 const HERO_IMAGE_KEY = 'heroImageUrl';
 const SITE_NAME_KEY = 'siteName';
@@ -15,7 +16,8 @@ type ServerResponse = {
 }
 
 export async function getHeroImageUrl(): Promise<{ success: boolean; url?: string | null; message: string; }> {
-    const supabase = createClient();
+    const cookieStore = cookies();
+    const supabase = createClient(cookieStore);
     const { data, error } = await supabase
         .from('site_settings')
         .select('value')
@@ -31,7 +33,8 @@ export async function getHeroImageUrl(): Promise<{ success: boolean; url?: strin
 }
 
 export async function updateHeroImage(image: File): Promise<ServerResponse> {
-    const supabase = createClient();
+    const cookieStore = cookies();
+    const supabase = createClient(cookieStore);
     // 1. Fetch the old image URL to delete it later
     const { data: oldSetting } = await supabase
         .from('site_settings')
@@ -83,7 +86,7 @@ export async function updateHeroImage(image: File): Promise<ServerResponse> {
         try {
             const oldImagePath = new URL(oldImageUrl).pathname.split('/product-images/').pop();
             if (oldImagePath) {
-                await supabase.storage.from('product-images').remove([`product-images/${oldImagePath}`]);
+                await supabase.storage.from('product-images').remove([`site-assets/${oldImagePath.split('/').pop()}`]);
             }
         } catch (e) {
             console.error("Failed to delete old hero image, but continuing:", e)
@@ -101,7 +104,8 @@ export async function updateHeroImage(image: File): Promise<ServerResponse> {
 
 
 export async function getSiteName(): Promise<string> {
-    const supabase = createClient();
+    const cookieStore = cookies();
+    const supabase = createClient(cookieStore);
     const { data, error } = await supabase
         .from('site_settings')
         .select('value')
@@ -116,7 +120,8 @@ export async function getSiteName(): Promise<string> {
 }
 
 export async function updateSiteName(newName: string): Promise<{success: boolean; message: string}> {
-    const supabase = createClient();
+    const cookieStore = cookies();
+    const supabase = createClient(cookieStore);
     if (!newName || newName.trim().length === 0) {
         return { success: false, message: 'Site name cannot be empty.' };
     }

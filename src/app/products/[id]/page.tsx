@@ -13,6 +13,8 @@ import { Star } from "lucide-react";
 import { ProductDetailsClient } from "@/components/product-details-client";
 import { ProductCard } from "@/components/product-card";
 import { ProductImageCarousel } from "@/components/product-image-carousel";
+import { cookies } from "next/headers";
+import { createClient } from "@/lib/supabase/server";
 
 export const dynamic = 'force-dynamic';
 

@@ -7,6 +7,7 @@ import { createClient } from '@/lib/supabase/server';
 import { getCartItems } from '../cart/actions';
 import { getShippingRates } from '@/lib/shiprocket-client';
 import { randomBytes } from 'crypto';
+import { cookies } from 'next/headers';
 
 
 export async function fetchShippingRatesAction(pincode: string, paymentMethod: 'online' | 'cod'): Promise<{success: boolean, message: string, rate?: number}> {
@@ -101,7 +102,8 @@ export async function verifyPaymentAndCreateOrder(payload: VerifyPaymentPayload)
         return { success: false, message: "Payment verification failed. Signature mismatch." };
     }
 
-    const supabase = createClient();
+    const cookieStore = cookies();
+    const supabase = createClient(cookieStore);
     const { data: { user } } = await supabase.auth.getUser();
 
     if (!user) {
@@ -164,7 +166,8 @@ type CreateCodOrderPayload = {
 }
 export async function createCodOrder(payload: CreateCodOrderPayload): Promise<{success: boolean; message: string; razorpayOrderId?: string}> {
     const { shippingAddress } = payload;
-    const supabase = createClient();
+    const cookieStore = cookies();
+    const supabase = createClient(cookieStore);
     
     const { data: { user } } = await supabase.auth.getUser();
 

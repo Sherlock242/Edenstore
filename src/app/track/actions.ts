@@ -1,10 +1,10 @@
-
 // src/app/track/actions.ts
 'use server';
 
 import { createClient } from '@/lib/supabase/server';
 import type { Product } from '@/app/actions';
 import { trackShipmentById } from '@/lib/shiprocket-client';
+import { cookies } from 'next/headers';
 
 export type OrderItem = {
     quantity: number;
@@ -31,7 +31,8 @@ export async function getOrderDetails(razorpayOrderId: string): Promise<{ succes
     if (!razorpayOrderId) {
         return { success: false, message: 'Order ID is required.' };
     }
-    const supabase = createClient();
+    const cookieStore = cookies();
+    const supabase = createClient(cookieStore);
     // 1. Fetch the main order details using the Razorpay order ID
     const { data: orderData, error: orderError } = await supabase
         .from('orders')
