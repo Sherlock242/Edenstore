@@ -176,7 +176,7 @@ export async function sendOrderToShiprocket(order: FullOrderDetails): Promise<{ 
     const { error: updateError } = await supabase
         .from('orders')
         .update({
-          shipment_id,
+          shipment_id: shipment_id,
           shiprocket_order_id: order_id,
           status: 'processing' // Good practice to ensure status is processing
         })
