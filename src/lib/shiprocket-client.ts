@@ -54,10 +54,9 @@ type ShipmentOrderItem = {
 export type ShipmentPayload = {
     order_id: string; // Your internal order ID
     order_date: string;
-    channel_id: string; // Add this
+    channel_id: string;
     billing_customer_name: string;
     billing_last_name: string;
-... (rest of the properties)
     billing_address: string;
     billing_city: string;
     billing_state: string;
