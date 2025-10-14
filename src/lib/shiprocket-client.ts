@@ -2,6 +2,7 @@
 'use server';
 
 import type { FullOrderDetails } from '@/app/admin/orders/actions';
+import { format } from 'date-fns';
 
 const SHIPROCKET_API_URL = "https://apiv2.shiprocket.in/v1/external";
 
@@ -53,23 +54,31 @@ type ShipmentOrderItem = {
 export type ShipmentPayload = {
     order_id: string; // Your internal order ID
     order_date: string;
+    pickup_location: string;
     channel_id: string;
+    comment: string;
     billing_customer_name: string;
     billing_last_name: string;
     billing_address: string;
+    billing_address_2: string;
     billing_city: string;
+    billing_pincode: string;
     billing_state: string;
     billing_country: string;
-    billing_pincode: string;
     billing_email: string;
     billing_phone: string;
+    shipping_is_billing: boolean;
     order_items: ShipmentOrderItem[];
     payment_method: 'Prepaid' | 'COD';
+    shipping_charges: number;
+    giftwrap_charges: number;
+    transaction_charges: number;
+    total_discount: number;
     sub_total: number;
     length: number;
     breadth: number;
     height: number;
-    weight: number;
+    weight: number; // in kgs
 }
 
 type ShipmentSuccessPayload = {
@@ -231,10 +240,11 @@ export async function pushOrderToShiprocket(order: FullOrderDetails): Promise<{s
     const shippingAddress = JSON.parse(order.shipping_address as string);
     const totalAmount = order.items.reduce((acc, item) => acc + item.price_at_purchase * item.quantity, 0);
     const totalWeight = order.items.reduce((acc, item) => acc + (item.product.weight * item.quantity), 0);
+    const pickupLocation = process.env.SHIPROCKET_PICKUP_NAME || 'Primary';
 
     const orderItemsForShipment = order.items.map(item => ({
       name: item.product.name,
-      sku: `${item.product.id}-${item.size}-${item.color}`,
+      sku: `${item.product.id}-${item.size}`.slice(0, 49), // SKU max length is 50
       units: item.quantity,
       selling_price: item.price_at_purchase,
       hsn: 49011010, // Example HSN, can be made dynamic later
@@ -242,24 +252,32 @@ export async function pushOrderToShiprocket(order: FullOrderDetails): Promise<{s
 
     const payload: ShipmentPayload = {
         order_id: order.id,
-        order_date: order.created_at,
-        channel_id: "8434256",
-        billing_customer_name: `${shippingAddress.firstName} ${shippingAddress.lastName || ''}`.trim(),
-        billing_last_name: shippingAddress.lastName || shippingAddress.firstName,
+        order_date: format(new Date(order.created_at), 'yyyy-MM-dd HH:mm'),
+        pickup_location: pickupLocation,
+        channel_id: "", // Not needed for create/adhoc
+        comment: `Order from anistore`,
+        billing_customer_name: shippingAddress.firstName || "N/A",
+        billing_last_name: shippingAddress.lastName || " ", // Must not be empty
         billing_address: shippingAddress.address,
+        billing_address_2: "",
         billing_city: shippingAddress.city,
-        billing_state: shippingAddress.state || "N/A",
+        billing_pincode: shippingAddress.pincode,
+        billing_state: shippingAddress.state,
         billing_country: shippingAddress.country,
-        billing_pincode: shippingAddress.pincode || "000000",
         billing_email: shippingAddress.email,
         billing_phone: shippingAddress.phone,
+        shipping_is_billing: true,
         order_items: orderItemsForShipment,
         payment_method: order.payment_method || 'Prepaid',
+        shipping_charges: 0,
+        giftwrap_charges: 0,
+        transaction_charges: 0,
+        total_discount: 0,
         sub_total: totalAmount,
         length: 10,
         breadth: 10,
         height: 2,
-        weight: totalWeight > 0 ? totalWeight : 0.1,
+        weight: totalWeight > 0 ? totalWeight : 0.1, // Ensure weight > 0
     };
 
     try {
