@@ -113,7 +113,8 @@ export function AddProductForm({ productToEdit, onProductAddedOrUpdated }: AddPr
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     let result;
-    const imagesWithFiles = values.images.filter(img => img.file && img.file.size > 0) as { file: File; hint: string }[];
+    // Filter for images where a new file has actually been selected.
+    const imagesWithFiles = values.images.filter(img => img.file instanceof File && img.file.size > 0) as { file: File; hint: string }[];
 
     if (isEditMode && values.id) {
         const updateValues = {
@@ -124,12 +125,14 @@ export function AddProductForm({ productToEdit, onProductAddedOrUpdated }: AddPr
             category: values.category,
             weight: values.weight,
             sizes: values.sizes,
-            images: imagesWithFiles,
+            // Only include images field if new images were uploaded
+            ...(imagesWithFiles.length > 0 && { images: imagesWithFiles }),
         };
         result = await updateProduct(updateValues);
     } else {
+        // For adding a new product, at least one image file is mandatory.
         if (imagesWithFiles.length === 0) {
-            form.setError('images', { type: 'manual', message: 'At least one new image file is required.' });
+            form.setError('images', { type: 'manual', message: 'At least one new image file is required to add a product.' });
             return;
         }
         const addValues = {
@@ -319,7 +322,7 @@ export function AddProductForm({ productToEdit, onProductAddedOrUpdated }: AddPr
                                     </div>
                                     </FormControl>
                                     {isEditMode && imageValue.preview && !imageValue.file && (
-                                        <FormDescription>This is the current image. To add a new one, upload a file.</FormDescription>
+                                        <FormDescription>This is the current image. To replace images, upload one or more new files.</FormDescription>
                                     )}
                                     <FormMessage />
                                 </FormItem>
@@ -355,3 +358,5 @@ export function AddProductForm({ productToEdit, onProductAddedOrUpdated }: AddPr
     </Form>
   );
 }
+
+    

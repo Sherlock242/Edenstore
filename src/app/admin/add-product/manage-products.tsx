@@ -28,9 +28,10 @@ import { Edit, Trash2 } from 'lucide-react';
 
 type ManageProductsProps = {
   onEditProduct: (product: Product) => void;
+  productAddedOrUpdated: number;
 };
 
-export function ManageProducts({ onEditProduct }: ManageProductsProps) {
+export function ManageProducts({ onEditProduct, productAddedOrUpdated }: ManageProductsProps) {
   const [products, setProducts] = useState<Product[]>([]);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
@@ -42,7 +43,7 @@ export function ManageProducts({ onEditProduct }: ManageProductsProps) {
       const fetchedProducts = await getProducts();
       setProducts(fetchedProducts);
     });
-  }, []);
+  }, [productAddedOrUpdated]);
   
   const handleEditClick = (product: Product) => {
     onEditProduct(product);
@@ -162,3 +163,5 @@ export function ManageProducts({ onEditProduct }: ManageProductsProps) {
     </div>
   );
 }
+
+    

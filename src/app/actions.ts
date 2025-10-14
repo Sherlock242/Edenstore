@@ -260,12 +260,48 @@ export async function addProduct(data: ProductFormValues): Promise<ServerRespons
 export async function updateProduct(data: UpdateProductFormValues): Promise<ServerResponse> {
   const { id, images, sizes, ...productData } = data;
 
-  // Handle image update if new images are provided
+  // Handle image replacement if new images are provided
   if (images && images.length > 0) {
-    // Note: This logic for updating images is simplified. 
-    // A full implementation would need to handle deleting old images, adding new ones,
-    // and preserving existing ones. For now, this will add new images but not remove old ones.
-    
+    // 1. Fetch old image records to delete them from storage
+    const { data: oldImages, error: fetchOldImagesError } = await supabaseAdmin
+      .from('product_images')
+      .select('url')
+      .eq('product_id', id);
+
+    if (fetchOldImagesError) {
+      return { success: false, message: 'Could not fetch old images for deletion.', error: { message: fetchOldImagesError.message } };
+    }
+
+    // 2. Delete old image files from Supabase Storage
+    if (oldImages && oldImages.length > 0) {
+      const oldImagePaths = oldImages.map(img => {
+        try {
+          const url = new URL(img.url);
+          // The path is everything after the bucket name, e.g., 'product-images/filename.jpg'
+          const path = url.pathname.split('/product-images/').pop();
+          return path ? `product-images/${path}` : null;
+        } catch (e) {
+          console.error(`Invalid URL for old image: ${img.url}`);
+          return null;
+        }
+      }).filter(Boolean) as string[];
+
+      if(oldImagePaths.length > 0) {
+          const { error: storageError } = await supabaseAdmin.storage
+              .from('product-images')
+              .remove(oldImagePaths);
+          if (storageError) {
+              console.error('Error deleting old product images from storage:', storageError);
+              // We can choose to continue or fail here. For now, let's fail to be safe.
+              return { success: false, message: 'Failed to delete old images from storage.', error: { message: storageError.message } };
+          }
+      }
+    }
+
+    // 3. Delete old image records from the 'product_images' table
+    await supabaseAdmin.from('product_images').delete().eq('product_id', id);
+
+    // 4. Upload new images and collect their data
     const newUploadedImages = [];
     for (const image of images) {
         const fileExt = image.file.name.split('.').pop();
@@ -283,25 +319,22 @@ export async function updateProduct(data: UpdateProductFormValues): Promise<Serv
         const { data: urlData } = supabaseAdmin.storage
             .from('product-images')
             .getPublicUrl(filePath);
-
-        if (!urlData) {
-            return { success: false, message: `Failed to get URL for image ${image.file.name}.` };
-        }
         
         newUploadedImages.push({
             product_id: id,
-            url: urlData.publicUrl,
+            url: urlData!.publicUrl,
             hint: image.hint,
         });
     }
 
+    // 5. Insert new image records into 'product_images' table
     if (newUploadedImages.length > 0) {
         const { error: imageInsertError } = await supabaseAdmin
             .from('product_images')
             .insert(newUploadedImages);
 
         if (imageInsertError) {
-            return { success: false, message: 'Failed to add new product images.', error: { message: imageInsertError.message } };
+            return { success: false, message: 'Failed to save new product images.', error: { message: imageInsertError.message } };
         }
     }
   }
@@ -376,7 +409,7 @@ export async function updateProduct(data: UpdateProductFormValues): Promise<Serv
 
 
 export async function deleteProduct(productId: string): Promise<ServerResponse> {
-  // First, fetch the product to get the image URL for deletion from storage
+  // First, fetch the product to get the image URLs for deletion from storage
   const { data: productData, error: fetchError } = await supabaseAdmin
     .from('products')
     .select('id, product_images(url)')
@@ -388,17 +421,25 @@ export async function deleteProduct(productId: string): Promise<ServerResponse> 
     return { success: false, message: 'Could not find the product to delete.' };
   }
 
-  // Delete image from Supabase Storage
+  // Delete images from Supabase Storage
   if (productData.product_images && productData.product_images.length > 0) {
-      const imageUrl = productData.product_images[0].url;
-      const filePath = new URL(imageUrl).pathname.split('/product-images/').pop();
-      if(filePath) {
+      const imagePaths = productData.product_images.map(img => {
+        try {
+            const url = new URL(img.url);
+            const path = url.pathname.split('/product-images/').pop();
+            return path ? `product-images/${path}` : null;
+        } catch (e) {
+            return null;
+        }
+      }).filter(Boolean) as string[];
+
+      if(imagePaths.length > 0) {
         const { error: storageError } = await supabaseAdmin.storage
             .from('product-images')
-            .remove([`product-images/${filePath}`]);
+            .remove(imagePaths);
 
         if (storageError) {
-            console.error('Error deleting product image from storage:', storageError);
+            console.error('Error deleting product images from storage:', storageError);
             // Don't block product deletion if image deletion fails, but log it.
         }
       }
@@ -448,3 +489,5 @@ export async function deleteUserAccount(): Promise<ServerResponse> {
 
     return { success: true, message: 'Account deleted successfully.' };
 }
+
+    

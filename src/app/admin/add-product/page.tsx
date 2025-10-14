@@ -10,6 +10,7 @@ import type { Product } from '@/app/actions';
 export default function AddProductPage() {
   const [activeTab, setActiveTab] = useState('add');
   const [productToEdit, setProductToEdit] = useState<Product | null>(null);
+  const [productAddedOrUpdated, setProductAddedOrUpdated] = useState(0);
 
   const handleEditProduct = (product: Product) => {
     setProductToEdit(product);
@@ -18,13 +19,19 @@ export default function AddProductPage() {
   
   const handleProductAddedOrUpdated = () => {
     setProductToEdit(null);
-    // We can optionally switch back to the manage tab after an update
+    setProductAddedOrUpdated(c => c + 1);
     // setActiveTab('manage');
   }
 
   return (
     <div className="container mx-auto max-w-7xl px-4 py-8 md:py-12">
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+      <Tabs value={activeTab} onValueChange={(value) => {
+          setActiveTab(value);
+          // If user switches away from edit tab, clear the product to edit
+          if (value !== 'add') {
+              setProductToEdit(null);
+          }
+      }}>
         <TabsList className="grid w-full grid-cols-2 max-w-md mx-auto">
           <TabsTrigger value="add">{productToEdit ? 'Edit Product' : 'Add New Product'}</TabsTrigger>
           <TabsTrigger value="manage">Manage Products</TabsTrigger>
@@ -48,7 +55,7 @@ export default function AddProductPage() {
               <CardTitle>Manage Your Products</CardTitle>
             </CardHeader>
             <CardContent>
-                <ManageProducts onEditProduct={handleEditProduct}/>
+                <ManageProducts onEditProduct={handleEditProduct} productAddedOrUpdated={productAddedOrUpdated}/>
             </CardContent>
           </Card>
         </TabsContent>
@@ -56,3 +63,5 @@ export default function AddProductPage() {
     </div>
   );
 }
+
+    
