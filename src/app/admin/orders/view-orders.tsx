@@ -285,5 +285,3 @@ export function ViewOrders({ orders, onStatusUpdated }: ViewOrdersProps) {
     </Accordion>
   );
 }
-
-    

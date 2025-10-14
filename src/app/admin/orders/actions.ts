@@ -191,5 +191,3 @@ export async function sendOrderToShiprocket(order: FullOrderDetails): Promise<{ 
 
     return { success: true, message: `Order successfully pushed to Shiprocket. Shipment ID: ${shipment_id}`, shipmentId: shipment_id, shiprocketOrderId: order_id };
 }
-
-    
