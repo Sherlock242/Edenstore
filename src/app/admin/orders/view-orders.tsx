@@ -19,7 +19,7 @@ import {
 } from '@/components/ui/accordion';
 import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
-import { updateOrderStatus, schedulePickupForOrder, type FullOrderDetails, sendOrderToShiprocket } from './actions';
+import { updateOrderStatus, type FullOrderDetails, sendOrderToShiprocket } from './actions';
 import { useToast } from '@/hooks/use-toast';
 import {
   Select,
@@ -28,9 +28,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Calendar as CalendarIcon, Rocket, Send } from 'lucide-react';
-import { Calendar } from '@/components/ui/calendar';
-import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
+import { Send } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 
@@ -42,10 +40,6 @@ type ViewOrdersProps = {
 export function ViewOrders({ orders, onStatusUpdated }: ViewOrdersProps) {
   const [isPending, startTransition] = useTransition();
   const { toast } = useToast();
-  
-  const [orderIdToSchedule, setOrderIdToSchedule] = useState<string | null>(null);
-  const [isScheduling, setIsScheduling] = useState(false);
-  const [pickupDate, setPickupDate] = useState<Date | undefined>();
   const [isPushing, setIsPushing] = useState<string | null>(null);
 
 
@@ -64,48 +58,15 @@ export function ViewOrders({ orders, onStatusUpdated }: ViewOrdersProps) {
     return order.items.reduce((total, item) => total + item.price_at_purchase * item.quantity, 0);
   };
   
-  const handleStatusChange = (order: FullOrderDetails, newStatus: FullOrderDetails['status']) => {
-      if (newStatus === 'pickup-scheduled' && order.status === 'processing' && order.shipment_id) {
-          setOrderIdToSchedule(order.id);
-          // Don't update the status immediately, wait for schedule confirmation
-      } else {
-          setOrderIdToSchedule(null); // Hide scheduling UI if another status is selected
-          startTransition(async () => {
-              const result = await updateOrderStatus(order.id, newStatus);
-              if (result.success) {
-                  onStatusUpdated(order.id, newStatus);
-                  toast({ title: "Status Updated", description: `Order status changed to ${newStatus}.`});
-              } else {
-                  toast({ variant: 'destructive', title: "Error", description: result.message });
-              }
-          });
-      }
-  }
-
-  const handleConfirmSchedule = (order: FullOrderDetails, dateToUse?: Date) => {
-      if (!order) return;
-      
-      if (!dateToUse) {
-         // This condition is for manual date selection
-          const isManual = pickupDate !== undefined;
-          if (isManual && !pickupDate) {
-            toast({ variant: 'destructive', title: 'No Date Selected', description: 'Please select a pickup date.' });
-            return;
-          }
-      }
-
-      setIsScheduling(true);
+  const handleStatusChange = (orderId: string, newStatus: FullOrderDetails['status']) => {
       startTransition(async () => {
-          const result = await schedulePickupForOrder(order, dateToUse || pickupDate);
+          const result = await updateOrderStatus(orderId, newStatus);
           if (result.success) {
-              onStatusUpdated(order.id, 'pickup-scheduled');
-              toast({ title: "Pickup Scheduled!", description: result.message });
+              onStatusUpdated(orderId, newStatus);
+              toast({ title: "Status Updated", description: `Order status changed to ${newStatus}.`});
           } else {
-              toast({ variant: 'destructive', title: "Scheduling Failed", description: result.message });
+              toast({ variant: 'destructive', title: "Error", description: result.message });
           }
-          setOrderIdToSchedule(null);
-          setPickupDate(undefined);
-          setIsScheduling(false);
       });
   }
 
@@ -114,17 +75,21 @@ export function ViewOrders({ orders, onStatusUpdated }: ViewOrdersProps) {
       startTransition(async () => {
         const result = await sendOrderToShiprocket(order);
         if (result.success && result.shipmentId && result.shiprocketOrderId) {
-            toast({ title: 'Order Pushed!', description: result.message });
-            // Manually update the client-side order with new shipment IDs and status
+            toast({ title: 'Order Pushed & Pickup Scheduled!', description: result.message });
             const updatedOrder: FullOrderDetails = { 
                 ...order, 
                 shipment_id: result.shipmentId, 
                 shiprocket_order_id: result.shiprocketOrderId,
-                status: 'processing'
+                status: 'pickup-scheduled'
             };
-            onStatusUpdated(order.id, 'processing', updatedOrder); 
+            onStatusUpdated(order.id, 'pickup-scheduled', updatedOrder); 
         } else {
             toast({ variant: 'destructive', title: "Push Failed", description: result.message });
+            // If push succeeded but pickup failed, the status is 'processing'.
+            if (result.message.includes('auto-scheduling pickup failed')) {
+                const updatedOrder: FullOrderDetails = { ...order, status: 'processing' };
+                onStatusUpdated(order.id, 'processing', updatedOrder);
+            }
         }
         setIsPushing(null);
       });
@@ -135,7 +100,6 @@ export function ViewOrders({ orders, onStatusUpdated }: ViewOrdersProps) {
       {orders.map(order => {
         const statusInfo = getStatusInfo(order.status);
         const shippingInfo = JSON.parse(order.shipping_address as string);
-        const isSchedulingThis = order.id === orderIdToSchedule;
 
         return (
           <AccordionItem value={order.id} key={order.id} className="rounded-lg border bg-card">
@@ -201,78 +165,26 @@ export function ViewOrders({ orders, onStatusUpdated }: ViewOrdersProps) {
                             {order.status === 'pending-shipment' ? (
                                 <Button className="w-full" onClick={() => handlePushToShiprocket(order)} disabled={isPushing === order.id}>
                                     <Send className="mr-2 h-4 w-4" />
-                                    {isPushing === order.id ? 'Pushing...' : 'Push to Shiprocket'}
+                                    {isPushing === order.id ? 'Pushing...' : 'Push to Shiprocket & Schedule'}
                                 </Button>
                             ) : (
                                 <div className="space-y-2">
                                     <Select 
-                                        defaultValue={order.status} 
-                                        value={isSchedulingThis ? 'pickup-scheduled' : order.status}
-                                        onValueChange={(value) => handleStatusChange(order, value as FullOrderDetails['status'])}
-                                        disabled={isPending || isScheduling}
+                                        defaultValue={order.status}
+                                        value={order.status}
+                                        onValueChange={(value) => handleStatusChange(order.id, value as FullOrderDetails['status'])}
+                                        disabled={isPending}
                                     >
                                         <SelectTrigger>
                                             <SelectValue placeholder="Change status..." />
                                         </SelectTrigger>
                                         <SelectContent>
-                                            <SelectItem value="processing">Processing</SelectItem>
-                                            <SelectItem value="pickup-scheduled" disabled={!order.shipment_id || order.status !== 'processing'}>
-                                                Schedule Pickup
-                                            </SelectItem>
+                                            <SelectItem value="processing" disabled>Processing</SelectItem>
+                                            <SelectItem value="pickup-scheduled" disabled>Pickup Scheduled</SelectItem>
                                             <SelectItem value="shipped">Shipped</SelectItem>
                                             <SelectItem value="delivered">Delivered</SelectItem>
                                         </SelectContent>
                                     </Select>
-
-                                    {isSchedulingThis && (
-                                        <div className="grid gap-2 pt-2 border-t mt-2">
-                                            <Popover>
-                                                <PopoverTrigger asChild>
-                                                <Button
-                                                    variant={"outline"}
-                                                    className={cn(
-                                                    "w-full justify-start text-left font-normal",
-                                                    !pickupDate && "text-muted-foreground"
-                                                    )}
-                                                    disabled={isScheduling}
-                                                >
-                                                    <CalendarIcon className="mr-2 h-4 w-4" />
-                                                    {pickupDate ? format(pickupDate, "PPP") : <span>Pick a manual date</span>}
-                                                </Button>
-                                                </PopoverTrigger>
-                                                <PopoverContent className="w-auto p-0">
-                                                <Calendar
-                                                    mode="single"
-                                                    selected={pickupDate}
-                                                    onSelect={setPickupDate}
-                                                    initialFocus
-                                                    disabled={(date) => date < new Date() || isScheduling}
-                                                />
-                                                </PopoverContent>
-                                            </Popover>
-                                            <Button onClick={() => handleConfirmSchedule(order, pickupDate)} disabled={isScheduling || !pickupDate}>
-                                                {isScheduling ? 'Confirming...' : 'Confirm Manual Date'}
-                                            </Button>
-                                            
-                                            <div className="relative my-1">
-                                                <div className="absolute inset-0 flex items-center">
-                                                    <span className="w-full border-t" />
-                                                </div>
-                                                <div className="relative flex justify-center text-xs uppercase">
-                                                    <span className="bg-card px-2 text-muted-foreground">Or</span>
-                                                </div>
-                                            </div>
-
-                                            <Button variant="secondary" onClick={() => handleConfirmSchedule(order, undefined)} disabled={isScheduling}>
-                                                <Rocket className="mr-2 h-4 w-4" />
-                                                Auto Schedule (2 Days)
-                                            </Button>
-
-                                            <Button variant="ghost" size="sm" onClick={() => { setOrderIdToSchedule(null); onStatusUpdated(order.id, order.status); }} disabled={isScheduling}>
-                                                Cancel
-                                            </Button>
-                                        </div>
-                                    )}
                                 </div>
                             )}
                         </div>

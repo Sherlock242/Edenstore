@@ -118,53 +118,11 @@ export async function updateOrderStatus(orderId: string, status: OrderDetails['s
 }
 
 
-export async function schedulePickupForOrder(order: FullOrderDetails, pickupDate?: Date): Promise<{ success: boolean; message: string }> {
-    if (!order.shipment_id) {
-        return { success: false, message: "Invalid Shipment ID." };
-    }
-    const cookieStore = cookies();
-    const supabase = createClient(cookieStore);
-
-    let finalPickupDate: Date;
-    if (pickupDate) {
-        finalPickupDate = pickupDate;
-    } else {
-        // Default to 2 days after order creation if no date is provided
-        const orderDate = new Date(order.created_at);
-        finalPickupDate = new Date(orderDate);
-        finalPickupDate.setDate(orderDate.getDate() + 2);
-    }
-    
-    // Format date as YYYY-MM-DD for the API
-    const formattedPickupDate = format(finalPickupDate, 'yyyy-MM-dd');
-
-    // 1. Call Shiprocket to schedule the pickup
-    const pickupResult = await requestShipmentPickup([order.shipment_id], formattedPickupDate);
-
-    if (!pickupResult.success) {
-        return { success: false, message: pickupResult.message };
-    }
-
-    // 2. Update the order status in our database to 'pickup-scheduled'
-    const { error: dbError } = await supabase
-        .from('orders')
-        .update({ status: 'pickup-scheduled' })
-        .eq('id', order.id);
-    
-    if (dbError) {
-        console.error("Failed to update order status after scheduling pickup:", dbError.message);
-        // Even if DB update fails, the pickup was scheduled. Inform the admin.
-        return { success: true, message: `Pickup scheduled with Shiprocket, but failed to update status in local DB. Please update manually. Error: ${dbError.message}` };
-    }
-    
-    const responseData = pickupResult.response?.pickup_status;
-    return { success: true, message: `Pickup successfully scheduled for ${formattedPickupDate}. Status: ${responseData}` };
-}
-
 export async function sendOrderToShiprocket(order: FullOrderDetails): Promise<{ success: boolean; message: string, shipmentId?: number, shiprocketOrderId?: number }> {
     const cookieStore = cookies();
     const supabase = createClient(cookieStore);
     
+    // 1. Push order to Shiprocket
     const pushResult = await pushOrderToShiprocket(order);
     if (!pushResult.success || !pushResult.payload) {
         return { success: false, message: pushResult.message };
@@ -172,22 +130,54 @@ export async function sendOrderToShiprocket(order: FullOrderDetails): Promise<{ 
 
     const { shipment_id, order_id } = pushResult.payload;
 
-    // Save shipment details to our order
+    // 2. Automatically schedule pickup for 2 days later
+    const orderDate = new Date(order.created_at);
+    const pickupDate = new Date(orderDate);
+    pickupDate.setDate(orderDate.getDate() + 2);
+    const formattedPickupDate = format(pickupDate, 'yyyy-MM-dd');
+    
+    const pickupResult = await requestShipmentPickup([shipment_id], formattedPickupDate);
+    
+    if (!pickupResult.success) {
+        // If pickup fails, we should still save the shipment details and let the admin know.
+        // The order is in Shiprocket, just not scheduled.
+        await supabase
+            .from('orders')
+            .update({
+              shipment_id: shipment_id,
+              shiprocket_order_id: order_id,
+              status: 'processing' // Set to processing since pickup failed
+            })
+            .eq('id', order.id);
+
+        return { 
+            success: false, // Return as overall failure to the UI
+            message: `Order pushed to Shiprocket, but auto-scheduling pickup failed. Please schedule manually in Shiprocket dashboard. Reason: ${pickupResult.message}` 
+        };
+    }
+
+    // 3. Save shipment details and update status to 'pickup-scheduled'
     const { error: updateError } = await supabase
         .from('orders')
         .update({
           shipment_id: shipment_id,
           shiprocket_order_id: order_id,
-          status: 'processing' // Good practice to ensure status is processing
+          status: 'pickup-scheduled'
         })
         .eq('id', order.id);
       
     if(updateError) {
-        console.error("Failed to save shipment details to order:", updateError.message);
-        // This is a critical error. The order is in Shiprocket but our DB doesn't know.
-        // We should inform the admin to manually reconcile.
-        return { success: false, message: `Order pushed to Shiprocket (Shipment ID: ${shipment_id}), but FAILED to save details in local DB. Please update order #${order.id} manually. Error: ${updateError.message}` };
+        console.error("Failed to save shipment details and status to order:", updateError.message);
+        return { 
+            success: false, 
+            message: `Order pushed and pickup scheduled, but FAILED to save details in local DB. Please update order #${order.id} manually. Error: ${updateError.message}` 
+        };
     }
 
-    return { success: true, message: `Order successfully pushed to Shiprocket. Shipment ID: ${shipment_id}`, shipmentId: shipment_id, shiprocketOrderId: order_id };
+    return { 
+        success: true, 
+        message: `Order pushed and pickup automatically scheduled for ${formattedPickupDate}.`, 
+        shipmentId: shipment_id, 
+        shiprocketOrderId: order_id 
+    };
 }
