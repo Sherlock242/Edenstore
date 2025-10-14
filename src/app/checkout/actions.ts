@@ -148,7 +148,7 @@ export async function verifyPaymentAndCreateOrder(payload: VerifyPaymentPayload)
 
     // *** AUTOMATION STEP: Create Shipment with Shiprocket ***
     const shipmentResult = await createShipment({
-      order_id: newOrder.id.toString(), // Use the actual database ID
+      order_id: newOrder.id, // Use the actual database ID
       order_date: newOrder.created_at,
       channel_id: "8434256", // Use the CUSTOM channel ID from your Shiprocket dashboard
       billing_customer_name: `${shippingAddress.firstName} ${shippingAddress.lastName || ''}`,
@@ -270,10 +270,10 @@ export async function createCodOrder(payload: CreateCodOrderPayload): Promise<{s
     }));
 
     const shipmentResult = await createShipment({
-      order_id: newOrder.id.toString(), // Use the actual database ID
+      order_id: newOrder.id, // Use the actual database ID
       order_date: newOrder.created_at,
       channel_id: "8434256", // Use the CUSTOM channel ID from your Shiprocket dashboard
-      billing_customer_name: `${shippingAddress.firstName} ${shippingAddress.lastName || ''}`,
+      billing_customer_name: `${shippingAddress.firstName} ${shippingAddress.lastName || ''}`.trim(),
       billing_last_name: shippingAddress.lastName || shippingAddress.firstName,
       billing_address: shippingAddress.address,
       billing_city: shippingAddress.city,
@@ -326,3 +326,5 @@ export async function createCodOrder(payload: CreateCodOrderPayload): Promise<{s
 
     return { success: true, message: "COD Order created successfully.", razorpayOrderId: codOrderId };
 }
+
+    

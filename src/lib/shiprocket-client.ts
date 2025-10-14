@@ -103,9 +103,10 @@ export async function createShipment(payload: ShipmentPayload): Promise<{success
         const responseData = await response.json();
 
         if (!response.ok || responseData.status_code !== 200) {
-            console.error("Shiprocket Shipment Error:", responseData);
-            const errorMessage = responseData.errors ? JSON.stringify(responseData.errors) : responseData.message;
-            return { success: false, message: errorMessage || "Failed to create shipment." };
+            console.error("Shiprocket Shipment Creation Failed. Payload sent:", JSON.stringify(payload, null, 2));
+            console.error("Shiprocket Shipment Creation Error Response:", JSON.stringify(responseData, null, 2));
+            const errorMessage = responseData.message || (responseData.errors ? JSON.stringify(responseData.errors) : "Failed to create shipment for an unknown reason.");
+            return { success: false, message: errorMessage };
         }
         
         return { success: true, message: "Shipment created successfully.", payload: responseData };
@@ -255,3 +256,5 @@ export async function requestShipmentPickup(shipmentIds: number[], pickupDate: s
         return { success: false, message: errorMessage };
     }
 }
+
+    
