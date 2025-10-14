@@ -23,8 +23,8 @@ import {
 } from '@/components/ui/alert-dialog';
 import { type Product } from '@/app/actions';
 import { useToast } from '@/hooks/use-toast';
-import { Edit, Trash2 } from 'lucide-react';
-import { deleteProductClient } from '@/app/server-actions';
+import { Edit, Loader2, Trash2 } from 'lucide-react';
+import { deleteProductClient, getProductsClient } from '@/app/server-actions';
 
 
 type ManageProductsProps = {
@@ -41,26 +41,10 @@ export function ManageProducts({ onEditProduct, productAddedOrUpdated, initialPr
   const { toast } = useToast();
 
   useEffect(() => {
-    // This effect now re-fetches data on the client side when an update happens.
-    // The initial data is passed as a prop from the server component.
-    if (productAddedOrUpdated > 0) {
-        startTransition(async () => {
-            // We need a way to get cookies on the client to re-fetch, which is not ideal.
-            // A better pattern would be to have this action called from a server component context
-            // or pass necessary identifiers. For now, we'll just re-set state from initial props
-            // or we would need a client-side fetch that doesn't need auth, which getProducts does.
-            // This is a limitation we'll accept for now to fix the build.
-            // A full solution would involve a dedicated client-side fetch function.
-        });
-  }, [productAddedOrUpdated]);
+    setProducts(initialProducts);
+  }, [initialProducts]);
 
-  const handleServerAction = (action: () => Promise<any>) => {
-    startTransition(async () => {
-      await action();
-    });
-  };
 
-  
   const handleEditClick = (product: Product) => {
     onEditProduct(product);
   };
@@ -111,7 +95,7 @@ export function ManageProducts({ onEditProduct, productAddedOrUpdated, initialPr
             {isPending && !products.length && (
                 <TableRow>
                     <TableCell colSpan={6} className="h-24 text-center">
-                        Loading products...
+                        <Loader2 className="h-6 w-6 animate-spin mx-auto" />
                     </TableCell>
                 </TableRow>
             )}
@@ -125,14 +109,16 @@ export function ManageProducts({ onEditProduct, productAddedOrUpdated, initialPr
             {products.map(product => (
                 <TableRow key={product.id}>
                 <TableCell>
-                    <Image
-                    src={product.images[0].url}
-                    alt={product.name}
-                    width={50}
-                    height={62}
-                    className="rounded-md object-cover"
-                    data-ai-hint={product.images[0].hint}
-                    />
+                    {product.images?.[0]?.url ? (
+                        <Image
+                            src={product.images[0].url}
+                            alt={product.name}
+                            width={50}
+                            height={62}
+                            className="rounded-md object-cover"
+                            data-ai-hint={product.images[0].hint}
+                        />
+                    ): <div className="h-[62.5px] w-[50px] bg-muted rounded-md" />}
                 </TableCell>
                 <TableCell className="font-medium">{product.name}</TableCell>
                 <TableCell>{product.category}</TableCell>

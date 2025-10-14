@@ -20,7 +20,7 @@ export type Product = {
   weight: number; // in kg
 };
 
-// This function now needs to fetch from Supabase
+// This function now needs to be passed the cookieStore from a Server Component
 export const getProducts = async (cookieStore: ReadonlyRequestCookies): Promise<Product[]> => {
     const supabase = createClient(cookieStore);
     const { data: productsData, error } = await supabase
@@ -71,7 +71,7 @@ export const getProductsForSearch = async (cookieStore: ReadonlyRequestCookies):
         id,
         name,
         category,
-        product_images ( url, hint )
+        product_images ( id, url, hint )
       `)
       .order('created_at', { ascending: false });
 
@@ -86,7 +86,7 @@ export const getProductsForSearch = async (cookieStore: ReadonlyRequestCookies):
         name: p.name,
         category: p.category,
         image: {
-            id: '', // Not needed for search
+            id: p.product_images[0]?.id || '',
             url: p.product_images[0]?.url || '',
             hint: p.product_images[0]?.hint || '',
         }
@@ -283,7 +283,7 @@ export async function updateProduct(cookieStore: ReadonlyRequestCookies, data: U
               
           if (storageError) {
               console.error('Error deleting old product images from storage:', storageError);
-              return { success: false, message: 'Failed to delete old images from storage.', error: { message: storageError.message } };
+              // Don't fail the operation, but log the error.
           }
         }
     }

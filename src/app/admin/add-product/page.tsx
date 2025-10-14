@@ -6,6 +6,7 @@ import { AddProductForm } from '@/app/admin/add-product/add-product-form';
 import { ManageProducts } from '@/app/admin/add-product/manage-products';
 import { type Product } from '@/app/actions';
 import { getProductsClient } from '@/app/server-actions';
+import { Loader2 } from 'lucide-react';
 
 // This is now a client component to manage state, but it fetches initial data on the server.
 export default function AddProductPage() {
@@ -22,7 +23,7 @@ export default function AddProductPage() {
     setProductToEdit(null);
     setProductAddedOrUpdated(c => c + 1);
     // Potentially switch tab after update
-    // setActiveTab('manage');
+    setActiveTab('manage');
   }
 
   return (
@@ -70,7 +71,7 @@ export default function AddProductPage() {
 }
 
 
-// Wrapper component to fetch initial data on the server
+// Wrapper component to fetch initial data on the client
 function ManageProductsWrapper({ onEditProduct, productAddedOrUpdated }: { onEditProduct: (product: Product) => void; productAddedOrUpdated: number; }) {
     const [products, setProducts] = useState<Product[]>([]);
     const [loading, setLoading] = useState(true);
@@ -84,7 +85,7 @@ function ManageProductsWrapper({ onEditProduct, productAddedOrUpdated }: { onEdi
     }, [productAddedOrUpdated]);
 
     if (loading) {
-        return <div className="text-center">Loading products...</div>
+        return <div className="text-center flex items-center justify-center min-h-[200px]"><Loader2 className="h-8 w-8 animate-spin" /></div>
     }
     
     return <ManageProducts initialProducts={products} onEditProduct={onEditProduct} productAddedOrUpdated={productAddedOrUpdated} />;

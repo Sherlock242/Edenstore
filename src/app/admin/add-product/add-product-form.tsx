@@ -1,6 +1,5 @@
-// src/app/admin/add-product/add-product-form.tsx
 'use client';
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -17,9 +16,9 @@ import {
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
-import { type Product } from '@/app/actions';
+import { type Product, type ProductFormValues, type UpdateProductFormValues } from '@/app/actions';
 import { addProductAction, updateProductAction } from '@/app/server-actions';
-import { Plus, Upload, X } from 'lucide-react';
+import { Upload, X } from 'lucide-react';
 import Image from 'next/image';
 
 const sizeSchema = z.object({
@@ -117,7 +116,7 @@ export function AddProductForm({ productToEdit, onProductAddedOrUpdated }: AddPr
     const imagesWithFiles = values.images.filter(img => img.file instanceof File && img.file.size > 0) as { file: File; hint: string }[];
 
     if (isEditMode && values.id) {
-        const updateValues = {
+        const updateValues: UpdateProductFormValues = {
             id: values.id,
             name: values.name,
             description: values.description,
@@ -135,7 +134,7 @@ export function AddProductForm({ productToEdit, onProductAddedOrUpdated }: AddPr
             form.setError('images', { type: 'manual', message: 'At least one new image file is required to add a product.' });
             return;
         }
-        const addValues = {
+        const addValues: ProductFormValues = {
             ...values,
             images: imagesWithFiles,
         };
@@ -258,7 +257,7 @@ export function AddProductForm({ productToEdit, onProductAddedOrUpdated }: AddPr
                             render={({ field }) => (
                                 <FormItem className="w-28">
                                     <FormControl>
-                                        <Input type="number" placeholder="Qty" {...field} />
+                                        <Input type="number" placeholder="Qty" {...field} onChange={e => field.onChange(e.target.value === '' ? undefined : e.target.valueAsNumber)} value={field.value ?? ''} />
                                     </FormControl>
                                     <FormMessage />
                                 </FormItem>
@@ -345,7 +344,7 @@ export function AddProductForm({ productToEdit, onProductAddedOrUpdated }: AddPr
                     )
                 })}
                  <Button type="button" variant="outline" size="sm" onClick={() => appendImage({ hint: '' })}>
-                    <Plus className="mr-2 h-4 w-4" /> Add Image
+                     Add Image
                 </Button>
                  {form.formState.errors.images && <p className="text-sm font-medium text-destructive">{form.formState.errors.images.root?.message || form.formState.errors.images.message}</p>}
             </div>

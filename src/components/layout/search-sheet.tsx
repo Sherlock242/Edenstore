@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useDebounce } from 'use-debounce';
-import { Search, X, Loader2 } from "lucide-react";
+import { Search, Loader2 } from "lucide-react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
@@ -104,7 +104,7 @@ export function SearchSheet() {
                                         onClick={() => handleSuggestionClick(product.id)}
                                         className="flex items-center gap-4 p-3 hover:bg-accent cursor-pointer"
                                     >
-                                        <Image src={product.image.url} alt={product.name} width={40} height={50} className="rounded-md object-cover" />
+                                        <Image src={product.image.url} alt={product.name} width={40} height={50} className="rounded-md object-cover" data-ai-hint={product.image.hint} />
                                         <div className="flex flex-col">
                                             <p className="font-semibold text-sm">{product.name}</p>
                                             <p className="text-xs text-muted-foreground">{product.category}</p>

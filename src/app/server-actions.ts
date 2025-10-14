@@ -1,11 +1,9 @@
-// This file is for server-side actions only
+// This file is for server-side actions that can be called from client components
 "use server";
 
 import { cookies } from 'next/headers';
-import { addProduct, deleteProduct, getProducts, getProductsForSearch, updateProduct } from './actions';
+import { addProduct, deleteProduct, getProducts, getProductsForSearch, updateProduct, type ProductFormValues, type UpdateProductFormValues } from './actions';
 import { getHeroImageUrl, getSiteName, updateHeroImage, updateSiteName } from './admin/settings/actions';
-
-// Wrapper server actions for client components
 
 // Product Actions
 export async function getProductsClient() {
@@ -18,12 +16,12 @@ export async function getProductsForSearchClient() {
     return await getProductsForSearch(cookieStore);
 }
 
-export async function addProductAction(data: any) {
+export async function addProductAction(data: ProductFormValues) {
     const cookieStore = cookies();
     return await addProduct(cookieStore, data);
 }
 
-export async function updateProductAction(data: any) {
+export async function updateProductAction(data: UpdateProductFormValues) {
     const cookieStore = cookies();
     return await updateProduct(cookieStore, data);
 }
