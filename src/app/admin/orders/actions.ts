@@ -25,7 +25,7 @@ export async function getAllOrders(): Promise<{ success: boolean; orders?: FullO
     const { data: ordersData, error: ordersError } = await supabaseAdmin
         .from('orders')
         .select(`
-            id, created_at, status, razorpay_order_id, shipping_address, user_id, shipment_id, shiprocket_order_id,
+            id, created_at, status, razorpay_order_id, shipping_address, user_id, shipment_id, shiprocket_order_id, payment_method,
             order_items ( product_id, quantity, size, color, price_at_purchase )
         `)
         .order('created_at', { ascending: false });
@@ -95,6 +95,7 @@ export async function getAllOrders(): Promise<{ success: boolean; orders?: FullO
             razorpay_order_id: order.razorpay_order_id,
             shipment_id: order.shipment_id,
             shiprocket_order_id: order.shiprocket_order_id,
+            payment_method: order.payment_method,
             user: user,
             items: items,
         };
@@ -158,3 +159,5 @@ export async function schedulePickupForOrder(order: FullOrderDetails, pickupDate
     const responseData = pickupResult.response?.pickup_status;
     return { success: true, message: `Pickup successfully scheduled for ${formattedPickupDate}. Status: ${responseData}` };
 }
+
+    

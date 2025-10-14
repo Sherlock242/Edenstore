@@ -117,9 +117,10 @@ export function ViewOrders({ orders, onStatusUpdated }: ViewOrdersProps) {
           <AccordionItem value={order.id} key={order.id} className="rounded-lg border bg-card">
             <AccordionTrigger className="p-4 hover:no-underline">
               <div className="flex w-full flex-col items-start gap-2 text-left text-sm sm:flex-row sm:items-center sm:justify-between sm:gap-4">
-                <span className="font-medium">#{order.razorpay_order_id.replace('order_', '')}</span>
+                <span className="font-medium">#{order.razorpay_order_id.replace('order_', '').replace('cod_', 'COD-')}</span>
                 <span className="truncate sm:w-1/4">{order.user.email}</span>
                 <span className="hidden sm:inline">{format(new Date(order.created_at), 'MMM dd, yyyy')}</span>
+                <Badge variant="outline" className={cn(order.payment_method === 'COD' ? 'bg-orange-500/20 text-orange-400 border-orange-500/30' : 'bg-green-500/20 text-green-400 border-green-500/30')}>{order.payment_method || 'Prepaid'}</Badge>
                 <Badge variant="outline" className={`capitalize ${statusInfo.color}`}>{statusInfo.text}</Badge>
                 <span className="font-bold">₹{calculateOrderTotal(order).toFixed(2)}</span>
               </div>
@@ -252,3 +253,5 @@ export function ViewOrders({ orders, onStatusUpdated }: ViewOrdersProps) {
     </Accordion>
   );
 }
+
+    

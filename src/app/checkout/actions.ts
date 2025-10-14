@@ -8,6 +8,7 @@ import { createClient as createAdminClient } from '@supabase/supabase-js';
 import { createClient } from '@/lib/supabase/server';
 import { getCartItems } from '../cart/actions';
 import { createShipment, getShippingRates } from '@/lib/shiprocket-client';
+import { randomBytes } from 'crypto';
 
 const supabaseAdmin = createAdminClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -15,13 +16,11 @@ const supabaseAdmin = createAdminClient(
   { auth: { persistSession: false }, db: { schema: 'public'} }
 );
 
-export async function fetchShippingRatesAction(pincode: string): Promise<{success: boolean, message: string, rate?: number}> {
+export async function fetchShippingRatesAction(pincode: string, paymentMethod: 'online' | 'cod'): Promise<{success: boolean, message: string, rate?: number}> {
     if (!pincode || pincode.length !== 6) {
         return { success: false, message: 'Invalid Pincode.' };
     }
 
-    // Use environment variable or a default placeholder.
-    // IMPORTANT: The user should set SHIPROCKET_PICKUP_POSTCODE in their environment.
     const pickupPostcode = process.env.SHIPROCKET_PICKUP_POSTCODE || "160015"; 
     
     if (!pickupPostcode) {
@@ -41,7 +40,7 @@ export async function fetchShippingRatesAction(pincode: string): Promise<{succes
         pickup_postcode: pickupPostcode,
         delivery_postcode: pincode,
         weight: totalWeight > 0 ? totalWeight : 0.1, // Ensure weight is not zero
-        cod: 0 // Assuming prepaid for rate calculation. Shiprocket often has the same rate for both.
+        cod: paymentMethod === 'cod' ? 1 : 0
     });
 
     return result;
@@ -135,6 +134,7 @@ export async function verifyPaymentAndCreateOrder(payload: VerifyPaymentPayload)
             shipping_address: JSON.stringify(shippingAddress),
             razorpay_order_id: razorpay_order_id,
             razorpay_payment_id: razorpay_payment_id,
+            payment_method: 'Prepaid',
         })
         .select()
         .single();
@@ -171,7 +171,7 @@ export async function verifyPaymentAndCreateOrder(payload: VerifyPaymentPayload)
       length: 10,
       breadth: 10,
       height: 2,
-      weight: totalWeight,
+      weight: totalWeight > 0 ? totalWeight : 0.1,
     });
 
     if (shipmentResult.success && shipmentResult.payload) {
@@ -206,8 +206,6 @@ export async function verifyPaymentAndCreateOrder(payload: VerifyPaymentPayload)
 
     if (itemsError) {
         console.error("Error creating order items:", itemsError);
-        // If this fails, we should ideally roll back the order creation,
-        // but for now, we'll just log the error.
         return { success: false, message: `Failed to save order items. Reason: ${itemsError.message}` };
     }
 
@@ -219,8 +217,118 @@ export async function verifyPaymentAndCreateOrder(payload: VerifyPaymentPayload)
 
     if (deleteCartError) {
         console.error("Error clearing cart:", deleteCartError);
-        // Don't fail the whole process if cart clearing fails, just log it.
     }
     
     return { success: true, message: "Payment verified and order created successfully.", razorpayOrderId: newOrder.razorpay_order_id };
 }
+
+
+type CreateCodOrderPayload = {
+    shippingAddress: any;
+}
+export async function createCodOrder(payload: CreateCodOrderPayload): Promise<{success: boolean; message: string; razorpayOrderId?: string}> {
+    const { shippingAddress } = payload;
+    
+    // 1. Get user and cart details
+    const supabase = createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (!user) {
+        return { success: false, message: "User not authenticated. Cannot create order." };
+    }
+
+    const cart = await getCartItems();
+    if (!cart.success || !cart.items || cart.items.length === 0) {
+        return { success: false, message: "Cart is empty or could not be fetched." };
+    }
+    
+    // Generate a unique, human-readable order ID for COD orders
+    const codOrderId = `cod_${randomBytes(6).toString('hex')}`;
+    const totalAmount = cart.items.reduce((acc, item) => acc + item.product.price * item.quantity, 0);
+    const totalWeight = cart.items.reduce((acc, item) => acc + (item.product.weight * item.quantity), 0);
+
+    // 2. Insert into 'orders' table
+    const { data: newOrder, error: orderError } = await supabaseAdmin
+        .from('orders')
+        .insert({
+            user_id: user.id,
+            status: 'processing',
+            shipping_address: JSON.stringify(shippingAddress),
+            razorpay_order_id: codOrderId, // Use our generated ID
+            payment_method: 'COD',
+        })
+        .select()
+        .single();
+    
+    if (orderError || !newOrder) {
+        console.error("Error creating COD order:", orderError);
+        return { success: false, message: `Failed to save order. Reason: ${orderError?.message || 'Unknown'}` };
+    }
+
+    // 3. Create shipment with Shiprocket
+    const orderItemsForShipment = cart.items.map(item => ({
+        name: item.product.name,
+        sku: `${item.product.id}-${item.size}-${item.color}`,
+        units: item.quantity,
+        selling_price: item.product.price,
+        hsn: 49011010,
+    }));
+
+    const shipmentResult = await createShipment({
+      order_id: newOrder.id,
+      order_date: newOrder.created_at,
+      billing_customer_name: `${shippingAddress.firstName} ${shippingAddress.lastName || ''}`,
+      billing_last_name: shippingAddress.lastName || shippingAddress.firstName,
+      billing_address: shippingAddress.address,
+      billing_city: shippingAddress.city,
+      billing_state: shippingAddress.state || "N/A",
+      billing_country: shippingAddress.country,
+      billing_pincode: shippingAddress.pincode || "000000",
+      billing_email: shippingAddress.email,
+      billing_phone: shippingAddress.phone,
+      order_items: orderItemsForShipment,
+      payment_method: 'COD',
+      sub_total: totalAmount,
+      length: 10,
+      breadth: 10,
+      height: 2,
+      weight: totalWeight > 0 ? totalWeight : 0.1,
+    });
+
+    if (shipmentResult.success && shipmentResult.payload) {
+      await supabaseAdmin
+        .from('orders')
+        .update({
+          shipment_id: shipmentResult.payload.shipment_id,
+          shiprocket_order_id: shipmentResult.payload.order_id,
+        })
+        .eq('id', newOrder.id);
+    } else {
+        console.error("Shiprocket COD shipment creation failed:", shipmentResult.message);
+    }
+
+    // 4. Insert into 'order_items' table
+    const orderItemsToInsert = cart.items.map(item => ({
+        order_id: newOrder.id,
+        product_id: item.product.id,
+        quantity: item.quantity,
+        price_at_purchase: item.product.price,
+        size: item.size,
+        color: item.color,
+    }));
+
+    const { error: itemsError } = await supabaseAdmin.from('order_items').insert(orderItemsToInsert);
+
+    if (itemsError) {
+        console.error("Error creating COD order items:", itemsError);
+        // Ideally, rollback the order here. For now, log and return error.
+        return { success: false, message: `Failed to save order items. Reason: ${itemsError.message}` };
+    }
+
+    // 5. Clear the user's cart
+    await supabaseAdmin.from('cart_items').delete().eq('user_id', user.id);
+
+    return { success: true, message: "COD Order created successfully.", razorpayOrderId: newOrder.razorpay_order_id };
+}
+
+    

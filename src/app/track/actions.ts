@@ -29,6 +29,7 @@ export type OrderDetails = {
     razorpay_order_id: string;
     shipment_id: number | null;
     shiprocket_order_id: number | null;
+    payment_method: 'Prepaid' | 'COD' | null;
     items: OrderItem[];
     tracking_data?: any; // To hold live tracking info from Shiprocket
 };
@@ -41,7 +42,7 @@ export async function getOrderDetails(razorpayOrderId: string): Promise<{ succes
     // 1. Fetch the main order details using the Razorpay order ID
     const { data: orderData, error: orderError } = await supabaseAdmin
         .from('orders')
-        .select('id, created_at, status, shipping_address, razorpay_order_id, shipment_id, shiprocket_order_id')
+        .select('id, created_at, status, shipping_address, razorpay_order_id, shipment_id, shiprocket_order_id, payment_method')
         .eq('razorpay_order_id', razorpayOrderId)
         .single();
 
@@ -125,9 +126,12 @@ export async function getOrderDetails(razorpayOrderId: string): Promise<{ succes
         razorpay_order_id: orderData.razorpay_order_id,
         shipment_id: orderData.shipment_id,
         shiprocket_order_id: orderData.shiprocket_order_id,
+        payment_method: orderData.payment_method,
         items: fullOrderItems,
         tracking_data: trackingData,
     };
 
     return { success: true, order: orderDetails, message: 'Order details fetched successfully.' };
 }
+
+    
