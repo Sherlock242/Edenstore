@@ -7,6 +7,9 @@ import { Header } from '@/components/layout/header';
 import { Footer } from '@/components/layout/footer';
 import { AppProviders } from '@/components/providers';
 import { getSiteName } from './admin/settings/actions';
+import { createClient } from '@/lib/supabase/server';
+import { redirect } from 'next/navigation';
+import MyOrdersPage from './my-orders/page';
 
 const inter = Inter({
   subsets: ['latin'],
@@ -24,6 +27,9 @@ export async function generateMetadata(): Promise<Metadata> {
   return {
     title: siteName,
     description: `The ultimate destination for anime t-shirts, powered by ${siteName}.`,
+    icons: {
+      icon: '/icon.png',
+    },
   };
 }
 
