@@ -163,5 +163,3 @@ export function ManageProducts({ onEditProduct, productAddedOrUpdated }: ManageP
     </div>
   );
 }
-
-    

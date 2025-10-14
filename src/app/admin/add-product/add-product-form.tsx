@@ -358,5 +358,3 @@ export function AddProductForm({ productToEdit, onProductAddedOrUpdated }: AddPr
     </Form>
   );
 }
-
-    

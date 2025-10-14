@@ -274,29 +274,28 @@ export async function updateProduct(data: UpdateProductFormValues): Promise<Serv
 
     // 2. Delete old image files from Supabase Storage
     if (oldImages && oldImages.length > 0) {
-      const oldImagePaths = oldImages.map(img => {
-        try {
-          const url = new URL(img.url);
-          // The path is everything after the bucket name, e.g., 'product-images/filename.jpg'
-          // Split by the bucket name and take the last part.
-          const pathParts = url.pathname.split('/product-images/');
-          return pathParts[pathParts.length - 1];
-        } catch (e) {
-          console.error(`Invalid URL for old image, cannot extract path: ${img.url}`);
-          return null;
-        }
-      }).filter(Boolean) as string[];
+        const oldImagePaths = oldImages.map(img => {
+            try {
+                // Correctly extract the path from the URL
+                const url = new URL(img.url);
+                const pathParts = url.pathname.split('/product-images/');
+                return `product-images/${pathParts[pathParts.length - 1]}`;
+            } catch (e) {
+                console.error(`Invalid URL for old image, cannot extract path: ${img.url}`);
+                return null;
+            }
+        }).filter((p): p is string => p !== null);
 
-      if(oldImagePaths.length > 0) {
+        if(oldImagePaths.length > 0) {
           const { error: storageError } = await supabaseAdmin.storage
               .from('product-images')
-              .remove(oldImagePaths);
+              .remove(oldImagePaths.map(p => p.replace('product-images/', '')));
+              
           if (storageError) {
               console.error('Error deleting old product images from storage:', storageError);
-              // We can choose to continue or fail here. For now, let's fail to be safe.
               return { success: false, message: 'Failed to delete old images from storage.', error: { message: storageError.message } };
           }
-      }
+        }
     }
 
     // 3. Delete old image records from the 'product_images' table
@@ -428,16 +427,16 @@ export async function deleteProduct(productId: string): Promise<ServerResponse> 
         try {
             const url = new URL(img.url);
             const pathParts = url.pathname.split('/product-images/');
-            return pathParts[pathParts.length - 1];
+            return `product-images/${pathParts[pathParts.length - 1]}`;
         } catch (e) {
             return null;
         }
-      }).filter(Boolean) as string[];
+      }).filter((p): p is string => p !== null);
 
       if(imagePaths.length > 0) {
         const { error: storageError } = await supabaseAdmin.storage
             .from('product-images')
-            .remove(imagePaths);
+            .remove(imagePaths.map(p => p.replace('product-images/', '')));
 
         if (storageError) {
             console.error('Error deleting product images from storage:', storageError);
@@ -490,5 +489,3 @@ export async function deleteUserAccount(): Promise<ServerResponse> {
 
     return { success: true, message: 'Account deleted successfully.' };
 }
-
-    
