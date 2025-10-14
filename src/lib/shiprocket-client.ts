@@ -152,14 +152,23 @@ export async function pushOrderToShiprocket(order: FullOrderDetails): Promise<{ 
         
         const responseBody = await response.json();
 
-        // Check the main HTTP status first, then verify the payload has the required IDs.
+        // The definitive success check: HTTP is OK and the payload contains the IDs we need.
         if (response.ok && responseBody.order_id && responseBody.shipment_id) {
              return { success: true, payload: { order_id: responseBody.order_id, shipment_id: responseBody.shipment_id }, message: 'Order pushed successfully.' };
         } else {
              console.error("Shiprocket Push Order Failed. Payload Sent:", JSON.stringify(payload, null, 2));
              console.error("Shiprocket Response:", JSON.stringify(responseBody, null, 2));
-             // Provide a more specific error message if available from Shiprocket's response
-             const errorMessage = responseBody.message || (responseBody.errors && Array.isArray(responseBody.errors) && responseBody.errors.length > 0) ? responseBody.errors.join(', ') : "Failed to push order for an unknown reason.";
+             
+             // Try to extract a meaningful error from Shiprocket's response
+             let errorMessage = "Failed to push order for an unknown reason.";
+             if (responseBody.message) {
+                 errorMessage = responseBody.message;
+             } else if (responseBody.errors && Array.isArray(responseBody.errors) && responseBody.errors.length > 0) {
+                 errorMessage = responseBody.errors.join(', ');
+             } else if (responseBody.payload && responseBody.payload.error_message) {
+                 errorMessage = responseBody.payload.error_message;
+             }
+             
              return { success: false, message: errorMessage };
         }
 
