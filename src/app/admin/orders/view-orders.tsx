@@ -115,12 +115,12 @@ export function ViewOrders({ orders, onStatusUpdated }: ViewOrdersProps) {
         const result = await sendOrderToShiprocket(order);
         if (result.success && result.shipmentId && result.shiprocketOrderId) {
             toast({ title: 'Order Pushed!', description: result.message });
-            // Manually update the client-side order with new shipment IDs
-            const updatedOrder = { 
+            // Manually update the client-side order with new shipment IDs and status
+            const updatedOrder: FullOrderDetails = { 
                 ...order, 
                 shipment_id: result.shipmentId, 
                 shiprocket_order_id: result.shiprocketOrderId,
-                status: 'processing' as FullOrderDetails['status']
+                status: 'processing'
             };
             onStatusUpdated(order.id, 'processing', updatedOrder); 
         } else {
@@ -190,7 +190,8 @@ export function ViewOrders({ orders, onStatusUpdated }: ViewOrdersProps) {
                         <div className="space-y-2 text-sm text-muted-foreground">
                             <p className="font-medium text-foreground">{shippingInfo.firstName} {shippingInfo.lastName}</p>
                             <p>{shippingInfo.address}</p>
-                            <p>{shippingInfo.city}, {shippingInfo.country}</p>
+                            <p>{shippingInfo.city}, {shippingInfo.state}, {shippingInfo.pincode}</p>
+                            <p>{shippingInfo.country}</p>
                             <p>{shippingInfo.email}</p>
                             <p>{shippingInfo.phone}</p>
                         </div>

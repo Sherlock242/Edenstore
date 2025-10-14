@@ -95,7 +95,7 @@ export async function pushOrderToShiprocket(order: FullOrderDetails): Promise<{ 
         return { success: false, message: "Invalid shipping address format." };
     }
 
-    const nameParts = (shippingDetails.firstName || '').split(' ');
+    const nameParts = (shippingDetails.firstName || '').split(' ').filter(Boolean);
     const lastName = nameParts.length > 1 ? nameParts.pop() || ' ' : ' ';
     const firstName = nameParts.join(' ');
 
@@ -152,18 +152,20 @@ export async function pushOrderToShiprocket(order: FullOrderDetails): Promise<{ 
         
         const responseBody = await response.json();
 
+        // Check the main HTTP status first, then verify the payload has the required IDs.
         if (response.ok && responseBody.payload?.order_id && responseBody.payload?.shipment_id) {
              return { success: true, payload: responseBody.payload, message: 'Order pushed successfully.' };
         } else {
              console.error("Shiprocket Push Order Failed. Payload Sent:", JSON.stringify(payload, null, 2));
              console.error("Shiprocket Response:", JSON.stringify(responseBody, null, 2));
-             const errorMessage = responseBody.message || "Failed to push order for an unknown reason.";
+             // Provide a more specific error message if available from Shiprocket's response
+             const errorMessage = responseBody.message || responseBody.errors?.join(', ') || "Failed to push order for an unknown reason.";
              return { success: false, message: errorMessage };
         }
 
     } catch (error) {
         console.error("Error pushing order to Shiprocket:", error);
-        const errorMessage = error instanceof Error ? error.message : "An unknown error occurred.";
+        const errorMessage = error instanceof Error ? error.message : "An unknown server error occurred.";
         return { success: false, message: errorMessage };
     }
 }
@@ -269,5 +271,3 @@ export async function trackShipmentById(shipmentId: string): Promise<any> {
         return null;
     }
 }
-
-    
