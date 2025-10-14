@@ -1,4 +1,3 @@
-
 // src/lib/shiprocket-client.ts
 'use server';
 
@@ -89,7 +88,6 @@ export async function pushOrderToShiprocket(order: FullOrderDetails): Promise<{ 
         return { success: false, message: "Could not authenticate with Shiprocket." };
     }
     
-    // Extract shipping details and handle potential parsing errors
     let shippingDetails;
     try {
         shippingDetails = JSON.parse(order.shipping_address as string);
@@ -97,30 +95,25 @@ export async function pushOrderToShiprocket(order: FullOrderDetails): Promise<{ 
         return { success: false, message: "Invalid shipping address format." };
     }
 
-    // Split name into first and last name
-    const nameParts = shippingDetails.firstName.split(' ');
+    const nameParts = (shippingDetails.firstName || '').split(' ');
     const lastName = nameParts.length > 1 ? nameParts.pop() || ' ' : ' ';
     const firstName = nameParts.join(' ');
 
-
-    // Prepare order items, ensuring string lengths are within Shiprocket's API limits
     const orderItemsForShipment: ShipmentOrderItem[] = order.items.map(item => ({
-        name: item.product.name.substring(0, 100), // Max length 100
-        sku: `${item.product.id}-${item.size}`.substring(0, 50), // Max length 50
+        name: item.product.name.substring(0, 100),
+        sku: `${item.product.id}-${item.size}`.substring(0, 50),
         units: item.quantity,
         selling_price: item.price_at_purchase,
-        hsn: 610910, // A common HSN code for cotton t-shirts, replace if you have specific ones
+        hsn: 610910,
     }));
 
-    // Calculate subtotal from the items
     const sub_total = order.items.reduce((acc, item) => acc + (item.price_at_purchase * item.quantity), 0);
     
-    // Prepare the full payload for Shiprocket
     const payload: ShipmentPayload = {
         order_id: order.razorpay_order_id,
         order_date: format(new Date(order.created_at), 'yyyy-MM-dd HH:mm'),
         pickup_location: process.env.SHIPROCKET_PICKUP_NAME || "Santosh",
-        channel_id: process.env.SHIPROCKET_CHANNEL_ID || "8434256",
+        channel_id: "",
         comment: "ANISTORE Order",
         billing_customer_name: firstName,
         billing_last_name: lastName,
@@ -159,14 +152,18 @@ export async function pushOrderToShiprocket(order: FullOrderDetails): Promise<{ 
         
         const responseBody = await response.json();
 
-        if (!response.ok || responseBody.status_code !== 200) {
+        // **FIXED LOGIC**: Check for the presence of `order_id` and `shipment_id` in the response payload.
+        // This is a more reliable indicator of success than `status_code`.
+        if (response.ok && responseBody.payload?.order_id && responseBody.payload?.shipment_id) {
+             return { success: true, payload: responseBody.payload, message: 'Order pushed successfully.' };
+        } else {
+             // Log detailed error information for debugging
              console.error("Shiprocket Push Order Failed. Payload Sent:", JSON.stringify(payload, null, 2));
              console.error("Shiprocket Response:", JSON.stringify(responseBody, null, 2));
+             // Provide a more specific error message if available
              const errorMessage = responseBody.message || "Failed to push order for an unknown reason.";
              return { success: false, message: errorMessage };
         }
-
-        return { success: true, payload: responseBody.payload, message: 'Order pushed successfully.' };
 
     } catch (error) {
         console.error("Error pushing order to Shiprocket:", error);
