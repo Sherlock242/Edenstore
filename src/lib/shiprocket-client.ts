@@ -245,7 +245,7 @@ export async function pushOrderToShiprocket(order: FullOrderDetails): Promise<{s
     
     // Provide a default channel ID if the environment variable is not set.
     // The user can later configure this in their .env file if they have multiple channels.
-    const channelId = process.env.SHIPROCKET_CHANNEL_ID || '3937090'; // Defaulting to a common "Custom" channel type.
+    const channelId = process.env.SHIPROCKET_CHANNEL_ID || '8434256';
 
     const orderItemsForShipment = order.items.map(item => ({
       name: item.product.name,
@@ -312,5 +312,3 @@ export async function pushOrderToShiprocket(order: FullOrderDetails): Promise<{s
         return { success: false, message: errorMessage };
     }
 }
-
-    
