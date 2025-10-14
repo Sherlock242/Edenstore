@@ -1,10 +1,10 @@
 
 'use server';
 
-import { createClient as createAdminClient } from '@supabase/supabase-js';
+import { createClient } from '@/lib/supabase/server';
 import type { OrderDetails } from '@/app/track/actions';
 import type { Product } from '@/app/actions';
-import { requestShipmentPickup } from '@/lib/shiprocket-client';
+import { requestShipmentPickup, pushOrderToShiprocket } from '@/lib/shiprocket-client';
 import { format } from 'date-fns';
 
 export type UserProfileInfo = {
@@ -14,15 +14,10 @@ export type UserProfileInfo = {
 
 export type FullOrderDetails = OrderDetails & { user: UserProfileInfo };
 
-const supabaseAdmin = createAdminClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!,
-  { auth: { persistSession: false } }
-);
-
 export async function getAllOrders(): Promise<{ success: boolean; orders?: FullOrderDetails[]; message: string }> {
+    const supabase = createClient();
     // 1. Fetch all orders with their items
-    const { data: ordersData, error: ordersError } = await supabaseAdmin
+    const { data: ordersData, error: ordersError } = await supabase
         .from('orders')
         .select(`
             id, created_at, status, razorpay_order_id, shipping_address, user_id, shipment_id, shiprocket_order_id, payment_method,
@@ -40,7 +35,7 @@ export async function getAllOrders(): Promise<{ success: boolean; orders?: FullO
     const userIds = [...new Set(ordersData.map(order => order.user_id))];
 
     // 3. Fetch product details
-    const { data: productsData, error: productsError } = await supabaseAdmin
+    const { data: productsData, error: productsError } = await supabase
         .from('products')
         .select(`
             id, name, description, price, category, popularity, release_date, weight,
@@ -53,7 +48,7 @@ export async function getAllOrders(): Promise<{ success: boolean; orders?: FullO
     if (productsError) return { success: false, message: 'Could not fetch product details.' };
 
     // 4. Fetch user details
-    const { data: usersData, error: usersError } = await supabaseAdmin
+    const { data: usersData, error: usersError } = await supabase
         .from('users')
         .select('id, display_name, email')
         .in('id', userIds);
@@ -105,7 +100,8 @@ export async function getAllOrders(): Promise<{ success: boolean; orders?: FullO
 }
 
 export async function updateOrderStatus(orderId: string, status: OrderDetails['status']): Promise<{ success: boolean; message: string }> {
-    const { error } = await supabaseAdmin
+    const supabase = createClient();
+    const { error } = await supabase
         .from('orders')
         .update({ status: status })
         .eq('id', orderId);
@@ -123,6 +119,7 @@ export async function schedulePickupForOrder(order: FullOrderDetails, pickupDate
     if (!order.shipment_id) {
         return { success: false, message: "Invalid Shipment ID." };
     }
+    const supabase = createClient();
 
     let finalPickupDate: Date;
     if (pickupDate) {
@@ -145,7 +142,7 @@ export async function schedulePickupForOrder(order: FullOrderDetails, pickupDate
     }
 
     // 2. Update the order status in our database to 'pickup-scheduled'
-    const { error: dbError } = await supabaseAdmin
+    const { error: dbError } = await supabase
         .from('orders')
         .update({ status: 'pickup-scheduled' })
         .eq('id', order.id);
@@ -160,4 +157,29 @@ export async function schedulePickupForOrder(order: FullOrderDetails, pickupDate
     return { success: true, message: `Pickup successfully scheduled for ${formattedPickupDate}. Status: ${responseData}` };
 }
 
+export async function sendOrderToShiprocket(order: FullOrderDetails): Promise<{ success: boolean; message: string, shipmentId?: number }> {
+    const supabase = createClient();
     
+    const pushResult = await pushOrderToShiprocket(order);
+    if (!pushResult.success || !pushResult.payload) {
+        return { success: false, message: pushResult.message };
+    }
+
+    const { shipment_id, order_id } = pushResult.payload;
+
+    // Save shipment details to our order
+    const { error: updateError } = await supabase
+        .from('orders')
+        .update({
+          shipment_id,
+          shiprocket_order_id: order_id,
+        })
+        .eq('id', order.id);
+      
+    if(updateError) {
+        console.error("Failed to save shipment details to order:", updateError.message);
+        return { success: false, message: `Order pushed to Shiprocket, but failed to save details in local DB. Error: ${updateError.message}` };
+    }
+
+    return { success: true, message: `Order successfully pushed to Shiprocket. Shipment ID: ${shipment_id}`, shipmentId: shipment_id };
+}

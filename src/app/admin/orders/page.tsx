@@ -20,10 +20,13 @@ export default function AdminOrdersPage() {
     });
   }, []);
 
-  const handleStatusUpdated = (orderId: string, newStatus: FullOrderDetails['status']) => {
-    setOrders(prevOrders => prevOrders.map(order => 
-      order.id === orderId ? { ...order, status: newStatus } : order
-    ));
+  const handleStatusUpdated = (orderId: string, newStatus: FullOrderDetails['status'], updatedOrder?: FullOrderDetails) => {
+    setOrders(prevOrders => prevOrders.map(order => {
+      if (order.id === orderId) {
+        return updatedOrder || { ...order, status: newStatus };
+      }
+      return order;
+    }));
   };
 
   if (isLoading) {

@@ -36,7 +36,7 @@ import { cn } from '@/lib/utils';
 
 type ViewOrdersProps = {
   orders: FullOrderDetails[];
-  onStatusUpdated: (orderId: string, newStatus: FullOrderDetails['status']) => void;
+  onStatusUpdated: (orderId: string, newStatus: FullOrderDetails['status'], updatedOrder?: FullOrderDetails) => void;
 };
 
 export function ViewOrders({ orders, onStatusUpdated }: ViewOrdersProps) {
@@ -115,7 +115,8 @@ export function ViewOrders({ orders, onStatusUpdated }: ViewOrdersProps) {
         if (result.success) {
             toast({ title: 'Order Pushed!', description: result.message });
             // Manually update the client-side order with new shipment IDs
-            onStatusUpdated(order.id, order.status); 
+            const updatedOrder = { ...order, shipment_id: result.shipmentId!, shiprocket_order_id: result.shipmentId! };
+            onStatusUpdated(order.id, order.status, updatedOrder); 
         } else {
             toast({ variant: 'destructive', title: "Push Failed", description: result.message });
         }
