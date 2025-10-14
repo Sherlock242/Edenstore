@@ -3,7 +3,7 @@
 
 import { revalidatePath } from 'next/cache';
 import { createClient } from '@/lib/supabase/server';
-import { cookies } from 'next/headers';
+import { type ReadonlyRequestCookies } from 'next/dist/server/web/spec-extension/cookies';
 
 
 export type Product = {
@@ -21,8 +21,7 @@ export type Product = {
 };
 
 // This function now needs to fetch from Supabase
-export const getProducts = async (): Promise<Product[]> => {
-    const cookieStore = cookies();
+export const getProducts = async (cookieStore: ReadonlyRequestCookies): Promise<Product[]> => {
     const supabase = createClient(cookieStore);
     const { data: productsData, error } = await supabase
       .from('products')
@@ -64,8 +63,7 @@ export const getProducts = async (): Promise<Product[]> => {
 
 export type SearchProduct = Pick<Product, 'id' | 'name' | 'category'> & { image: Product['images'][0] };
 
-export const getProductsForSearch = async (): Promise<SearchProduct[]> => {
-    const cookieStore = cookies();
+export const getProductsForSearch = async (cookieStore: ReadonlyRequestCookies): Promise<SearchProduct[]> => {
     const supabase = createClient(cookieStore);
     const { data: productsData, error } = await supabase
       .from('products')
@@ -125,8 +123,7 @@ type ServerResponse = {
     product?: Product;
 }
 
-export async function addProduct(data: ProductFormValues): Promise<ServerResponse> {
-    const cookieStore = cookies();
+export async function addProduct(cookieStore: ReadonlyRequestCookies, data: ProductFormValues): Promise<ServerResponse> {
     const supabase = createClient(cookieStore);
     const { images, sizes, ...productData } = data;
     
@@ -249,8 +246,7 @@ export async function addProduct(data: ProductFormValues): Promise<ServerRespons
 }
 
 
-export async function updateProduct(data: UpdateProductFormValues): Promise<ServerResponse> {
-  const cookieStore = cookies();
+export async function updateProduct(cookieStore: ReadonlyRequestCookies, data: UpdateProductFormValues): Promise<ServerResponse> {
   const supabase = createClient(cookieStore);
   const { id, images, sizes, ...productData } = data;
 
@@ -402,8 +398,7 @@ export async function updateProduct(data: UpdateProductFormValues): Promise<Serv
 }
 
 
-export async function deleteProduct(productId: string): Promise<ServerResponse> {
-  const cookieStore = cookies();
+export async function deleteProduct(cookieStore: ReadonlyRequestCookies, productId: string): Promise<ServerResponse> {
   const supabase = createClient(cookieStore);
   // First, fetch the product to get the image URLs for deletion from storage
   const { data: productData, error: fetchError } = await supabase
@@ -461,8 +456,7 @@ export async function deleteProduct(productId: string): Promise<ServerResponse> 
 }
 
 
-export async function deleteUserAccount(): Promise<ServerResponse> {
-    const cookieStore = cookies();
+export async function deleteUserAccount(cookieStore: ReadonlyRequestCookies): Promise<ServerResponse> {
     const supabase = createClient(cookieStore);
     // We need the user's ID. To do this securely, we get the session on the server.
     const { data: { user } } = await supabase.auth.getUser();

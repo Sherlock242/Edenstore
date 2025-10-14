@@ -1,4 +1,3 @@
-
 'use client';
 import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
@@ -17,7 +16,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { getHeroImageUrl, updateHeroImage, getSiteName, updateSiteName } from './actions';
+import { getHeroImageUrlClient, getSiteNameClient, updateHeroImageAction, updateSiteNameAction } from '@/app/server-actions';
 import Image from 'next/image';
 import { Upload } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
@@ -61,19 +60,19 @@ export default function SiteSettingsPage() {
   
   useEffect(() => {
       // Fetch initial data for both forms
-      getHeroImageUrl().then(result => {
+      getHeroImageUrlClient().then(result => {
           if (result.success && result.url) {
               setImagePreview(result.url);
           }
       });
-      getSiteName().then(name => {
+      getSiteNameClient().then(name => {
           siteNameForm.setValue('siteName', name);
       })
   }, [siteNameForm]);
 
   const onHeroImageSubmit = async (values: z.infer<typeof heroImageSchema>) => {
     setIsHeroSubmitting(true);
-    const result = await updateHeroImage(values.heroImage);
+    const result = await updateHeroImageAction(values.heroImage);
 
     if (result.success) {
       toast({
@@ -96,7 +95,7 @@ export default function SiteSettingsPage() {
 
   const onSiteNameSubmit = async (values: z.infer<typeof siteNameSchema>) => {
       setIsNameSubmitting(true);
-      const result = await updateSiteName(values.siteName);
+      const result = await updateSiteNameAction(values.siteName);
 
       if (result.success) {
           toast({

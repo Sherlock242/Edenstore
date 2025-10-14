@@ -3,7 +3,7 @@
 
 import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
-import { cookies } from 'next/headers';
+import { type ReadonlyRequestCookies } from 'next/dist/server/web/spec-extension/cookies';
 
 const HERO_IMAGE_KEY = 'heroImageUrl';
 const SITE_NAME_KEY = 'siteName';
@@ -15,8 +15,7 @@ type ServerResponse = {
     error?: { message: string } | null;
 }
 
-export async function getHeroImageUrl(): Promise<{ success: boolean; url?: string | null; message: string; }> {
-    const cookieStore = cookies();
+export async function getHeroImageUrl(cookieStore: ReadonlyRequestCookies): Promise<{ success: boolean; url?: string | null; message: string; }> {
     const supabase = createClient(cookieStore);
     const { data, error } = await supabase
         .from('site_settings')
@@ -32,8 +31,7 @@ export async function getHeroImageUrl(): Promise<{ success: boolean; url?: strin
     return { success: true, url: data?.value, message: 'Fetched successfully.' };
 }
 
-export async function updateHeroImage(image: File): Promise<ServerResponse> {
-    const cookieStore = cookies();
+export async function updateHeroImage(cookieStore: ReadonlyRequestCookies, image: File): Promise<ServerResponse> {
     const supabase = createClient(cookieStore);
     // 1. Fetch the old image URL to delete it later
     const { data: oldSetting } = await supabase
@@ -103,8 +101,7 @@ export async function updateHeroImage(image: File): Promise<ServerResponse> {
 }
 
 
-export async function getSiteName(): Promise<string> {
-    const cookieStore = cookies();
+export async function getSiteName(cookieStore: ReadonlyRequestCookies): Promise<string> {
     const supabase = createClient(cookieStore);
     const { data, error } = await supabase
         .from('site_settings')
@@ -119,8 +116,7 @@ export async function getSiteName(): Promise<string> {
     return data?.value || 'ANISTORE'; // Return default if not found
 }
 
-export async function updateSiteName(newName: string): Promise<{success: boolean; message: string}> {
-    const cookieStore = cookies();
+export async function updateSiteName(cookieStore: ReadonlyRequestCookies, newName: string): Promise<{success: boolean; message: string}> {
     const supabase = createClient(cookieStore);
     if (!newName || newName.trim().length === 0) {
         return { success: false, message: 'Site name cannot be empty.' };

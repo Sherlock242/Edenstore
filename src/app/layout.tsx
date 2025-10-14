@@ -7,9 +7,6 @@ import { Header } from '@/components/layout/header';
 import { Footer } from '@/components/layout/footer';
 import { AppProviders } from '@/components/providers';
 import { getSiteName } from './admin/settings/actions';
-import { createClient } from '@/lib/supabase/server';
-import { redirect } from 'next/navigation';
-import MyOrdersPage from './my-orders/page';
 import { cookies } from 'next/headers';
 
 const inter = Inter({
@@ -24,7 +21,8 @@ const spaceGrotesk = Space_Grotesk({
 });
 
 export async function generateMetadata(): Promise<Metadata> {
-  const siteName = await getSiteName();
+  const cookieStore = cookies();
+  const siteName = await getSiteName(cookieStore);
   return {
     title: {
       default: siteName,
@@ -42,7 +40,8 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const siteName = await getSiteName();
+  const cookieStore = cookies();
+  const siteName = await getSiteName(cookieStore);
   return (
     <html lang="en" className="dark">
       <body

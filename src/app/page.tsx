@@ -6,11 +6,11 @@ import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { getHeroImageUrl } from '@/app/admin/settings/actions';
 import { cookies } from 'next/headers';
-import { createClient } from '@/lib/supabase/server';
 
 export default async function Home() {
-  const products = await getProducts();
-  const heroImageResult = await getHeroImageUrl();
+  const cookieStore = cookies();
+  const products = await getProducts(cookieStore);
+  const heroImageResult = await getHeroImageUrl(cookieStore);
 
   let heroImageUrl = heroImageResult.success && heroImageResult.url ? heroImageResult.url : "https://images.unsplash.com/photo-1711732734189-b86588856234?q=80&w=2070&auto=format&fit=crop";
   let heroImageHint = "sung jin woo";

@@ -14,12 +14,12 @@ import { ProductDetailsClient } from "@/components/product-details-client";
 import { ProductCard } from "@/components/product-card";
 import { ProductImageCarousel } from "@/components/product-image-carousel";
 import { cookies } from "next/headers";
-import { createClient } from "@/lib/supabase/server";
 
 export const dynamic = 'force-dynamic';
 
 export default async function ProductPage({ params }: { params: { id: string } }) {
-  const products = await getProducts();
+  const cookieStore = cookies();
+  const products = await getProducts(cookieStore);
   const product = products.find((p) => p.id === params.id);
 
   if (!product) {
@@ -85,7 +85,9 @@ export default async function ProductPage({ params }: { params: { id: string } }
 }
 
 export async function generateStaticParams() {
-    const products = await getProducts();
+    const { cookies } = await import('next/headers');
+    const cookieStore = cookies();
+    const products = await getProducts(cookieStore);
     return products.map((product) => ({
       id: product.id,
     }));

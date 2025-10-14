@@ -1,4 +1,3 @@
-
 // src/app/admin/add-product/add-product-form.tsx
 'use client';
 import { useEffect, useState } from 'react';
@@ -18,7 +17,8 @@ import {
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
-import { addProduct, updateProduct, type Product } from '@/app/actions';
+import { type Product } from '@/app/actions';
+import { addProductAction, updateProductAction } from '@/app/server-actions';
 import { Plus, Upload, X } from 'lucide-react';
 import Image from 'next/image';
 
@@ -128,7 +128,7 @@ export function AddProductForm({ productToEdit, onProductAddedOrUpdated }: AddPr
             // Only include images field if new images were uploaded
             ...(imagesWithFiles.length > 0 && { images: imagesWithFiles }),
         };
-        result = await updateProduct(updateValues);
+        result = await updateProductAction(updateValues);
     } else {
         // For adding a new product, at least one image file is mandatory.
         if (imagesWithFiles.length === 0) {
@@ -139,7 +139,7 @@ export function AddProductForm({ productToEdit, onProductAddedOrUpdated }: AddPr
             ...values,
             images: imagesWithFiles,
         };
-        result = await addProduct(addValues);
+        result = await addProductAction(addValues);
     }
 
     if (result.success) {

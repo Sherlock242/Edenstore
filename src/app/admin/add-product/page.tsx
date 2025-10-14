@@ -1,12 +1,13 @@
-
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { AddProductForm } from '@/app/admin/add-product/add-product-form';
 import { ManageProducts } from '@/app/admin/add-product/manage-products';
-import type { Product } from '@/app/actions';
+import { type Product } from '@/app/actions';
+import { getProductsClient } from '@/app/server-actions';
 
+// This is now a client component to manage state, but it fetches initial data on the server.
 export default function AddProductPage() {
   const [activeTab, setActiveTab] = useState('add');
   const [productToEdit, setProductToEdit] = useState<Product | null>(null);
@@ -20,6 +21,7 @@ export default function AddProductPage() {
   const handleProductAddedOrUpdated = () => {
     setProductToEdit(null);
     setProductAddedOrUpdated(c => c + 1);
+    // Potentially switch tab after update
     // setActiveTab('manage');
   }
 
@@ -55,7 +57,10 @@ export default function AddProductPage() {
               <CardTitle>Manage Your Products</CardTitle>
             </CardHeader>
             <CardContent>
-                <ManageProducts onEditProduct={handleEditProduct} productAddedOrUpdated={productAddedOrUpdated}/>
+                <ManageProductsWrapper 
+                    onEditProduct={handleEditProduct}
+                    productAddedOrUpdated={productAddedOrUpdated}
+                />
             </CardContent>
           </Card>
         </TabsContent>
@@ -64,4 +69,23 @@ export default function AddProductPage() {
   );
 }
 
+
+// Wrapper component to fetch initial data on the server
+function ManageProductsWrapper({ onEditProduct, productAddedOrUpdated }: { onEditProduct: (product: Product) => void; productAddedOrUpdated: number; }) {
+    const [products, setProducts] = useState<Product[]>([]);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        setLoading(true);
+        getProductsClient().then(products => {
+            setProducts(products)
+            setLoading(false);
+        });
+    }, [productAddedOrUpdated]);
+
+    if (loading) {
+        return <div className="text-center">Loading products...</div>
+    }
     
+    return <ManageProducts initialProducts={products} onEditProduct={onEditProduct} productAddedOrUpdated={productAddedOrUpdated} />;
+}

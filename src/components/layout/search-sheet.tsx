@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from "react";
@@ -9,7 +8,8 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { getProductsForSearch, type SearchProduct } from "@/app/actions";
+import { type SearchProduct } from "@/app/actions";
+import { getProductsForSearchClient } from "@/app/server-actions";
 import { Sheet, SheetContent, SheetTrigger } from "../ui/sheet";
 
 export function SearchSheet() {
@@ -44,11 +44,11 @@ export function SearchSheet() {
     // Effect to fetch all products for searching
     useEffect(() => {
         if (isSearchOpen && allProducts.length === 0) {
-        setIsFetchingSuggestions(true);
-        getProductsForSearch().then(products => {
-            setAllProducts(products);
-            setIsFetchingSuggestions(false);
-        });
+            setIsFetchingSuggestions(true);
+            getProductsForSearchClient().then(products => {
+                setAllProducts(products);
+                setIsFetchingSuggestions(false);
+            });
         }
     }, [isSearchOpen, allProducts.length]);
 
@@ -126,4 +126,3 @@ export function SearchSheet() {
         </Sheet>
     );
 }
-
