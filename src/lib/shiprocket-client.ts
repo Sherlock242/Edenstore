@@ -96,7 +96,7 @@ export async function pushOrderToShiprocket(order: FullOrderDetails): Promise<{ 
     }
 
     const nameParts = (shippingDetails.firstName || '').split(' ').filter(Boolean);
-    const lastName = nameParts.length > 1 ? nameParts.pop() || ' ' : ' ';
+    const lastName = nameParts.length > 1 ? nameParts.pop() || ' ' : (shippingDetails.lastName || ' ');
     const firstName = nameParts.join(' ');
 
     const orderItemsForShipment: ShipmentOrderItem[] = order.items.map(item => ({
@@ -159,7 +159,7 @@ export async function pushOrderToShiprocket(order: FullOrderDetails): Promise<{ 
              console.error("Shiprocket Push Order Failed. Payload Sent:", JSON.stringify(payload, null, 2));
              console.error("Shiprocket Response:", JSON.stringify(responseBody, null, 2));
              // Provide a more specific error message if available from Shiprocket's response
-             const errorMessage = responseBody.message || (responseBody.errors && Array.isArray(responseBody.errors)) ? responseBody.errors.join(', ') : "Failed to push order for an unknown reason.";
+             const errorMessage = responseBody.message || (responseBody.errors && Array.isArray(responseBody.errors) && responseBody.errors.length > 0) ? responseBody.errors.join(', ') : "Failed to push order for an unknown reason.";
              return { success: false, message: errorMessage };
         }
 
