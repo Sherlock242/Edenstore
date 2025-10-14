@@ -25,6 +25,7 @@ async function getShiprocketToken(): Promise<string | null> {
                 email: process.env.SHIPROCKET_API_EMAIL,
                 password: process.env.SHIPROCKET_API_PASSWORD,
             }),
+            cache: 'no-store'
         });
 
         if (!response.ok) {
@@ -53,8 +54,10 @@ type ShipmentOrderItem = {
 export type ShipmentPayload = {
     order_id: string; // Your internal order ID
     order_date: string;
+    channel_id: string; // Add this
     billing_customer_name: string;
     billing_last_name: string;
+... (rest of the properties)
     billing_address: string;
     billing_city: string;
     billing_state: string;
@@ -106,7 +109,7 @@ export async function createShipment(payload: ShipmentPayload): Promise<{success
             return { success: false, message: errorMessage || "Failed to create shipment." };
         }
         
-        return { success: true, message: "Shipment created successfully.", payload: responseData.payload };
+        return { success: true, message: "Shipment created successfully.", payload: responseData };
 
     } catch (error) {
         const errorMessage = error instanceof Error ? error.message : "An unknown error occurred.";

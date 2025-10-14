@@ -112,7 +112,7 @@ export async function verifyPaymentAndCreateOrder(payload: VerifyPaymentPayload)
 
     // 3. Get cart items to be saved as order items.
     const cart = await getCartItems();
-    if (!cart.success || !cart.items || cart.items.length === 0) {
+    if (!cart.success || !cart.items || !cart.items.length) {
         return { success: false, message: "Cart is empty or could not be fetched. Cannot create order." };
     }
 
@@ -150,6 +150,7 @@ export async function verifyPaymentAndCreateOrder(payload: VerifyPaymentPayload)
     const shipmentResult = await createShipment({
       order_id: newOrder.id.toString(), // Use the actual database ID
       order_date: newOrder.created_at,
+      channel_id: "8434256", // Use the CUSTOM channel ID from your Shiprocket dashboard
       billing_customer_name: `${shippingAddress.firstName} ${shippingAddress.lastName || ''}`,
       billing_last_name: shippingAddress.lastName || shippingAddress.firstName,
       billing_address: shippingAddress.address,
@@ -271,6 +272,7 @@ export async function createCodOrder(payload: CreateCodOrderPayload): Promise<{s
     const shipmentResult = await createShipment({
       order_id: newOrder.id.toString(), // Use the actual database ID
       order_date: newOrder.created_at,
+      channel_id: "8434256", // Use the CUSTOM channel ID from your Shiprocket dashboard
       billing_customer_name: `${shippingAddress.firstName} ${shippingAddress.lastName || ''}`,
       billing_last_name: shippingAddress.lastName || shippingAddress.firstName,
       billing_address: shippingAddress.address,
