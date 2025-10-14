@@ -6,11 +6,12 @@ import crypto from 'crypto';
 import { createClient as createAdminClient } from '@supabase/supabase-js';
 import { createClient } from '@/lib/supabase/server';
 import { getCartItems } from '../cart/actions';
+import { cookies } from 'next/headers';
 
 const supabaseAdmin = createAdminClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!,
-  { auth: { persistSession: false }, db: { schema: 'public'} }
+  { auth: { persistSession: false } }
 );
 
 type CreateOrderPayload = {
@@ -18,9 +19,16 @@ type CreateOrderPayload = {
 }
 export async function createRazorpayOrder(payload: CreateOrderPayload): Promise<{success: boolean; order?: any; message: string}> {
     try {
+        const keyId = process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID;
+        const keySecret = process.env.RAZORPAY_KEY_SECRET;
+
+        if (!keyId || !keySecret) {
+            return { success: false, message: "Razorpay keys are not configured correctly." };
+        }
+
         const instance = new Razorpay({
-            key_id: process.env.RAZORPAY_KEY_ID!,
-            key_secret: process.env.RAZORPAY_KEY_SECRET!,
+            key_id: keyId,
+            key_secret: keySecret,
         });
 
         const options = {
@@ -63,46 +71,40 @@ export async function verifyPaymentAndCreateOrder(payload: VerifyPaymentPayload)
         .update(body.toString())
         .digest("hex");
     
-    // 1. Verify Payment Signature
     if (expectedSignature !== razorpay_signature) {
         return { success: false, message: "Payment verification failed. Signature mismatch." };
     }
 
-    // 2. Payment is verified, now create the order in the database.
-    const supabase = createClient();
+    const cookieStore = cookies();
+    const supabase = createClient(cookieStore);
     const { data: { user } } = await supabase.auth.getUser();
 
     if (!user) {
         return { success: false, message: "User not authenticated. Cannot create order." };
     }
 
-    // 3. Get cart items to be saved as order items.
     const cart = await getCartItems();
-    if (!cart.success || !cart.items || cart.items.length === 0) {
-        return { success: false, message: "Cart is empty or could not be fetched. Cannot create order." };
+    if (!cart.success || !cart.items || !cart.items.length) {
+        return { success: false, message: "Cart is empty. Cannot create order." };
     }
     
-    // 4. Insert into 'orders' table
     const { data: newOrder, error: orderError } = await supabaseAdmin
         .from('orders')
         .insert({
             user_id: user.id,
-            status: 'processing',
+            status: 'pending-shipment',
             shipping_address: JSON.stringify(shippingAddress),
             razorpay_order_id: razorpay_order_id,
             razorpay_payment_id: razorpay_payment_id,
-            total_amount: totalAmount,
-            total_price: totalAmount,
         })
         .select()
         .single();
     
     if (orderError || !newOrder) {
         console.error("Error creating order:", orderError);
-        return { success: false, message: `Failed to save order to the database. Reason: ${orderError?.message || 'Unknown error'}` };
+        return { success: false, message: `Failed to save order. Reason: ${orderError?.message || 'Unknown'}` };
     }
 
-    // 5. Insert into 'order_items' table
     const orderItemsToInsert = cart.items.map(item => ({
         order_id: newOrder.id,
         product_id: item.product.id,
@@ -116,21 +118,11 @@ export async function verifyPaymentAndCreateOrder(payload: VerifyPaymentPayload)
 
     if (itemsError) {
         console.error("Error creating order items:", itemsError);
-        // If this fails, we should ideally roll back the order creation,
-        // but for now, we'll just log the error.
+        await supabaseAdmin.from('orders').delete().eq('id', newOrder.id);
         return { success: false, message: `Failed to save order items. Reason: ${itemsError.message}` };
     }
-
-    // 6. Clear the user's cart
-    const { error: deleteCartError } = await supabaseAdmin
-        .from('cart_items')
-        .delete()
-        .eq('user_id', user.id);
-
-    if (deleteCartError) {
-        console.error("Error clearing cart:", deleteCartError);
-        // Don't fail the whole process if cart clearing fails, just log it.
-    }
     
-    return { success: true, message: "Payment verified and order created successfully.", razorpayOrderId: newOrder.razorpay_order_id };
+    await supabaseAdmin.from('cart_items').delete().eq('user_id', user.id);
+    
+    return { success: true, message: "Payment verified and order created.", razorpayOrderId: razorpay_order_id };
 }

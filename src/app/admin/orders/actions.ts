@@ -6,6 +6,7 @@ import type { OrderDetails } from '@/app/track/actions';
 import type { Product } from '@/app/actions';
 import { pushOrderToShiprocket } from '@/lib/shiprocket-client';
 import { cookies } from 'next/headers';
+import { createClient as createAdminClient } from '@supabase/supabase-js';
 
 export type UserProfileInfo = {
     display_name: string;
@@ -101,9 +102,13 @@ export async function getAllOrders(): Promise<{ success: boolean; orders?: FullO
 }
 
 export async function updateOrderStatus(orderId: string, status: OrderDetails['status']): Promise<{ success: boolean; message: string }> {
-    const cookieStore = cookies();
-    const supabase = createClient(cookieStore);
-    const { error } = await supabase
+    // Use the admin client to bypass RLS for status updates.
+    const supabaseAdmin = createAdminClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.SUPABASE_SERVICE_ROLE_KEY!,
+        { auth: { persistSession: false } }
+    );
+    const { error } = await supabaseAdmin
         .from('orders')
         .update({ status: status })
         .eq('id', orderId);
@@ -118,8 +123,12 @@ export async function updateOrderStatus(orderId: string, status: OrderDetails['s
 
 
 export async function sendOrderToShiprocket(order: FullOrderDetails): Promise<{ success: boolean; message: string, shipmentId?: number, shiprocketOrderId?: number }> {
-    const cookieStore = cookies();
-    const supabase = createClient(cookieStore);
+     // Use the admin client to bypass RLS when updating the order.
+    const supabaseAdmin = createAdminClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.SUPABASE_SERVICE_ROLE_KEY!,
+        { auth: { persistSession: false } }
+    );
     
     const pushResult = await pushOrderToShiprocket(order);
     if (!pushResult.success || !pushResult.payload) {
@@ -128,8 +137,8 @@ export async function sendOrderToShiprocket(order: FullOrderDetails): Promise<{ 
 
     const { shipment_id, order_id } = pushResult.payload;
 
-    // Save shipment details and update status to 'processing'
-    const { error: updateError } = await supabase
+    // Save shipment details and update status to 'processing' using the admin client
+    const { error: updateError } = await supabaseAdmin
         .from('orders')
         .update({
           shipment_id: shipment_id,
