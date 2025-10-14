@@ -241,6 +241,11 @@ export async function pushOrderToShiprocket(order: FullOrderDetails): Promise<{s
     const totalAmount = order.items.reduce((acc, item) => acc + item.price_at_purchase * item.quantity, 0);
     const totalWeight = order.items.reduce((acc, item) => acc + (item.product.weight * item.quantity), 0);
     const pickupLocation = process.env.SHIPROCKET_PICKUP_NAME || 'Primary';
+    const channelId = process.env.SHIPROCKET_CHANNEL_ID || '';
+
+    if (!channelId) {
+        return { success: false, message: "SHIPROCKET_CHANNEL_ID is not set in your environment variables."}
+    }
 
     const orderItemsForShipment = order.items.map(item => ({
       name: item.product.name,
@@ -254,7 +259,7 @@ export async function pushOrderToShiprocket(order: FullOrderDetails): Promise<{s
         order_id: order.id,
         order_date: format(new Date(order.created_at), 'yyyy-MM-dd HH:mm'),
         pickup_location: pickupLocation,
-        channel_id: "", // Not needed for create/adhoc
+        channel_id: channelId, 
         comment: `Order from anistore`,
         billing_customer_name: shippingAddress.firstName || "N/A",
         billing_last_name: shippingAddress.lastName || " ", // Must not be empty

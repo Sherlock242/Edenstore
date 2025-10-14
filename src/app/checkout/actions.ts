@@ -5,10 +5,8 @@ import Razorpay from 'razorpay';
 import crypto from 'crypto';
 import { createClient } from '@/lib/supabase/server';
 import { getCartItems } from '../cart/actions';
-import { getShippingRates, pushOrderToShiprocket } from '@/lib/shiprocket-client';
+import { getShippingRates } from '@/lib/shiprocket-client';
 import { randomBytes } from 'crypto';
-import type { FullOrderDetails } from '@/app/admin/orders/actions';
-import type { OrderItem } from '../track/actions';
 
 
 export async function fetchShippingRatesAction(pincode: string, paymentMethod: 'online' | 'cod'): Promise<{success: boolean, message: string, rate?: number}> {
@@ -119,7 +117,7 @@ export async function verifyPaymentAndCreateOrder(payload: VerifyPaymentPayload)
         .from('orders')
         .insert({
             user_id: user.id,
-            status: 'processing',
+            status: 'pending-shipment', // New status indicating it's ready to be pushed
             shipping_address: JSON.stringify(shippingAddress),
             razorpay_order_id: razorpay_order_id,
             razorpay_payment_id: razorpay_payment_id,
@@ -146,43 +144,18 @@ export async function verifyPaymentAndCreateOrder(payload: VerifyPaymentPayload)
 
     if (itemsError) {
         console.error("Error creating order items:", itemsError);
+        // Here you might want to delete the order record you just created for consistency
+        await supabase.from('orders').delete().eq('id', newOrder.id);
         return { success: false, message: `Failed to save order items. Reason: ${itemsError.message}` };
     }
-
-    // AUTOMATICALLY PUSH TO SHIPROCKET
-    const fullOrderDetails: FullOrderDetails = {
-        id: newOrder.id.toString(),
-        created_at: newOrder.created_at,
-        status: newOrder.status as 'processing',
-        shipping_address: newOrder.shipping_address,
-        razorpay_order_id: newOrder.razorpay_order_id,
-        payment_method: newOrder.payment_method as 'Prepaid',
-        user: { display_name: user.email || '', email: user.email || '' },
-        items: cart.items.map(item => ({...item, price_at_purchase: item.product.price, product_id: item.product.id})),
-        shipment_id: null,
-        shiprocket_order_id: null
-    };
-
-    const pushResult = await pushOrderToShiprocket(fullOrderDetails);
     
-    if (pushResult.success && pushResult.payload) {
-        const { shipment_id, order_id } = pushResult.payload;
-        await supabase
-            .from('orders')
-            .update({ shipment_id, shiprocket_order_id: order_id })
-            .eq('id', newOrder.id);
-    } else {
-        console.error("Failed to push order to Shiprocket automatically:", pushResult.message);
-        // Don't fail the entire order, just log it. The admin can push it manually.
-    }
-
-
+    // Clear cart after successful order creation
     await supabase
         .from('cart_items')
         .delete()
         .eq('user_id', user.id);
     
-    return { success: true, message: "Payment verified and order created successfully.", razorpayOrderId: razorpay_order_id };
+    return { success: true, message: "Payment verified and order created successfully. Ready for shipment processing.", razorpayOrderId: razorpay_order_id };
 }
 
 
@@ -210,7 +183,7 @@ export async function createCodOrder(payload: CreateCodOrderPayload): Promise<{s
         .from('orders')
         .insert({
             user_id: user.id,
-            status: 'processing',
+            status: 'pending-shipment', // New status
             shipping_address: JSON.stringify(shippingAddress),
             razorpay_order_id: codOrderId,
             payment_method: 'COD',
@@ -236,36 +209,11 @@ export async function createCodOrder(payload: CreateCodOrderPayload): Promise<{s
 
     if (itemsError) {
         console.error("Error creating COD order items:", itemsError);
+        await supabase.from('orders').delete().eq('id', newOrder.id);
         return { success: false, message: `Failed to save order items. Reason: ${itemsError.message}` };
-    }
-
-    // AUTOMATICALLY PUSH TO SHIPROCKET
-     const fullOrderDetails: FullOrderDetails = {
-        id: newOrder.id.toString(),
-        created_at: newOrder.created_at,
-        status: newOrder.status as 'processing',
-        shipping_address: newOrder.shipping_address,
-        razorpay_order_id: newOrder.razorpay_order_id,
-        payment_method: newOrder.payment_method as 'COD',
-        user: { display_name: user.email || '', email: user.email || '' },
-        items: cart.items.map(item => ({...item, price_at_purchase: item.product.price, product_id: item.product.id})),
-        shipment_id: null,
-        shiprocket_order_id: null
-    };
-
-    const pushResult = await pushOrderToShiprocket(fullOrderDetails);
-    
-    if (pushResult.success && pushResult.payload) {
-        const { shipment_id, order_id } = pushResult.payload;
-        await supabase
-            .from('orders')
-            .update({ shipment_id, shiprocket_order_id: order_id })
-            .eq('id', newOrder.id);
-    } else {
-        console.error("Failed to push order to Shiprocket automatically:", pushResult.message);
     }
 
     await supabase.from('cart_items').delete().eq('user_id', user.id);
 
-    return { success: true, message: "COD Order created successfully.", razorpayOrderId: codOrderId };
+    return { success: true, message: "COD Order created successfully. Ready for shipment processing.", razorpayOrderId: codOrderId };
 }

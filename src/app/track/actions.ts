@@ -17,7 +17,7 @@ export type OrderItem = {
 export type OrderDetails = {
     id: string;
     created_at: string;
-    status: 'processing' | 'pickup-scheduled' | 'shipped' | 'delivered';
+    status: 'pending-shipment' | 'processing' | 'pickup-scheduled' | 'shipped' | 'delivered';
     shipping_address: any;
     razorpay_order_id: string;
     shipment_id: number | null;

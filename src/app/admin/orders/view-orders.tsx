@@ -51,6 +51,7 @@ export function ViewOrders({ orders, onStatusUpdated }: ViewOrdersProps) {
 
   const getStatusInfo = (status: FullOrderDetails['status']) => {
     switch (status) {
+      case 'pending-shipment': return { text: 'Pending Shipment', color: 'bg-orange-500/20 text-orange-400 border-orange-500/30' };
       case 'processing': return { text: 'Processing', color: 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30' };
       case 'pickup-scheduled': return { text: 'Pickup Scheduled', color: 'bg-cyan-500/20 text-cyan-400 border-cyan-500/30' };
       case 'shipped': return { text: 'Shipped', color: 'bg-blue-500/20 text-blue-400 border-blue-500/30' };
@@ -112,11 +113,16 @@ export function ViewOrders({ orders, onStatusUpdated }: ViewOrdersProps) {
       setIsPushing(order.id);
       startTransition(async () => {
         const result = await sendOrderToShiprocket(order);
-        if (result.success) {
+        if (result.success && result.shipmentId && result.shiprocketOrderId) {
             toast({ title: 'Order Pushed!', description: result.message });
             // Manually update the client-side order with new shipment IDs
-            const updatedOrder = { ...order, shipment_id: result.shipmentId!, shiprocket_order_id: result.shipmentId! };
-            onStatusUpdated(order.id, order.status, updatedOrder); 
+            const updatedOrder = { 
+                ...order, 
+                shipment_id: result.shipmentId, 
+                shiprocket_order_id: result.shiprocketOrderId,
+                status: 'processing' as FullOrderDetails['status']
+            };
+            onStatusUpdated(order.id, 'processing', updatedOrder); 
         } else {
             toast({ variant: 'destructive', title: "Push Failed", description: result.message });
         }
@@ -191,7 +197,7 @@ export function ViewOrders({ orders, onStatusUpdated }: ViewOrdersProps) {
                         
                         <div className="mt-4">
                             <h4 className="font-semibold mb-2">Manage Order</h4>
-                            {!order.shipment_id && !order.shiprocket_order_id ? (
+                            {order.status === 'pending-shipment' ? (
                                 <Button className="w-full" onClick={() => handlePushToShiprocket(order)} disabled={isPushing === order.id}>
                                     <Send className="mr-2 h-4 w-4" />
                                     {isPushing === order.id ? 'Pushing...' : 'Push to Shiprocket'}

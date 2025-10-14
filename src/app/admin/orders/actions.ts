@@ -157,7 +157,7 @@ export async function schedulePickupForOrder(order: FullOrderDetails, pickupDate
     return { success: true, message: `Pickup successfully scheduled for ${formattedPickupDate}. Status: ${responseData}` };
 }
 
-export async function sendOrderToShiprocket(order: FullOrderDetails): Promise<{ success: boolean; message: string, shipmentId?: number }> {
+export async function sendOrderToShiprocket(order: FullOrderDetails): Promise<{ success: boolean; message: string, shipmentId?: number, shiprocketOrderId?: number }> {
     const supabase = createClient();
     
     const pushResult = await pushOrderToShiprocket(order);
@@ -173,13 +173,16 @@ export async function sendOrderToShiprocket(order: FullOrderDetails): Promise<{ 
         .update({
           shipment_id,
           shiprocket_order_id: order_id,
+          status: 'processing' // Good practice to ensure status is processing
         })
         .eq('id', order.id);
       
     if(updateError) {
         console.error("Failed to save shipment details to order:", updateError.message);
-        return { success: false, message: `Order pushed to Shiprocket, but failed to save details in local DB. Error: ${updateError.message}` };
+        // This is a critical error. The order is in Shiprocket but our DB doesn't know.
+        // We should inform the admin to manually reconcile.
+        return { success: false, message: `Order pushed to Shiprocket (Shipment ID: ${shipment_id}), but FAILED to save details in local DB. Please update order #${order.id} manually. Error: ${updateError.message}` };
     }
 
-    return { success: true, message: `Order successfully pushed to Shiprocket. Shipment ID: ${shipment_id}`, shipmentId: shipment_id };
+    return { success: true, message: `Order successfully pushed to Shiprocket. Shipment ID: ${shipment_id}`, shipmentId: shipment_id, shiprocketOrderId: order_id };
 }
