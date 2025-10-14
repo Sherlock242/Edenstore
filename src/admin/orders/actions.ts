@@ -1,9 +1,11 @@
 
 'use server';
 
-import { createClient as createAdminClient } from '@supabase/supabase-js';
+import { createClient } from '@/lib/supabase/server';
 import type { OrderDetails } from '@/app/track/actions';
 import type { Product } from '@/app/actions';
+import { requestShipmentPickup } from '@/lib/shiprocket-client';
+import { format } from 'date-fns';
 
 export type UserProfileInfo = {
     display_name: string;
@@ -12,18 +14,13 @@ export type UserProfileInfo = {
 
 export type FullOrderDetails = OrderDetails & { user: UserProfileInfo };
 
-const supabaseAdmin = createAdminClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!,
-  { auth: { persistSession: false } }
-);
-
 export async function getAllOrders(): Promise<{ success: boolean; orders?: FullOrderDetails[]; message: string }> {
+    const supabase = createClient();
     // 1. Fetch all orders with their items
-    const { data: ordersData, error: ordersError } = await supabaseAdmin
+    const { data: ordersData, error: ordersError } = await supabase
         .from('orders')
         .select(`
-            id, created_at, status, razorpay_order_id, shipping_address, user_id,
+            id, created_at, status, razorpay_order_id, shipping_address, user_id, shipment_id, shiprocket_order_id, payment_method,
             order_items ( product_id, quantity, size, color, price_at_purchase )
         `)
         .order('created_at', { ascending: false });
@@ -38,7 +35,7 @@ export async function getAllOrders(): Promise<{ success: boolean; orders?: FullO
     const userIds = [...new Set(ordersData.map(order => order.user_id))];
 
     // 3. Fetch product details
-    const { data: productsData, error: productsError } = await supabaseAdmin
+    const { data: productsData, error: productsError } = await supabase
         .from('products')
         .select(`
             id, name, description, price, category, popularity, release_date, weight,
@@ -51,7 +48,7 @@ export async function getAllOrders(): Promise<{ success: boolean; orders?: FullO
     if (productsError) return { success: false, message: 'Could not fetch product details.' };
 
     // 4. Fetch user details
-    const { data: usersData, error: usersError } = await supabaseAdmin
+    const { data: usersData, error: usersError } = await supabase
         .from('users')
         .select('id, display_name, email')
         .in('id', userIds);
@@ -91,6 +88,9 @@ export async function getAllOrders(): Promise<{ success: boolean; orders?: FullO
             status: order.status as OrderDetails['status'],
             shipping_address: order.shipping_address,
             razorpay_order_id: order.razorpay_order_id,
+            shipment_id: order.shipment_id,
+            shiprocket_order_id: order.shiprocket_order_id,
+            payment_method: order.payment_method,
             user: user,
             items: items,
         };
@@ -100,7 +100,8 @@ export async function getAllOrders(): Promise<{ success: boolean; orders?: FullO
 }
 
 export async function updateOrderStatus(orderId: string, status: OrderDetails['status']): Promise<{ success: boolean; message: string }> {
-    const { error } = await supabaseAdmin
+    const supabase = createClient();
+    const { error } = await supabase
         .from('orders')
         .update({ status: status })
         .eq('id', orderId);
@@ -111,4 +112,47 @@ export async function updateOrderStatus(orderId: string, status: OrderDetails['s
     }
 
     return { success: true, message: 'Order status updated successfully.' };
+}
+
+
+export async function schedulePickupForOrder(order: FullOrderDetails, pickupDate?: Date): Promise<{ success: boolean; message: string }> {
+    if (!order.shipment_id) {
+        return { success: false, message: "Invalid Shipment ID." };
+    }
+    const supabase = createClient();
+
+    let finalPickupDate: Date;
+    if (pickupDate) {
+        finalPickupDate = pickupDate;
+    } else {
+        // Default to 2 days after order creation if no date is provided
+        const orderDate = new Date(order.created_at);
+        finalPickupDate = new Date(orderDate);
+        finalPickupDate.setDate(orderDate.getDate() + 2);
+    }
+    
+    // Format date as YYYY-MM-DD for the API
+    const formattedPickupDate = format(finalPickupDate, 'yyyy-MM-dd');
+
+    // 1. Call Shiprocket to schedule the pickup
+    const pickupResult = await requestShipmentPickup([order.shipment_id], formattedPickupDate);
+
+    if (!pickupResult.success) {
+        return { success: false, message: pickupResult.message };
+    }
+
+    // 2. Update the order status in our database to 'pickup-scheduled'
+    const { error: dbError } = await supabase
+        .from('orders')
+        .update({ status: 'pickup-scheduled' })
+        .eq('id', order.id);
+    
+    if (dbError) {
+        console.error("Failed to update order status after scheduling pickup:", dbError.message);
+        // Even if DB update fails, the pickup was scheduled. Inform the admin.
+        return { success: true, message: `Pickup scheduled with Shiprocket, but failed to update status in local DB. Please update manually. Error: ${dbError.message}` };
+    }
+    
+    const responseData = pickupResult.response?.pickup_status;
+    return { success: true, message: `Pickup successfully scheduled for ${formattedPickupDate}. Status: ${responseData}` };
 }

@@ -2,22 +2,7 @@
 "use server";
 
 import { revalidatePath } from 'next/cache';
-import { createClient } from '@supabase/supabase-js';
-import { supabase as supabaseClient } from '@/lib/supabase-client';
-
-// Create a new Supabase client with admin privileges for server-side operations
-// This uses the service role key, which has full admin privileges.
-// NEVER expose this key or use this client in the browser.
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!,
-  {
-    auth: {
-      autoRefreshToken: false,
-      persistSession: false,
-    },
-  }
-);
+import { createClient } from '@/lib/supabase/server';
 
 
 export type Product = {
@@ -36,7 +21,8 @@ export type Product = {
 
 // This function now needs to fetch from Supabase
 export const getProducts = async (): Promise<Product[]> => {
-    const { data: productsData, error } = await supabaseAdmin
+    const supabase = createClient();
+    const { data: productsData, error } = await supabase
       .from('products')
       .select(`
         id,
@@ -77,7 +63,8 @@ export const getProducts = async (): Promise<Product[]> => {
 export type SearchProduct = Pick<Product, 'id' | 'name' | 'category'> & { image: Product['images'][0] };
 
 export const getProductsForSearch = async (): Promise<SearchProduct[]> => {
-    const { data: productsData, error } = await supabaseAdmin
+    const supabase = createClient();
+    const { data: productsData, error } = await supabase
       .from('products')
       .select(`
         id,
@@ -136,10 +123,11 @@ type ServerResponse = {
 }
 
 export async function addProduct(data: ProductFormValues): Promise<ServerResponse> {
+    const supabase = createClient();
     const { images, sizes, ...productData } = data;
     
     // 1. Insert product data into the 'products' table using the admin client
-    const { data: newProductData, error: productInsertError } = await supabaseAdmin
+    const { data: newProductData, error: productInsertError } = await supabase
         .from('products')
         .insert({
             name: productData.name,
@@ -166,7 +154,7 @@ export async function addProduct(data: ProductFormValues): Promise<ServerRespons
         const fileName = `${Date.now()}-${Math.random()}.${fileExt}`;
         const filePath = `product-images/${fileName}`;
 
-        const { error: uploadError } = await supabaseAdmin.storage
+        const { error: uploadError } = await supabase.storage
             .from('product-images')
             .upload(filePath, image.file);
 
@@ -176,7 +164,7 @@ export async function addProduct(data: ProductFormValues): Promise<ServerRespons
             return { success: false, message: `Failed to upload image ${image.file.name}.`, error: { message: uploadError.message } };
         }
 
-        const { data: urlData } = supabaseAdmin.storage
+        const { data: urlData } = supabase.storage
             .from('product-images')
             .getPublicUrl(filePath);
 
@@ -193,7 +181,7 @@ export async function addProduct(data: ProductFormValues): Promise<ServerRespons
 
     // 3. Insert all image data into 'product_images' table
     if (uploadedImages.length > 0) {
-        const { error: imageInsertError } = await supabaseAdmin
+        const { error: imageInsertError } = await supabase
             .from('product_images')
             .insert(uploadedImages);
 
@@ -206,19 +194,19 @@ export async function addProduct(data: ProductFormValues): Promise<ServerRespons
 
     // 4. Insert sizes and quantities
     const sizesToInsert = sizes.map(s => ({ product_id: productId, size: s.size, quantity: Number(s.quantity) }));
-    await supabaseAdmin.from('product_sizes').insert(sizesToInsert);
+    await supabase.from('product_sizes').insert(sizesToInsert);
 
     // For simplicity, we'll add some default colors. In a real app, this would be part of the form.
     const defaultColors = ['Black', 'White'];
     const colorsToInsert = defaultColors.map(color => ({ product_id: productId, color }));
-    await supabaseAdmin.from('product_colors').insert(colorsToInsert);
+    await supabase.from('product_colors').insert(colorsToInsert);
 
     revalidatePath('/');
     revalidatePath('/products');
     revalidatePath('/admin/add-product');
 
     // Fetch the newly created product to return it
-    const { data: finalProductData, error: finalProductError } = await supabaseAdmin
+    const { data: finalProductData, error: finalProductError } = await supabase
       .from('products')
       .select(`
         id, name, description, price, category, popularity, release_date, weight,
@@ -258,12 +246,13 @@ export async function addProduct(data: ProductFormValues): Promise<ServerRespons
 
 
 export async function updateProduct(data: UpdateProductFormValues): Promise<ServerResponse> {
+  const supabase = createClient();
   const { id, images, sizes, ...productData } = data;
 
   // Handle image replacement if new images are provided
   if (images && images.length > 0) {
     // 1. Fetch old image records to delete them from storage
-    const { data: oldImages, error: fetchOldImagesError } = await supabaseAdmin
+    const { data: oldImages, error: fetchOldImagesError } = await supabase
       .from('product_images')
       .select('url')
       .eq('product_id', id);
@@ -287,7 +276,7 @@ export async function updateProduct(data: UpdateProductFormValues): Promise<Serv
         }).filter((p): p is string => p !== null);
 
         if(oldImagePaths.length > 0) {
-          const { error: storageError } = await supabaseAdmin.storage
+          const { error: storageError } = await supabase.storage
               .from('product-images')
               .remove(oldImagePaths.map(p => p.replace('product-images/', '')));
               
@@ -299,7 +288,7 @@ export async function updateProduct(data: UpdateProductFormValues): Promise<Serv
     }
 
     // 3. Delete old image records from the 'product_images' table
-    await supabaseAdmin.from('product_images').delete().eq('product_id', id);
+    await supabase.from('product_images').delete().eq('product_id', id);
 
     // 4. Upload new images and collect their data
     const newUploadedImages = [];
@@ -308,7 +297,7 @@ export async function updateProduct(data: UpdateProductFormValues): Promise<Serv
         const fileName = `${Date.now()}-${Math.random()}.${fileExt}`;
         const filePath = `product-images/${fileName}`;
 
-        const { error: uploadError } = await supabaseAdmin.storage
+        const { error: uploadError } = await supabase.storage
             .from('product-images')
             .upload(filePath, image.file);
 
@@ -316,7 +305,7 @@ export async function updateProduct(data: UpdateProductFormValues): Promise<Serv
             return { success: false, message: `Failed to upload image ${image.file.name}.`, error: { message: uploadError.message } };
         }
 
-        const { data: urlData } = supabaseAdmin.storage
+        const { data: urlData } = supabase.storage
             .from('product-images')
             .getPublicUrl(filePath);
         
@@ -329,7 +318,7 @@ export async function updateProduct(data: UpdateProductFormValues): Promise<Serv
 
     // 5. Insert new image records into 'product_images' table
     if (newUploadedImages.length > 0) {
-        const { error: imageInsertError } = await supabaseAdmin
+        const { error: imageInsertError } = await supabase
             .from('product_images')
             .insert(newUploadedImages);
 
@@ -340,7 +329,7 @@ export async function updateProduct(data: UpdateProductFormValues): Promise<Serv
   }
   
   // Update product details in 'products' table
-  const { error: productUpdateError } = await supabaseAdmin
+  const { error: productUpdateError } = await supabase
     .from('products')
     .update({
       name: productData.name,
@@ -358,10 +347,10 @@ export async function updateProduct(data: UpdateProductFormValues): Promise<Serv
 
   // Update sizes
   // 1. Delete existing sizes for the product
-  await supabaseAdmin.from('product_sizes').delete().eq('product_id', id);
+  await supabase.from('product_sizes').delete().eq('product_id', id);
   // 2. Insert new sizes
   const sizesToInsert = sizes.map(s => ({ product_id: id, size: s.size, quantity: Number(s.quantity) }));
-  await supabaseAdmin.from('product_sizes').insert(sizesToInsert);
+  await supabase.from('product_sizes').insert(sizesToInsert);
 
 
   revalidatePath('/');
@@ -370,7 +359,7 @@ export async function updateProduct(data: UpdateProductFormValues): Promise<Serv
   revalidatePath('/admin/add-product');
 
   // Fetch the fully updated product to return it
-  const { data: finalProductData, error: finalProductError } = await supabaseAdmin
+  const { data: finalProductData, error: finalProductError } = await supabase
     .from('products')
     .select(`
       id, name, description, price, category, popularity, release_date, weight,
@@ -409,8 +398,9 @@ export async function updateProduct(data: UpdateProductFormValues): Promise<Serv
 
 
 export async function deleteProduct(productId: string): Promise<ServerResponse> {
+  const supabase = createClient();
   // First, fetch the product to get the image URLs for deletion from storage
-  const { data: productData, error: fetchError } = await supabaseAdmin
+  const { data: productData, error: fetchError } = await supabase
     .from('products')
     .select('id, product_images(url)')
     .eq('id', productId)
@@ -434,7 +424,7 @@ export async function deleteProduct(productId: string): Promise<ServerResponse> 
       }).filter((p): p is string => p !== null);
 
       if(imagePaths.length > 0) {
-        const { error: storageError } = await supabaseAdmin.storage
+        const { error: storageError } = await supabase.storage
             .from('product-images')
             .remove(imagePaths.map(p => p.replace('product-images/', '')));
 
@@ -447,7 +437,7 @@ export async function deleteProduct(productId: string): Promise<ServerResponse> 
 
   // Delete the product from the 'products' table.
   // Cascading delete should handle related tables (images, sizes, colors)
-  const { error: deleteError } = await supabaseAdmin
+  const { error: deleteError } = await supabase
     .from('products')
     .delete()
     .eq('id', productId);
@@ -466,15 +456,16 @@ export async function deleteProduct(productId: string): Promise<ServerResponse> 
 
 
 export async function deleteUserAccount(): Promise<ServerResponse> {
+    const supabase = createClient();
     // We need the user's ID. To do this securely, we get the session on the server.
-    const { data: { user } } = await supabaseClient.auth.getUser();
+    const { data: { user } } = await supabase.auth.getUser();
 
     if (!user) {
         return { success: false, message: "User not found or not authenticated." };
     }
 
     // Use the admin client to delete the user from the auth schema.
-    const { error: deleteAuthUserError } = await supabaseAdmin.auth.admin.deleteUser(user.id);
+    const { error: deleteAuthUserError } = await supabase.auth.admin.deleteUser(user.id);
 
     if (deleteAuthUserError) {
         console.error('Error deleting user from auth:', deleteAuthUserError);
@@ -483,7 +474,7 @@ export async function deleteUserAccount(): Promise<ServerResponse> {
 
     // The trigger in the database should have already deleted the user from the public.users table.
     // We can now sign the user out on the client, although they are effectively logged out anyway.
-    await supabaseClient.auth.signOut();
+    await supabase.auth.signOut();
     
     revalidatePath('/');
 

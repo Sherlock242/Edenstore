@@ -1,7 +1,7 @@
 
 'use server';
 
-import { createClient as createAdminClient } from '@supabase/supabase-js';
+import { createClient } from '@/lib/supabase/server';
 
 export type UserProfileInfo = {
     id: string;
@@ -10,14 +10,9 @@ export type UserProfileInfo = {
     created_at: string;
 }
 
-const supabaseAdmin = createAdminClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!,
-  { auth: { persistSession: false } }
-);
-
 export async function getAllUsers(): Promise<{ success: boolean; users?: UserProfileInfo[]; message: string }> {
-    const { data: usersData, error: usersError } = await supabaseAdmin
+    const supabase = createClient();
+    const { data: usersData, error: usersError } = await supabase
         .from('users')
         .select('id, display_name, email, created_at')
         .order('created_at', { ascending: true });

@@ -2,16 +2,9 @@
 // src/app/track/actions.ts
 'use server';
 
-import { createClient as createAdminClient } from '@supabase/supabase-js';
+import { createClient } from '@/lib/supabase/server';
 import type { Product } from '@/app/actions';
 import { trackShipmentById } from '@/lib/shiprocket-client';
-
-// Admin client to securely fetch all order data
-const supabaseAdmin = createAdminClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!,
-  { auth: { persistSession: false } }
-);
 
 export type OrderItem = {
     quantity: number;
@@ -38,9 +31,9 @@ export async function getOrderDetails(razorpayOrderId: string): Promise<{ succes
     if (!razorpayOrderId) {
         return { success: false, message: 'Order ID is required.' };
     }
-
+    const supabase = createClient();
     // 1. Fetch the main order details using the Razorpay order ID
-    const { data: orderData, error: orderError } = await supabaseAdmin
+    const { data: orderData, error: orderError } = await supabase
         .from('orders')
         .select('id, created_at, status, shipping_address, razorpay_order_id, shipment_id, shiprocket_order_id, payment_method')
         .eq('razorpay_order_id', razorpayOrderId)
@@ -52,7 +45,7 @@ export async function getOrderDetails(razorpayOrderId: string): Promise<{ succes
     }
 
     // 2. Fetch the associated order items
-    const { data: orderItemsData, error: itemsError } = await supabaseAdmin
+    const { data: orderItemsData, error: itemsError } = await supabase
         .from('order_items')
         .select('product_id, quantity, size, color, price_at_purchase')
         .eq('order_id', orderData.id);
@@ -66,7 +59,7 @@ export async function getOrderDetails(razorpayOrderId: string): Promise<{ succes
     const productIds = [...new Set(orderItemsData.map(item => item.product_id))];
 
     // 4. Fetch details for all products in the order
-    const { data: productsData, error: productsError } = await supabaseAdmin
+    const { data: productsData, error: productsError } = await supabase
         .from('products')
         .select(`
             id, name, description, price, category, popularity, release_date, weight,
@@ -133,5 +126,3 @@ export async function getOrderDetails(razorpayOrderId: string): Promise<{ succes
 
     return { success: true, order: orderDetails, message: 'Order details fetched successfully.' };
 }
-
-    

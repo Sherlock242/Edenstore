@@ -1,20 +1,9 @@
 
 'use server';
 
-import { createClient as createAdminClient } from '@supabase/supabase-js';
 import { createClient } from '@/lib/supabase/server';
 import type { CartItem } from '@/contexts/cart-context';
 import type { Product } from '@/app/actions';
-
-
-// This admin client is used for fetching product details, as cart items only store product IDs.
-// We need a server-side client with elevated privileges to join tables.
-const supabaseAdmin = createAdminClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!,
-  { auth: { persistSession: false } }
-);
-
 
 export async function getCartItems(): Promise<{ success: boolean; items?: CartItem[]; message: string }> {
   const supabase = createClient();
@@ -43,7 +32,7 @@ export async function getCartItems(): Promise<{ success: boolean; items?: CartIt
   const productIds = [...new Set(cartItemsData.map(item => item.product_id))];
 
   // 3. Fetch all product details for the items in the cart using the admin client.
-  const { data: productsData, error: productsError } = await supabaseAdmin
+  const { data: productsData, error: productsError } = await supabase
     .from('products')
     .select(`
         id, name, description, price, category, popularity, release_date, weight,

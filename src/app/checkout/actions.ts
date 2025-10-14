@@ -4,17 +4,11 @@
 
 import Razorpay from 'razorpay';
 import crypto from 'crypto';
-import { createClient as createAdminClient } from '@supabase/supabase-js';
 import { createClient } from '@/lib/supabase/server';
 import { getCartItems } from '../cart/actions';
 import { createShipment, getShippingRates } from '@/lib/shiprocket-client';
 import { randomBytes } from 'crypto';
 
-const supabaseAdmin = createAdminClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!,
-  { auth: { persistSession: false }, db: { schema: 'public'} }
-);
 
 export async function fetchShippingRatesAction(pincode: string, paymentMethod: 'online' | 'cod'): Promise<{success: boolean, message: string, rate?: number}> {
     if (!pincode || pincode.length !== 6) {
@@ -126,7 +120,7 @@ export async function verifyPaymentAndCreateOrder(payload: VerifyPaymentPayload)
     const totalWeight = cart.items.reduce((acc, item) => acc + (item.product.weight * item.quantity), 0);
     
     // 4. Insert into 'orders' table
-    const { data: newOrder, error: orderError } = await supabaseAdmin
+    const { data: newOrder, error: orderError } = await supabase
         .from('orders')
         .insert({
             user_id: user.id,
@@ -177,7 +171,7 @@ export async function verifyPaymentAndCreateOrder(payload: VerifyPaymentPayload)
     if (shipmentResult.success && shipmentResult.payload) {
       console.log('Shiprocket shipment created successfully:', shipmentResult.payload);
       // Save shipment details to our order
-      const { error: updateError } = await supabaseAdmin
+      const { error: updateError } = await supabase
         .from('orders')
         .update({
           shipment_id: shipmentResult.payload.shipment_id,
@@ -202,7 +196,7 @@ export async function verifyPaymentAndCreateOrder(payload: VerifyPaymentPayload)
         color: item.color,
     }));
 
-    const { error: itemsError } = await supabaseAdmin.from('order_items').insert(orderItemsToInsert);
+    const { error: itemsError } = await supabase.from('order_items').insert(orderItemsToInsert);
 
     if (itemsError) {
         console.error("Error creating order items:", itemsError);
@@ -210,7 +204,7 @@ export async function verifyPaymentAndCreateOrder(payload: VerifyPaymentPayload)
     }
 
     // 6. Clear the user's cart
-    const { error: deleteCartError } = await supabaseAdmin
+    const { error: deleteCartError } = await supabase
         .from('cart_items')
         .delete()
         .eq('user_id', user.id);
@@ -228,9 +222,9 @@ type CreateCodOrderPayload = {
 }
 export async function createCodOrder(payload: CreateCodOrderPayload): Promise<{success: boolean; message: string; razorpayOrderId?: string}> {
     const { shippingAddress } = payload;
+    const supabase = createClient();
     
     // 1. Get user and cart details
-    const supabase = createClient();
     const { data: { user } } = await supabase.auth.getUser();
 
     if (!user) {
@@ -248,7 +242,7 @@ export async function createCodOrder(payload: CreateCodOrderPayload): Promise<{s
     const totalWeight = cart.items.reduce((acc, item) => acc + (item.product.weight * item.quantity), 0);
 
     // 2. Insert into 'orders' table
-    const { data: newOrder, error: orderError } = await supabaseAdmin
+    const { data: newOrder, error: orderError } = await supabase
         .from('orders')
         .insert({
             user_id: user.id,
@@ -296,7 +290,7 @@ export async function createCodOrder(payload: CreateCodOrderPayload): Promise<{s
     });
 
     if (shipmentResult.success && shipmentResult.payload) {
-      await supabaseAdmin
+      await supabase
         .from('orders')
         .update({
           shipment_id: shipmentResult.payload.shipment_id,
@@ -317,7 +311,7 @@ export async function createCodOrder(payload: CreateCodOrderPayload): Promise<{s
         color: item.color,
     }));
 
-    const { error: itemsError } = await supabaseAdmin.from('order_items').insert(orderItemsToInsert);
+    const { error: itemsError } = await supabase.from('order_items').insert(orderItemsToInsert);
 
     if (itemsError) {
         console.error("Error creating COD order items:", itemsError);
@@ -326,9 +320,7 @@ export async function createCodOrder(payload: CreateCodOrderPayload): Promise<{s
     }
 
     // 5. Clear the user's cart
-    await supabaseAdmin.from('cart_items').delete().eq('user_id', user.id);
+    await supabase.from('cart_items').delete().eq('user_id', user.id);
 
     return { success: true, message: "COD Order created successfully.", razorpayOrderId: codOrderId };
 }
-
-    
