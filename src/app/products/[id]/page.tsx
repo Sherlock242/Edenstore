@@ -15,7 +15,8 @@ import { ProductDetailsClient } from "@/components/product-details-client";
 import { ProductCard } from "@/components/product-card";
 import { ProductImageCarousel } from "@/components/product-image-carousel";
 import { cookies } from "next/headers";
-import { createClient } from "@/lib/supabase/server";
+import { createClient as createServerClient } from '@/lib/supabase/server';
+import { createClient } from "@supabase/supabase-js";
 
 export const dynamic = 'force-dynamic';
 
@@ -87,8 +88,13 @@ export default async function ProductPage({ params }: { params: { id: string } }
 }
 
 export async function generateStaticParams() {
-    // This function runs at build time, so we need a client that doesn't depend on user cookies
-    const supabase = createClient(cookies());
+    // This function runs at build time, so we need a client that doesn't depend on user cookies.
+    // We create a generic client here to fetch public data.
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    );
+
     const { data: products } = await supabase.from('products').select('id');
     
     if (!products) {
