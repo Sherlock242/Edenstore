@@ -136,7 +136,7 @@ export async function verifyPaymentAndCreateOrder(payload: VerifyPaymentPayload)
             razorpay_payment_id: razorpay_payment_id,
             payment_method: 'Prepaid',
         })
-        .select()
+        .select('id, created_at')
         .single();
     
     if (orderError || !newOrder) {
@@ -154,7 +154,7 @@ export async function verifyPaymentAndCreateOrder(payload: VerifyPaymentPayload)
 
     // *** AUTOMATION STEP: Create Shipment with Shiprocket ***
     const shipmentResult = await createShipment({
-      order_id: newOrder.id,
+      order_id: newOrder.id.toString(), // Use the actual database ID
       order_date: newOrder.created_at,
       billing_customer_name: `${shippingAddress.firstName} ${shippingAddress.lastName || ''}`,
       billing_last_name: shippingAddress.lastName || shippingAddress.firstName,
@@ -219,7 +219,7 @@ export async function verifyPaymentAndCreateOrder(payload: VerifyPaymentPayload)
         console.error("Error clearing cart:", deleteCartError);
     }
     
-    return { success: true, message: "Payment verified and order created successfully.", razorpayOrderId: newOrder.razorpay_order_id };
+    return { success: true, message: "Payment verified and order created successfully.", razorpayOrderId: razorpay_order_id };
 }
 
 
@@ -257,7 +257,7 @@ export async function createCodOrder(payload: CreateCodOrderPayload): Promise<{s
             razorpay_order_id: codOrderId, // Use our generated ID
             payment_method: 'COD',
         })
-        .select()
+        .select('id, created_at')
         .single();
     
     if (orderError || !newOrder) {
@@ -275,7 +275,7 @@ export async function createCodOrder(payload: CreateCodOrderPayload): Promise<{s
     }));
 
     const shipmentResult = await createShipment({
-      order_id: newOrder.id,
+      order_id: newOrder.id.toString(), // Use the actual database ID
       order_date: newOrder.created_at,
       billing_customer_name: `${shippingAddress.firstName} ${shippingAddress.lastName || ''}`,
       billing_last_name: shippingAddress.lastName || shippingAddress.firstName,
@@ -328,7 +328,7 @@ export async function createCodOrder(payload: CreateCodOrderPayload): Promise<{s
     // 5. Clear the user's cart
     await supabaseAdmin.from('cart_items').delete().eq('user_id', user.id);
 
-    return { success: true, message: "COD Order created successfully.", razorpayOrderId: newOrder.razorpay_order_id };
+    return { success: true, message: "COD Order created successfully.", razorpayOrderId: codOrderId };
 }
 
     
