@@ -239,33 +239,32 @@ export async function pushOrderToShiprocket(order: FullOrderDetails): Promise<{s
     }
 
     const pickupLocation = process.env.SHIPROCKET_PICKUP_NAME || "Santosh";
-    if (!pickupLocation) {
-        return { success: false, message: "SHIPROCKET_PICKUP_NAME is not set in your environment variables and no default is available. Please set it to the name of your pickup location from your Shiprocket dashboard." };
-    }
-
     const shippingAddress = JSON.parse(order.shipping_address as string);
     const totalAmount = order.items.reduce((acc, item) => acc + item.price_at_purchase * item.quantity, 0);
     const totalWeight = order.items.reduce((acc, item) => acc + (item.product.weight * item.quantity), 0);
     
-    // Provide a default channel ID if the environment variable is not set.
     const channelId = process.env.SHIPROCKET_CHANNEL_ID || '8434256';
 
     const orderItemsForShipment = order.items.map(item => ({
       name: item.product.name,
-      sku: `${item.product.id}-${item.size}`.slice(0, 49), // SKU max length is 50
+      sku: `${item.product.id}-${item.size}`.slice(0, 49),
       units: item.quantity,
       selling_price: item.price_at_purchase,
-      hsn: 49011010, // Example HSN, can be made dynamic later
+      hsn: 49011010,
     }));
+    
+    // Handle cases where lastName might be empty
+    const customerFirstName = shippingAddress.firstName || "N/A";
+    const customerLastName = shippingAddress.lastName || " "; // Use a space if empty
 
     const payload: ShipmentPayload = {
-        order_id: order.id,
+        order_id: order.razorpay_order_id, // Using public-facing order ID
         order_date: format(new Date(order.created_at), 'yyyy-MM-dd HH:mm'),
         pickup_location: pickupLocation,
         channel_id: channelId, 
         comment: `Order from anistore`,
-        billing_customer_name: shippingAddress.firstName || "N/A",
-        billing_last_name: shippingAddress.lastName || " ", // Must not be empty
+        billing_customer_name: customerFirstName,
+        billing_last_name: customerLastName,
         billing_address: shippingAddress.address,
         billing_address_2: "",
         billing_city: shippingAddress.city,
@@ -285,7 +284,7 @@ export async function pushOrderToShiprocket(order: FullOrderDetails): Promise<{s
         length: 10,
         breadth: 10,
         height: 2,
-        weight: totalWeight > 0 ? totalWeight : 0.1, // Ensure weight > 0
+        weight: totalWeight > 0 ? totalWeight : 0.1,
     };
 
     try {
