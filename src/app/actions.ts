@@ -278,10 +278,11 @@ export async function updateProduct(data: UpdateProductFormValues): Promise<Serv
         try {
           const url = new URL(img.url);
           // The path is everything after the bucket name, e.g., 'product-images/filename.jpg'
-          const path = url.pathname.split('/product-images/').pop();
-          return path ? `product-images/${path}` : null;
+          // Split by the bucket name and take the last part.
+          const pathParts = url.pathname.split('/product-images/');
+          return pathParts[pathParts.length - 1];
         } catch (e) {
-          console.error(`Invalid URL for old image: ${img.url}`);
+          console.error(`Invalid URL for old image, cannot extract path: ${img.url}`);
           return null;
         }
       }).filter(Boolean) as string[];
@@ -426,8 +427,8 @@ export async function deleteProduct(productId: string): Promise<ServerResponse> 
       const imagePaths = productData.product_images.map(img => {
         try {
             const url = new URL(img.url);
-            const path = url.pathname.split('/product-images/').pop();
-            return path ? `product-images/${path}` : null;
+            const pathParts = url.pathname.split('/product-images/');
+            return pathParts[pathParts.length - 1];
         } catch (e) {
             return null;
         }
