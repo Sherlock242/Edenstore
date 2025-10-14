@@ -268,12 +268,16 @@ export async function trackShipmentById(shipmentId: string): Promise<any> {
     if (!token) return null;
 
     try {
-        const response = await fetch(`${SHIPROCKET_API_URL}/tracking/${shipmentId}`, {
+        const response = await fetch(`${SHIPROCKET_API_URL}/courier/track/shipment/${shipmentId}`, {
             headers: { 'Authorization': `Bearer ${token}` },
             cache: 'no-store'
         });
-        if (!response.ok) return null;
-        return await response.json();
+        if (!response.ok) {
+            console.error(`Shiprocket tracking failed for shipment ${shipmentId}. Status: ${response.status}`);
+            return null;
+        };
+        const data = await response.json();
+        return data;
     } catch (error) {
         console.error("Error tracking shipment:", error);
         return null;
