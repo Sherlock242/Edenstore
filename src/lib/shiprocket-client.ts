@@ -1,5 +1,3 @@
-
-// src/lib/shiprocket-client.ts
 'use server';
 
 import type { FullOrderDetails } from '@/app/admin/orders/actions';
@@ -7,12 +5,19 @@ import { format } from 'date-fns';
 
 const SHIPROCKET_API_URL = "https://apiv2.shiprocket.in/v1/external";
 
-type ShiprocketAuthResponse = {
-    token: string;
-}
+let tokenCache = {
+    token: null as string | null,
+    expiresAt: 0,
+};
 
-// Function to get the authentication token from Shiprocket
+// Function to get the authentication token from Shiprocket, with caching
 async function getShiprocketToken(): Promise<string | null> {
+    const now = Date.now();
+    // Re-use token if it's not expired (Shiprocket tokens last for 10 days, we'll refresh every 9 days)
+    if (tokenCache.token && now < tokenCache.expiresAt) {
+        return tokenCache.token;
+    }
+
     try {
         if (!process.env.SHIPROCKET_API_EMAIL || !process.env.SHIPROCKET_API_PASSWORD) {
             console.error("Shiprocket API credentials are not set in .env file.");
@@ -35,7 +40,12 @@ async function getShiprocketToken(): Promise<string | null> {
             return null;
         }
 
-        const data: ShiprocketAuthResponse = await response.json();
+        const data = await response.json();
+        tokenCache = {
+            token: data.token,
+            // Set expiry to 9 days from now in milliseconds
+            expiresAt: now + 9 * 24 * 60 * 60 * 1000,
+        };
         return data.token;
 
     } catch (error) {
@@ -43,7 +53,6 @@ async function getShiprocketToken(): Promise<string | null> {
         return null;
     }
 }
-
 
 type ShipmentOrderItem = {
     name: string;
@@ -54,7 +63,7 @@ type ShipmentOrderItem = {
 };
 
 type ShipmentPayload = {
-    order_id: string; // Your internal order ID
+    order_id: string;
     order_date: string;
     pickup_location: string;
     channel_id: string;
@@ -83,7 +92,7 @@ type ShipmentPayload = {
     weight: number; // in kgs
 };
 
-export async function pushOrderToShiprocket(order: FullOrderDetails): Promise<{ success: boolean; payload?: { order_id: number; shipment_id: number; }; message: string }> {
+export async function sendOrderToShiprocket(order: FullOrderDetails): Promise<{ success: boolean; payload?: { order_id: number; shipment_id: number; }; message: string }> {
     const token = await getShiprocketToken();
     if (!token) {
         return { success: false, message: "Could not authenticate with Shiprocket." };
@@ -178,8 +187,6 @@ export async function pushOrderToShiprocket(order: FullOrderDetails): Promise<{ 
     }
 }
 
-
-
 export async function getShippingRates(params: { pickup_postcode: string, delivery_postcode: string, weight: number, cod: 0 | 1, declared_value: number }): Promise<{ success: boolean; message: string; rate?: number }> {
     const token = await getShiprocketToken();
     if (!token) return { success: false, message: "Could not authenticate with Shiprocket." };
@@ -192,6 +199,7 @@ export async function getShippingRates(params: { pickup_postcode: string, delive
     url.searchParams.append('weight', weight.toString());
     url.searchParams.append('cod', cod.toString());
     url.searchParams.append('declared_value', declared_value.toString());
+    url.searchParams.append('is_return', '0');
 
     try {
         const response = await fetch(url.toString(), {
@@ -209,18 +217,19 @@ export async function getShippingRates(params: { pickup_postcode: string, delive
             return { success: false, message: responseBody.message || "Could not fetch shipping rates." };
         }
         
-        // Find the cheapest rate
         const rates = responseBody.data.available_courier_companies;
         if (!rates || rates.length === 0) {
             return { success: false, message: "No courier service available for this pincode." };
         }
 
         const cheapestRate = rates.reduce((min: any, current: any) => {
-            return (current.rate < min.rate) ? current : min;
+            // Shiprocket returns rate as a string, ensure they are numbers for comparison
+            const currentRate = parseFloat(current.rate);
+            const minRate = parseFloat(min.rate);
+            return (currentRate < minRate) ? current : min;
         }, rates[0]);
 
-
-        return { success: true, rate: cheapestRate.rate, message: 'Rate fetched.' };
+        return { success: true, rate: parseFloat(cheapestRate.rate), message: 'Rate fetched.' };
 
     } catch (error) {
         console.error("Error fetching shipping rates:", error);
@@ -229,9 +238,14 @@ export async function getShippingRates(params: { pickup_postcode: string, delive
 }
 
 
-export async function requestShipmentPickup(shipmentIds: number[], pickupDate: string): Promise<{ success: boolean; message: string; response?: any; }> {
+export async function requestShipmentPickup(shipmentIds: number[]): Promise<{ success: boolean; message: string; response?: any; }> {
     const token = await getShiprocketToken();
     if (!token) return { success: false, message: "Could not authenticate with Shiprocket." };
+
+    // Shiprocket requires pickup date in YYYY-MM-DD format, for the next day.
+    const pickupDate = new Date();
+    pickupDate.setDate(pickupDate.getDate() + 1);
+    const formattedPickupDate = format(pickupDate, 'yyyy-MM-dd');
 
     try {
         const response = await fetch(`${SHIPROCKET_API_URL}/courier/generate/pickup`, {
@@ -242,7 +256,7 @@ export async function requestShipmentPickup(shipmentIds: number[], pickupDate: s
             },
             body: JSON.stringify({
                 shipment_id: shipmentIds,
-                pickup_date: pickupDate, 
+                pickup_date: formattedPickupDate, 
             }),
             cache: 'no-store'
         });
@@ -310,7 +324,7 @@ export async function assignCourierAndGenerateAwb(shipmentId: number): Promise<{
         } else {
             console.error("Shiprocket AWB Generation Error:", responseBody);
             // Try to provide a more specific error message if available
-            const errorMessage = responseBody.message || (responseBody.errors ? JSON.stringify(responseBody.errors) : "Failed to generate AWB.");
+            const errorMessage = responseBody.awb_assign_error || responseBody.message || (responseBody.errors ? JSON.stringify(responseBody.errors) : "Failed to generate AWB.");
             return { success: false, message: errorMessage };
         }
     } catch (error) {
@@ -318,6 +332,3 @@ export async function assignCourierAndGenerateAwb(shipmentId: number): Promise<{
         return { success: false, message: "An unexpected server error occurred while generating AWB." };
     }
 }
-    
-
-    

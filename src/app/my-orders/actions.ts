@@ -1,4 +1,3 @@
-
 'use server';
 
 import { createClient } from '@/lib/supabase/server';
@@ -18,9 +17,10 @@ export type OrderItem = {
 export type OrderSummary = {
     id: string;
     created_at: string;
-    status: 'pending-shipment' | 'processing' | 'shipped' | 'delivered';
+    status: 'pending-shipment' | 'processing' | 'shipped' | 'delivered' | 'processing-error';
     razorpay_order_id: string;
     shipment_id: number | null;
+    total_amount: number;
     items: OrderItem[];
     tracking_data?: any; // To hold live tracking info from Shiprocket
 };
@@ -38,7 +38,7 @@ export async function getUserOrders(): Promise<{ success: boolean; orders?: Orde
     // 1. Fetch all orders for the current user
     const { data: ordersData, error: ordersError } = await supabase
         .from('orders')
-        .select('id, created_at, status, razorpay_order_id, shipment_id, order_items ( product_id, quantity, size, color, price_at_purchase )')
+        .select('id, created_at, status, razorpay_order_id, shipment_id, total_amount, order_items!inner(product_id, quantity, size, color, price_at_purchase)')
         .eq('user_id', user.id)
         .order('created_at', { ascending: false });
 
@@ -113,6 +113,7 @@ export async function getUserOrders(): Promise<{ success: boolean; orders?: Orde
                 status: order.status as OrderSummary['status'],
                 razorpay_order_id: order.razorpay_order_id,
                 shipment_id: order.shipment_id,
+                total_amount: order.total_amount,
                 items: items,
                 tracking_data: tracking_data, // Add tracking data here
             };

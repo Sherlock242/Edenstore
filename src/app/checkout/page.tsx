@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useCart } from '@/contexts/cart-context';
@@ -105,7 +104,7 @@ export default function CheckoutPage() {
         });
         return false;
     }
-    if (shippingCost === null && paymentMethod === 'online') {
+    if (shippingCost === null) {
         toast({
             variant: 'destructive',
             title: 'Shipping Not Calculated',
@@ -142,8 +141,15 @@ export default function CheckoutPage() {
         phone,
     };
     
+    const finalShippingCost = shippingCost || 0;
+
     if (paymentMethod === 'cod') {
-        const codResult = await createCodOrder({ shippingAddress });
+        const codResult = await createCodOrder({ 
+            shippingAddress,
+            totalAmount: total,
+            shippingCost: finalShippingCost,
+            gstAmount,
+        });
         if (codResult.success) {
             toast({
                 title: 'Order Placed!',
@@ -188,7 +194,10 @@ export default function CheckoutPage() {
                     razorpay_order_id: response.razorpay_order_id,
                     razorpay_payment_id: response.razorpay_payment_id,
                     razorpay_signature: response.razorpay_signature,
-                    shippingAddress: shippingAddress
+                    shippingAddress: shippingAddress,
+                    totalAmount: total,
+                    shippingCost: finalShippingCost,
+                    gstAmount,
                  });
 
                 if (verificationResult.success) {
@@ -384,5 +393,3 @@ export default function CheckoutPage() {
     </>
   );
 }
-
-    

@@ -1,4 +1,3 @@
-
 // src/app/checkout/actions.ts
 'use server';
 
@@ -9,9 +8,64 @@ import { getCartItems } from '../cart/actions';
 import { getShippingRates, assignCourierAndGenerateAwb } from '@/lib/shiprocket-client';
 import { randomBytes } from 'crypto';
 import { cookies } from 'next/headers';
-import { sendOrderToShiprocket } from '@/app/admin/orders/actions';
-import type { FullOrderDetails, UserProfileInfo } from '@/app/admin/orders/actions';
+import type { FullOrderDetails } from '@/app/admin/orders/actions';
 import { createClient as createAdminClient } from '@supabase/supabase-js';
+
+// This function is defined in checkout/page.tsx, but we need it here as well.
+const GST_RATE = 0.05;
+
+async function pushOrderAndAutomateShipment(order: FullOrderDetails) {
+    const supabaseAdmin = createAdminClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.SUPABASE_SERVICE_ROLE_KEY!,
+        { auth: { persistSession: false } }
+    );
+    // This function will run in the background and not block the user's request.
+    // We are not returning anything from this function as it's a fire-and-forget operation.
+    try {
+        // Step 1: Push order to Shiprocket
+        const pushResult = await sendOrderToShiprocket(order);
+        if (!pushResult.success || !pushResult.shipmentId || !pushResult.shiprocketOrderId) {
+            console.error(`[AUTOMATION FAILED] Step 1: Could not push order ${order.id} to Shiprocket. Reason: ${pushResult.message}`);
+            // Update status to 'processing-error' to indicate a problem
+            await supabaseAdmin.from('orders').update({ status: 'processing-error' }).eq('id', order.id);
+            return;
+        }
+        const { shipmentId, shiprocketOrderId } = pushResult;
+
+        // Step 2: Assign courier and get AWB
+        const awbResult = await assignCourierAndGenerateAwb(shipmentId);
+        if (!awbResult.success || !awbResult.awb) {
+            console.error(`[AUTOMATION FAILED] Step 2: Could not generate AWB for shipment ${shipmentId}. Reason: ${awbResult.message}`);
+            // The order is pushed, but AWB failed. We should still update the order with what we have and set status to 'processing'
+            await supabaseAdmin
+                .from('orders')
+                .update({ shipment_id: shipmentId, shiprocket_order_id: shiprocketOrderId, status: 'processing' })
+                .eq('id', order.id);
+            return;
+        }
+
+        // Step 3: Save AWB and update status to 'processing'
+        const { error: updateError } = await supabaseAdmin
+            .from('orders')
+            .update({
+                shipment_id: shipmentId,
+                shiprocket_order_id: shiprocketOrderId,
+                awb_code: awbResult.awb,
+                status: 'processing'
+            })
+            .eq('id', order.id);
+
+        if (updateError) {
+            console.error(`[AUTOMATION FAILED] Step 3: Failed to save AWB for order ${order.id}. Reason: ${updateError.message}`);
+        } else {
+            console.log(`[AUTOMATION SUCCESS] Order ${order.id} processed. Shipment ID: ${shipmentId}, AWB: ${awbResult.awb}`);
+        }
+    } catch (error) {
+        console.error(`[AUTOMATION CRASH] A critical error occurred during shipment automation for order ${order.id}:`, error);
+        await supabaseAdmin.from('orders').update({ status: 'processing-error' }).eq('id', order.id);
+    }
+}
 
 
 export async function fetchShippingRatesAction(pincode: string, paymentMethod: 'online' | 'cod'): Promise<{success: boolean, message: string, rate?: number}> {
@@ -34,9 +88,6 @@ export async function fetchShippingRatesAction(pincode: string, paymentMethod: '
     const totalWeight = cart.items.reduce((acc, item) => acc + (item.product.weight * item.quantity), 0);
     const subTotal = cart.items.reduce((acc, item) => acc + (item.product.price * item.quantity), 0);
     
-    // In India, GST is typically applied on the shipping fee as well.
-    // However, Shiprocket's rate API returns the final rate inclusive of their taxes.
-    // The subTotal for `declared_value` should be the pre-tax value of goods.
     const result = await getShippingRates({
         pickup_postcode: pickupPostcode,
         delivery_postcode: pincode,
@@ -93,9 +144,12 @@ type VerifyPaymentPayload = {
     razorpay_payment_id: string;
     razorpay_signature: string;
     shippingAddress: any;
+    totalAmount: number;
+    shippingCost: number;
+    gstAmount: number;
 }
 export async function verifyPaymentAndCreateOrder(payload: VerifyPaymentPayload): Promise<{success: boolean; message: string; shipmentId?: number}> {
-    const { razorpay_order_id, razorpay_payment_id, razorpay_signature, shippingAddress } = payload;
+    const { razorpay_order_id, razorpay_payment_id, razorpay_signature, shippingAddress, totalAmount, shippingCost, gstAmount } = payload;
     const key_secret = process.env.RAZORPAY_KEY_SECRET!;
 
     const body = razorpay_order_id + "|" + razorpay_payment_id;
@@ -105,7 +159,6 @@ export async function verifyPaymentAndCreateOrder(payload: VerifyPaymentPayload)
         .update(body.toString())
         .digest("hex");
     
-    // 1. Verify Payment Signature
     if (expectedSignature !== razorpay_signature) {
         return { success: false, message: "Payment verification failed. Signature mismatch." };
     }
@@ -125,7 +178,6 @@ export async function verifyPaymentAndCreateOrder(payload: VerifyPaymentPayload)
         return { success: false, message: "Cart is empty or could not be fetched. Cannot create order." };
     }
     
-    // Start transaction
     const { data: newOrder, error: orderError } = await supabase
         .from('orders')
         .insert({
@@ -135,6 +187,9 @@ export async function verifyPaymentAndCreateOrder(payload: VerifyPaymentPayload)
             razorpay_order_id: razorpay_order_id,
             razorpay_payment_id: razorpay_payment_id,
             payment_method: 'Prepaid',
+            total_amount: totalAmount,
+            shipping_cost: shippingCost,
+            gst_amount: gstAmount,
         })
         .select()
         .single();
@@ -157,11 +212,10 @@ export async function verifyPaymentAndCreateOrder(payload: VerifyPaymentPayload)
 
     if (itemsError) {
         console.error("Error creating order items:", itemsError);
-        await supabase.from('orders').delete().eq('id', newOrder.id); // Rollback order
+        await supabase.from('orders').delete().eq('id', newOrder.id);
         return { success: false, message: `Failed to save order items. Reason: ${itemsError.message}` };
     }
     
-    // Construct the FullOrderDetails object to send to Shiprocket
     const fullOrder: FullOrderDetails = {
         id: newOrder.id,
         created_at: newOrder.created_at,
@@ -171,14 +225,13 @@ export async function verifyPaymentAndCreateOrder(payload: VerifyPaymentPayload)
         shipment_id: null,
         shiprocket_order_id: null,
         payment_method: 'Prepaid',
+        awb_code: null,
         items: cart.items.map(ci => ({...ci, product_id: ci.product.id, price_at_purchase: ci.product.price})),
         user: { display_name: userProfile?.display_name || '', email: userProfile?.email || '' }
     };
 
-    // --- AUTOMATION CHAIN ---
-    await processShipmentAutomation(fullOrder);
+    pushOrderAndAutomateShipment(fullOrder);
     
-    // Clear cart after successful order creation
     await supabase
         .from('cart_items')
         .delete()
@@ -190,9 +243,12 @@ export async function verifyPaymentAndCreateOrder(payload: VerifyPaymentPayload)
 
 type CreateCodOrderPayload = {
     shippingAddress: any;
+    totalAmount: number;
+    shippingCost: number;
+    gstAmount: number;
 }
 export async function createCodOrder(payload: CreateCodOrderPayload): Promise<{success: boolean; message: string; shipmentId?: number}> {
-    const { shippingAddress } = payload;
+    const { shippingAddress, totalAmount, shippingCost, gstAmount } = payload;
     const cookieStore = cookies();
     const supabase = createClient(cookieStore);
     
@@ -202,7 +258,6 @@ export async function createCodOrder(payload: CreateCodOrderPayload): Promise<{s
         return { success: false, message: "User not authenticated. Cannot create order." };
     }
     const { data: userProfile } = await supabase.from('users').select('display_name, email').eq('id', user.id).single();
-
 
     const cart = await getCartItems();
     if (!cart.success || !cart.items || cart.items.length === 0) {
@@ -219,6 +274,9 @@ export async function createCodOrder(payload: CreateCodOrderPayload): Promise<{s
             shipping_address: JSON.stringify(shippingAddress),
             razorpay_order_id: codOrderId,
             payment_method: 'COD',
+            total_amount: totalAmount,
+            shipping_cost: shippingCost,
+            gst_amount: gstAmount,
         })
         .select()
         .single();
@@ -245,7 +303,6 @@ export async function createCodOrder(payload: CreateCodOrderPayload): Promise<{s
         return { success: false, message: `Failed to save order items. Reason: ${itemsError.message}` };
     }
     
-    // Construct the FullOrderDetails object to send to Shiprocket
      const fullOrder: FullOrderDetails = {
         id: newOrder.id,
         created_at: newOrder.created_at,
@@ -255,63 +312,14 @@ export async function createCodOrder(payload: CreateCodOrderPayload): Promise<{s
         shipment_id: null,
         shiprocket_order_id: null,
         payment_method: 'COD',
+        awb_code: null,
         items: cart.items.map(ci => ({...ci, product_id: ci.product.id, price_at_purchase: ci.product.price})),
         user: { display_name: userProfile?.display_name || '', email: userProfile?.email || '' }
     };
     
-    // --- AUTOMATION CHAIN ---
-    await processShipmentAutomation(fullOrder);
+    pushOrderAndAutomateShipment(fullOrder);
 
     await supabase.from('cart_items').delete().eq('user_id', user.id);
 
     return { success: true, message: "COD Order created successfully." };
 }
-
-// This is the new master function for handling shipment automation
-async function processShipmentAutomation(order: FullOrderDetails) {
-    const supabaseAdmin = createAdminClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.SUPABASE_SERVICE_ROLE_KEY!,
-        { auth: { persistSession: false } }
-    );
-
-    // Step 1: Push order to Shiprocket
-    const pushResult = await sendOrderToShiprocket(order);
-    if (!pushResult.success || !pushResult.shipmentId || !pushResult.shiprocketOrderId) {
-        console.error(`[AUTOMATION FAILED] Step 1: Could not push order ${order.id} to Shiprocket. Reason: ${pushResult.message}`);
-        return;
-    }
-    const { shipmentId, shiprocketOrderId } = pushResult;
-
-    // Step 2: Assign courier and get AWB
-    const awbResult = await assignCourierAndGenerateAwb(shipmentId);
-    if (!awbResult.success || !awbResult.awb) {
-        console.error(`[AUTOMATION FAILED] Step 2: Could not generate AWB for shipment ${shipmentId}. Reason: ${awbResult.message}`);
-        // The order is pushed, but AWB failed. We should still update the order with what we have.
-        await supabaseAdmin
-            .from('orders')
-            .update({ shipment_id: shipmentId, shiprocket_order_id: shiprocketOrderId, status: 'processing' })
-            .eq('id', order.id);
-        return;
-    }
-
-    // Step 3: Save AWB and update status to 'processing'
-    const { error: updateError } = await supabaseAdmin
-        .from('orders')
-        .update({
-            shipment_id: shipmentId,
-            shiprocket_order_id: shiprocketOrderId,
-            awb_code: awbResult.awb,
-            status: 'processing'
-        })
-        .eq('id', order.id);
-
-    if (updateError) {
-        console.error(`[AUTOMATION FAILED] Step 3: Failed to save AWB for order ${order.id}. Reason: ${updateError.message}`);
-        // Even if DB update fails, we log it. The most critical parts are done.
-    }
-
-    console.log(`[AUTOMATION SUCCESS] Order ${order.id} processed. Shipment ID: ${shipmentId}, AWB: ${awbResult.awb}`);
-}
-
-    

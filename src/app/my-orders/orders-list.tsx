@@ -1,4 +1,3 @@
-
 'use client';
 
 import Image from 'next/image';
@@ -7,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { format } from 'date-fns';
 import type { OrderSummary } from './actions';
-import { Milestone } from 'lucide-react';
+import { Milestone, AlertTriangle } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 
 type OrdersListProps = {
@@ -22,12 +21,9 @@ export function OrdersList({ orders }: OrdersListProps) {
           case 'processing': return { text: 'Processing', color: 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30' };
           case 'shipped': return { text: 'Shipped', color: 'bg-blue-500/20 text-blue-400 border-blue-500/30' };
           case 'delivered': return { text: 'Delivered', color: 'bg-green-500/20 text-green-400 border-green-500/30' };
+          case 'processing-error': return { text: 'Processing Error', color: 'bg-red-500/20 text-red-400 border-red-500/30' };
           default: return { text: status, color: 'bg-muted text-muted-foreground' };
         }
-    }
-
-    const calculateOrderTotal = (order: OrderSummary) => {
-        return order.items.reduce((total, item) => total + (item.price_at_purchase * item.quantity), 0);
     }
     
     return (
@@ -50,7 +46,7 @@ export function OrdersList({ orders }: OrdersListProps) {
                   <div className="flex flex-col items-start gap-2 sm:items-end">
                       <Badge variant="outline" className={`capitalize ${statusInfo.color}`}>{statusInfo.text}</Badge>
                       <div className="text-lg font-bold">
-                          Total: ₹{calculateOrderTotal(order).toFixed(2)}
+                          Total: ₹{order.total_amount.toFixed(2)}
                       </div>
                   </div>
                 </CardHeader>
@@ -114,9 +110,20 @@ export function OrdersList({ orders }: OrdersListProps) {
                       )}
                   </Accordion>
                 </CardContent>
-                {order.status === 'processing' && !order.shipment_id && (
+                {(order.status === 'pending-shipment' || (order.status === 'processing' && !order.shipment_id)) && (
                     <CardFooter>
                         <p className="text-sm text-muted-foreground">Tracking details will be available once the order is shipped.</p>
+                    </CardFooter>
+                )}
+                {order.status === 'processing-error' && (
+                     <CardFooter className="bg-destructive/10 border-t border-destructive/20 pt-4">
+                        <div className="flex items-start gap-3">
+                            <AlertTriangle className="h-5 w-5 text-destructive" />
+                            <div className="text-sm text-destructive">
+                                <p className="font-semibold">Shipment Processing Error</p>
+                                <p>There was an issue communicating with the shipping provider. We are aware of the problem and will process your order manually. No action is needed from you.</p>
+                            </div>
+                        </div>
                     </CardFooter>
                 )}
               </Card>
