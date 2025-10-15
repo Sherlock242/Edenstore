@@ -87,7 +87,10 @@ export function OrdersList({ orders }: OrdersListProps) {
                         <AccordionItem value="tracking">
                             <AccordionTrigger>Tracking Details</AccordionTrigger>
                             <AccordionContent>
-                               {awbCode && <p className="mb-4 text-sm text-muted-foreground">AWB Number: <span className="font-medium text-foreground">{awbCode}</span></p>}
+                                <div className="space-y-2 mb-6 text-sm">
+                                  <p className="text-muted-foreground">Shipment ID: <span className="font-medium text-foreground">{order.shipment_id}</span></p>
+                                  <p className="text-muted-foreground">AWB Number: <span className="font-medium text-foreground">{awbCode || "Not yet assigned"}</span></p>
+                                </div>
                                 <div className="space-y-6">
                                 {trackingHistory.length > 0 ? (
                                     <div className="relative pl-6">
