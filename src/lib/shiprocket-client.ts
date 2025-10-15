@@ -92,7 +92,7 @@ type ShipmentPayload = {
     weight: number; // in kgs
 };
 
-export async function sendOrderToShiprocket(order: FullOrderDetails): Promise<{ success: boolean; payload?: { order_id: number; shipment_id: number; }; message: string }> {
+export async function pushOrderToShiprocket(order: FullOrderDetails): Promise<{ success: boolean; payload?: { order_id: number; shipment_id: number; }; message: string }> {
     const token = await getShiprocketToken();
     if (!token) {
         return { success: false, message: "Could not authenticate with Shiprocket." };

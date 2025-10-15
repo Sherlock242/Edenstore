@@ -5,7 +5,7 @@
 import { createClient } from '@/lib/supabase/server';
 import type { OrderDetails } from '@/app/track/actions';
 import type { Product } from '@/app/actions';
-import { sendOrderToShiprocket as pushOrderToShiprocket } from '@/lib/shiprocket-client';
+import { pushOrderToShiprocket } from '@/lib/shiprocket-client';
 import { cookies } from 'next/headers';
 import { createClient as createAdminClient } from '@supabase/supabase-js';
 

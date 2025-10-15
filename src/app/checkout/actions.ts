@@ -5,12 +5,11 @@ import Razorpay from 'razorpay';
 import crypto from 'crypto';
 import { createClient } from '@/lib/supabase/server';
 import { getCartItems } from '../cart/actions';
-import { assignCourierAndGenerateAwb, getShippingRates } from '@/lib/shiprocket-client';
+import { assignCourierAndGenerateAwb, getShippingRates, pushOrderToShiprocket } from '@/lib/shiprocket-client';
 import { randomBytes } from 'crypto';
 import { cookies } from 'next/headers';
 import type { FullOrderDetails } from '@/app/admin/orders/actions';
 import { createClient as createAdminClient } from '@supabase/supabase-js';
-import { sendOrderToShiprocket } from '@/app/admin/orders/actions';
 
 
 // This function is defined in checkout/page.tsx, but we need it here as well.
@@ -26,14 +25,14 @@ async function pushOrderAndAutomateShipment(order: FullOrderDetails) {
     // We are not returning anything from this function as it's a fire-and-forget operation.
     try {
         // Step 1: Push order to Shiprocket
-        const pushResult = await sendOrderToShiprocket(order);
-        if (!pushResult.success || !pushResult.shipmentId || !pushResult.shiprocketOrderId) {
+        const pushResult = await pushOrderToShiprocket(order);
+        if (!pushResult.success || !pushResult.payload) {
             console.error(`[AUTOMATION FAILED] Step 1: Could not push order ${order.id} to Shiprocket. Reason: ${pushResult.message}`);
             // Update status to 'processing-error' to indicate a problem
             await supabaseAdmin.from('orders').update({ status: 'processing-error' }).eq('id', order.id);
             return;
         }
-        const { shipmentId, shiprocketOrderId } = pushResult;
+        const { shipment_id: shipmentId, order_id: shiprocketOrderId } = pushResult.payload;
 
         // Step 2: Assign courier and get AWB
         const awbResult = await assignCourierAndGenerateAwb(shipmentId);
@@ -325,4 +324,3 @@ export async function createCodOrder(payload: CreateCodOrderPayload): Promise<{s
 
     return { success: true, message: "COD Order created successfully." };
 }
-
