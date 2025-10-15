@@ -31,6 +31,8 @@ export async function generateMetadata(): Promise<Metadata> {
     description: `The ultimate destination for anime t-shirts, powered by ${siteName}.`,
     icons: {
       icon: '/icon.png',
+      shortcut: '/icon.png',
+      apple: '/icon.png',
     },
   };
 }
