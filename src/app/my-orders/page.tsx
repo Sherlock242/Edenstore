@@ -26,7 +26,8 @@ export default async function MyOrdersPage() {
 
   const getStatusInfo = (status: OrderSummary['status']) => {
     switch (status) {
-      case 'processing': return { text: 'Order Placed', color: 'bg-green-500/20 text-green-400 border-green-500/30' };
+      case 'pending-shipment': return { text: 'Order Placed', color: 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30' };
+      case 'processing': return { text: 'Processing', color: 'bg-blue-500/20 text-blue-400 border-blue-500/30' };
       case 'shipped': return { text: 'Shipped', color: 'bg-blue-500/20 text-blue-400 border-blue-500/30' };
       case 'delivered': return { text: 'Delivered', color: 'bg-green-500/20 text-green-400 border-green-500/30' };
       default: return { text: status, color: 'bg-muted text-muted-foreground' };
@@ -61,7 +62,7 @@ export default async function MyOrdersPage() {
               <Card key={order.id}>
                 <CardHeader className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                   <div className="space-y-1">
-                    <CardTitle className="text-xl">Order #{order.razorpay_order_id.replace('order_', '')}</CardTitle>
+                    <CardTitle className="text-xl">Order #{order.razorpay_order_id.replace('order_', '').replace('cod_','')}</CardTitle>
                     <CardDescription>
                       Placed on {format(new Date(order.created_at), 'MMMM dd, yyyy')}
                     </CardDescription>
@@ -106,9 +107,15 @@ export default async function MyOrdersPage() {
                   </Accordion>
                 </CardContent>
                 <CardFooter>
-                  <Button variant="outline" asChild>
-                      <Link href={`/track?order_id=${order.razorpay_order_id}`}>Track This Order</Link>
-                  </Button>
+                    {order.shipment_id ? (
+                        <Button variant="outline" asChild>
+                            <Link href={`/track?shipment_id=${order.shipment_id}`}>Track This Order</Link>
+                        </Button>
+                    ) : (
+                        <Button variant="outline" disabled>
+                            Tracking Unavailable
+                        </Button>
+                    )}
                 </CardFooter>
               </Card>
             )

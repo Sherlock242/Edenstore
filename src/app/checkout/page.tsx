@@ -17,7 +17,7 @@ import { useRouter } from 'next/navigation';
 import { Loader2, CreditCard, Truck } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import type { User } from '@supabase/supabase-js';
-import { getSiteName } from '../admin/settings/actions';
+import { getSiteNameClient } from '@/app/server-actions';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { cn } from '@/lib/utils';
 
@@ -40,7 +40,7 @@ export default function CheckoutPage() {
   const [city, setCity] = useState('');
   const [stateName, setStateName] = useState('');
   const [pincode, setPincode] = useState('');
-  const [country, setCountry] = useState('');
+  const [country, setCountry] = useState('India');
   const [phone, setPhone] = useState('');
 
   // State for shipping cost
@@ -58,7 +58,7 @@ export default function CheckoutPage() {
       }
     });
 
-    getSiteName().then(setSiteName);
+    getSiteNameClient().then(setSiteName);
 
   }, []);
   
@@ -105,7 +105,7 @@ export default function CheckoutPage() {
         });
         return false;
     }
-    if (shippingCost === null) {
+    if (shippingCost === null && paymentMethod === 'online') {
         toast({
             variant: 'destructive',
             title: 'Shipping Not Calculated',
@@ -143,15 +143,14 @@ export default function CheckoutPage() {
     };
     
     if (paymentMethod === 'cod') {
-        // Handle Cash on Delivery
         const codResult = await createCodOrder({ shippingAddress });
-        if (codResult.success && codResult.razorpayOrderId) {
+        if (codResult.success && codResult.shipmentId) {
             toast({
                 title: 'Order Placed!',
                 description: 'Your order has been successfully placed.',
             });
             dispatch({ type: 'SET_ITEMS', payload: [] });
-            router.push(`/track?order_id=${codResult.razorpayOrderId}`);
+            router.push(`/track?shipment_id=${codResult.shipmentId}`);
         } else {
             toast({
                 variant: 'destructive',
@@ -192,10 +191,10 @@ export default function CheckoutPage() {
                     shippingAddress: shippingAddress
                  });
 
-                if (verificationResult.success && verificationResult.razorpayOrderId) {
+                if (verificationResult.success && verificationResult.shipmentId) {
                     toast({ title: 'Payment Successful!', description: 'Your order has been placed.' });
                     dispatch({ type: 'SET_ITEMS', payload: [] });
-                    router.push(`/track?order_id=${verificationResult.razorpayOrderId}`);
+                    router.push(`/track?shipment_id=${verificationResult.shipmentId}`);
                 } else {
                      toast({ variant: 'destructive', title: 'Order Failed', description: verificationResult.message });
                 }
@@ -215,8 +214,6 @@ export default function CheckoutPage() {
         rzp.open();
     }
     
-    // In both cases, if we reach here after opening Razorpay or after a COD attempt, we stop processing.
-    // The Razorpay handlers or the COD result will navigate away.
     setIsProcessing(false);
   };
 
@@ -280,7 +277,7 @@ export default function CheckoutPage() {
                 </div>
                 <div>
                   <Label htmlFor="country">Country</Label>
-                  <Input id="country" placeholder="Japan" value={country} onChange={(e) => setCountry(e.target.value)} required/>
+                  <Input id="country" placeholder="India" value={country} onChange={(e) => setCountry(e.target.value)} required/>
                 </div>
               </CardContent>
             </Card>
@@ -387,5 +384,3 @@ export default function CheckoutPage() {
     </>
   );
 }
-
-    

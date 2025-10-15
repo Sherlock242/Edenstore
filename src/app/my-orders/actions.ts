@@ -6,7 +6,10 @@ import type { Product } from '@/app/actions';
 import type { OrderDetails, OrderItem } from '@/app/track/actions';
 import { cookies } from 'next/headers';
 
-export type OrderSummary = Omit<OrderDetails, 'shipping_address'>;
+export type OrderSummary = Omit<OrderDetails, 'shipping_address' | 'tracking_data' | 'shiprocket_order_id' | 'payment_method'> & {
+    shipment_id: number | null;
+};
+
 
 export async function getUserOrders(): Promise<{ success: boolean; orders?: OrderSummary[]; message: string }> {
     const cookieStore = cookies();
@@ -20,7 +23,7 @@ export async function getUserOrders(): Promise<{ success: boolean; orders?: Orde
     // 1. Fetch all orders for the current user
     const { data: ordersData, error: ordersError } = await supabase
         .from('orders')
-        .select('id, created_at, status, razorpay_order_id, order_items ( product_id, quantity, size, color, price_at_purchase )')
+        .select('id, created_at, status, razorpay_order_id, shipment_id, order_items ( product_id, quantity, size, color, price_at_purchase )')
         .eq('user_id', user.id)
         .order('created_at', { ascending: false });
 
@@ -87,9 +90,7 @@ export async function getUserOrders(): Promise<{ success: boolean; orders?: Orde
             created_at: order.created_at,
             status: order.status as OrderDetails['status'],
             razorpay_order_id: order.razorpay_order_id,
-            shipment_id: null,
-            shiprocket_order_id: null,
-            payment_method: null,
+            shipment_id: order.shipment_id,
             items: items,
         };
     });
