@@ -5,7 +5,7 @@
 import { createClient } from '@/lib/supabase/server';
 import type { OrderDetails } from '@/app/track/actions';
 import type { Product } from '@/app/actions';
-import { pushOrderToShiprocket } from '@/lib/shiprocket-client';
+import { sendOrderToShiprocket as pushOrderToShiprocket } from '@/lib/shiprocket-client';
 import { cookies } from 'next/headers';
 import { createClient as createAdminClient } from '@supabase/supabase-js';
 
@@ -161,5 +161,4 @@ export async function sendOrderToShiprocket(order: FullOrderDetails): Promise<{ 
         shiprocketOrderId: order_id 
     };
 }
-
     
