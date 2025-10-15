@@ -21,7 +21,7 @@ import { getSiteName } from '../admin/settings/actions';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { cn } from '@/lib/utils';
 
-const GST_RATE = 0.18; // 18% GST
+const GST_RATE = 0.05; // 5% GST
 
 export default function CheckoutPage() {
   const { state, dispatch } = useCart();
@@ -354,7 +354,7 @@ export default function CheckoutPage() {
                     <span>₹{subtotal.toFixed(2)}</span>
                   </div>
                    <div className="flex justify-between">
-                    <span>GST (18%)</span>
+                    <span>GST (5%)</span>
                     <span>₹{gstAmount.toFixed(2)}</span>
                   </div>
                   <div className="flex justify-between">
