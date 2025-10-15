@@ -1,3 +1,4 @@
+
 // src/app/checkout/actions.ts
 'use server';
 
@@ -5,7 +6,7 @@ import Razorpay from 'razorpay';
 import crypto from 'crypto';
 import { createClient } from '@/lib/supabase/server';
 import { getCartItems } from '../cart/actions';
-import { assignCourierAndGenerateAwb, getShippingRates, pushOrderToShiprocket } from '@/lib/shiprocket-client';
+import { assignCourierAndGenerateAwb, getShippingRates, pushOrderToShiprocket, generateLabel } from '@/lib/shiprocket-client';
 import { randomBytes } from 'crypto';
 import { cookies } from 'next/headers';
 import type { FullOrderDetails } from '@/app/admin/orders/actions';
@@ -46,19 +47,27 @@ async function pushOrderAndAutomateShipment(order: FullOrderDetails) {
             return;
         }
 
-        // Step 3: Save AWB and update status to 'processing'
+        // Step 3: Generate the shipping label
+        const labelResult = await generateLabel([shipmentId]);
+        if (!labelResult.success) {
+            // Log the error but don't stop the process. The label can be generated manually later.
+            console.warn(`[AUTOMATION WARNING] Step 3: Could not generate label for shipment ${shipmentId}. Reason: ${labelResult.message}`);
+        }
+
+        // Step 4: Save AWB, label URL, and update status to 'processing'
         const { error: updateError } = await supabaseAdmin
             .from('orders')
             .update({
                 shipment_id: shipmentId,
                 shiprocket_order_id: shiprocketOrderId,
                 awb_code: awbResult.awb,
+                shipping_label_url: labelResult.labelUrl, // Save the label URL
                 status: 'processing'
             })
             .eq('id', order.id);
 
         if (updateError) {
-            console.error(`[AUTOMATION FAILED] Step 3: Failed to save AWB for order ${order.id}. Reason: ${updateError.message}`);
+            console.error(`[AUTOMATION FAILED] Step 4: Failed to save AWB/Label for order ${order.id}. Reason: ${updateError.message}`);
         } else {
             console.log(`[AUTOMATION SUCCESS] Order ${order.id} processed. Shipment ID: ${shipmentId}, AWB: ${awbResult.awb}`);
         }

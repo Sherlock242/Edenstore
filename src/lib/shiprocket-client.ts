@@ -339,4 +339,37 @@ export async function assignCourierAndGenerateAwb(shipmentId: number): Promise<{
     }
 }
 
+export async function generateLabel(shipmentIds: number[]): Promise<{ success: boolean, message: string, labelUrl?: string }> {
+    const token = await getShiprocketToken();
+    if (!token) {
+        return { success: false, message: "Could not authenticate with Shiprocket." };
+    }
+
+    try {
+        const response = await fetch(`${SHIPROCKET_API_URL}/courier/generate/label`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`,
+            },
+            body: JSON.stringify({
+                shipment_id: shipmentIds, // API expects an array
+            }),
+            cache: 'no-store'
+        });
+        
+        const responseBody = await response.json();
+
+        if (response.ok && responseBody.label_created) {
+            return { success: true, labelUrl: responseBody.label_url, message: "Label generated successfully." };
+        } else {
+            console.error("Shiprocket Label Generation Error:", responseBody);
+            return { success: false, message: responseBody.message || "Failed to generate label." };
+        }
+
+    } catch (error) {
+        console.error("Error generating label from Shiprocket:", error);
+        return { success: false, message: "An unexpected server error occurred while generating the label." };
+    }
+}
     
