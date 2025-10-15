@@ -144,13 +144,13 @@ export default function CheckoutPage() {
     
     if (paymentMethod === 'cod') {
         const codResult = await createCodOrder({ shippingAddress });
-        if (codResult.success && codResult.shipmentId) {
+        if (codResult.success) {
             toast({
                 title: 'Order Placed!',
                 description: 'Your order has been successfully placed.',
             });
             dispatch({ type: 'SET_ITEMS', payload: [] });
-            router.push(`/track?shipment_id=${codResult.shipmentId}`);
+            router.push('/my-orders');
         } else {
             toast({
                 variant: 'destructive',
@@ -191,10 +191,10 @@ export default function CheckoutPage() {
                     shippingAddress: shippingAddress
                  });
 
-                if (verificationResult.success && verificationResult.shipmentId) {
+                if (verificationResult.success) {
                     toast({ title: 'Payment Successful!', description: 'Your order has been placed.' });
                     dispatch({ type: 'SET_ITEMS', payload: [] });
-                    router.push(`/track?shipment_id=${verificationResult.shipmentId}`);
+                    router.push('/my-orders');
                 } else {
                      toast({ variant: 'destructive', title: 'Order Failed', description: verificationResult.message });
                 }
@@ -384,3 +384,5 @@ export default function CheckoutPage() {
     </>
   );
 }
+
+    
