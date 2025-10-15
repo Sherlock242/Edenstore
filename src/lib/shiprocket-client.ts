@@ -1,3 +1,4 @@
+
 'use server';
 
 import type { FullOrderDetails } from '@/app/admin/orders/actions';
@@ -108,17 +109,22 @@ export async function pushOrderToShiprocket(order: FullOrderDetails): Promise<{ 
     const nameParts = (shippingDetails.firstName || '').split(' ').filter(Boolean);
     const lastName = nameParts.length > 1 ? nameParts.pop() || ' ' : (shippingDetails.lastName || ' ');
     const firstName = nameParts.join(' ');
-
-    const orderItemsForShipment: ShipmentOrderItem[] = order.items.map(item => ({
-        name: item.product.name.substring(0, 100),
-        sku: `${item.product.id}-${item.size}`.substring(0, 50),
-        units: item.quantity,
-        selling_price: item.price_at_purchase,
-        hsn: 610910,
-    }));
-
-    const sub_total = order.items.reduce((acc, item) => acc + (item.price_at_purchase * item.quantity), 0);
     
+    const totalOrderValue = order.items.reduce((acc, item) => acc + (item.price_at_purchase * item.quantity), 0);
+    const totalQuantity = order.items.reduce((acc, item) => acc + item.quantity, 0);
+
+    // To ensure the correct total is collected for COD and declared for prepaid,
+    // we will send a single consolidated item to Shiprocket representing the full order value.
+    const orderItemsForShipment: ShipmentOrderItem[] = [
+      {
+          name: `ANISTORE Order - ${order.razorpay_order_id}`.substring(0, 100),
+          sku: `ANISTORE-${order.id}`.substring(0, 50),
+          units: 1, // Consolidate into a single unit
+          selling_price: totalOrderValue, // The full value of the products
+          hsn: 610910,
+      }
+    ];
+
     const payload: ShipmentPayload = {
         order_id: order.razorpay_order_id,
         order_date: format(new Date(order.created_at), 'yyyy-MM-dd HH:mm'),
@@ -138,11 +144,11 @@ export async function pushOrderToShiprocket(order: FullOrderDetails): Promise<{ 
         shipping_is_billing: true,
         order_items: orderItemsForShipment,
         payment_method: order.payment_method === 'COD' ? 'COD' : 'Prepaid',
-        shipping_charges: 0, 
+        shipping_charges: 0,
         giftwrap_charges: 0,
         transaction_charges: 0,
         total_discount: 0,
-        sub_total: sub_total,
+        sub_total: totalOrderValue, // This should be the grand total the customer paid or will pay
         length: 10,
         breadth: 10,
         height: 5,
@@ -332,3 +338,5 @@ export async function assignCourierAndGenerateAwb(shipmentId: number): Promise<{
         return { success: false, message: "An unexpected server error occurred while generating AWB." };
     }
 }
+
+    
