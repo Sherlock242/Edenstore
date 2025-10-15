@@ -1,3 +1,4 @@
+
 // src/app/track/page.tsx
 import { Suspense } from 'react';
 import { Loader } from 'lucide-react';
@@ -16,10 +17,10 @@ export default function TrackOrderPage() {
     <div className="container mx-auto max-w-4xl px-4 py-8 md:py-12">
       <div className="flex flex-col items-center text-center">
         <h1 className="mb-4 font-headline text-3xl font-bold tracking-tighter md:text-4xl">
-          Track Your Order
+          Track Your Shipment
         </h1>
         <p className="mb-8 max-w-md text-muted-foreground">
-          Enter your order ID below to check the status of your shipment.
+          Enter your Shipment ID below to check the status of your package.
         </p>
       </div>
       <Suspense fallback={<Loading />}>

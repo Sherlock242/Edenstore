@@ -28,22 +28,23 @@ export type OrderDetails = {
     tracking_data?: any; // To hold live tracking info from Shiprocket
 };
 
-export async function getOrderDetails(razorpayOrderId: string): Promise<{ success: boolean; order?: OrderDetails; message: string }> {
-    if (!razorpayOrderId) {
-        return { success: false, message: 'Order ID is required.' };
+export async function getOrderDetailsByShipmentId(shipmentId: string): Promise<{ success: boolean; order?: OrderDetails; message: string }> {
+    if (!shipmentId || isNaN(Number(shipmentId))) {
+        return { success: false, message: 'A valid Shipment ID is required.' };
     }
     const cookieStore = cookies();
     const supabase = createClient(cookieStore);
-    // 1. Fetch the main order details using the Razorpay order ID
+    
+    // 1. Fetch the main order details using the Shipment ID
     const { data: orderData, error: orderError } = await supabase
         .from('orders')
         .select('id, created_at, status, shipping_address, razorpay_order_id, shipment_id, shiprocket_order_id, payment_method')
-        .eq('razorpay_order_id', razorpayOrderId)
+        .eq('shipment_id', Number(shipmentId))
         .single();
 
     if (orderError || !orderData) {
-        console.error('Error fetching order:', orderError);
-        return { success: false, message: 'Order not found.' };
+        console.error('Error fetching order by shipment ID:', orderError);
+        return { success: false, message: 'Order not found for this shipment ID.' };
     }
 
     // 2. Fetch the associated order items
@@ -53,11 +54,9 @@ export async function getOrderDetails(razorpayOrderId: string): Promise<{ succes
         .eq('order_id', orderData.id);
 
     if (itemsError || !orderItemsData) {
-        console.error('Error fetching order items:', itemsError);
         return { success: false, message: 'Could not fetch items for this order.' };
     }
     
-    // 3. Get all unique product IDs from the order items
     const productIds = [...new Set(orderItemsData.map(item => item.product_id))];
 
     // 4. Fetch details for all products in the order
@@ -72,11 +71,9 @@ export async function getOrderDetails(razorpayOrderId: string): Promise<{ succes
         .in('id', productIds);
     
     if (productsError) {
-        console.error('Error fetching product details for order:', productsError);
         return { success: false, message: 'Failed to fetch product details for the order.' };
     }
 
-    // Create a map for easy product lookup
     const productsMap = new Map<string, Product>(productsData.map(p => [
         p.id.toString(), 
         {
@@ -94,7 +91,6 @@ export async function getOrderDetails(razorpayOrderId: string): Promise<{ succes
         }
     ]));
 
-    // 5. Combine all data into the final OrderDetails object
     const fullOrderItems: OrderItem[] = orderItemsData.map(item => ({
         quantity: item.quantity,
         size: item.size,
@@ -103,15 +99,8 @@ export async function getOrderDetails(razorpayOrderId: string): Promise<{ succes
         product: productsMap.get(item.product_id.toString())!,
     })).filter(item => item.product);
 
-    if (fullOrderItems.length === 0) {
-        return { success: false, message: "Could not find product details for items in this order." };
-    }
-    
-    // 6. Fetch live tracking data from Shiprocket if a shipment ID exists
-    let trackingData = null;
-    if (orderData.shipment_id) {
-        trackingData = await trackShipmentById(orderData.shipment_id.toString());
-    }
+    // 6. Fetch live tracking data from Shiprocket
+    const trackingData = await trackShipmentById(shipmentId);
 
     const orderDetails: OrderDetails = {
         id: orderData.id,
@@ -121,7 +110,7 @@ export async function getOrderDetails(razorpayOrderId: string): Promise<{ succes
         razorpay_order_id: orderData.razorpay_order_id,
         shipment_id: orderData.shipment_id,
         shiprocket_order_id: orderData.shiprocket_order_id,
-        payment_method: orderData.payment_method,
+        payment_method: orderData.payment_method as 'Prepaid' | 'COD' | null,
         items: fullOrderItems,
         tracking_data: trackingData,
     };

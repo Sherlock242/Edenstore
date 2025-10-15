@@ -1,3 +1,4 @@
+
 // src/app/track/track-order-client.tsx
 "use client";
 
@@ -7,13 +8,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Loader, Package, MapPin, Calendar, Milestone } from "lucide-react";
-import { getOrderDetails, type OrderDetails } from "./actions";
+import { getOrderDetailsByShipmentId, type OrderDetails } from "./actions";
 import Image from "next/image";
 import { format } from "date-fns";
 
 export function TrackOrderClient() {
     const searchParams = useSearchParams();
-    const [orderId, setOrderId] = useState("");
+    const [shipmentId, setShipmentId] = useState("");
     const [order, setOrder] = useState<OrderDetails | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -28,7 +29,7 @@ export function TrackOrderClient() {
         setError(null);
         setOrder(null);
 
-        const result = await getOrderDetails(idToTrack);
+        const result = await getOrderDetailsByShipmentId(idToTrack);
 
         if (result.success && result.order) {
             setOrder(result.order);
@@ -40,10 +41,10 @@ export function TrackOrderClient() {
     }
     
     useEffect(() => {
-        const orderIdFromUrl = searchParams.get('order_id');
-        if (orderIdFromUrl) {
-            setOrderId(orderIdFromUrl);
-            handleTrackOrder(orderIdFromUrl);
+        const shipmentIdFromUrl = searchParams.get('shipment_id');
+        if (shipmentIdFromUrl) {
+            setShipmentId(shipmentIdFromUrl);
+            handleTrackOrder(shipmentIdFromUrl);
         } else {
             setIsLoading(false);
         }
@@ -51,7 +52,7 @@ export function TrackOrderClient() {
 
     const handleFormSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        handleTrackOrder(orderId);
+        handleTrackOrder(shipmentId);
     }
     
     const trackingDetails = order?.tracking_data?.tracking_data;
@@ -62,14 +63,14 @@ export function TrackOrderClient() {
         <>
             <Card className="max-w-md mx-auto">
                 <CardHeader>
-                    <CardTitle>Enter Order ID</CardTitle>
+                    <CardTitle>Enter Shipment ID</CardTitle>
                 </CardHeader>
                 <CardContent>
                     <form onSubmit={handleFormSubmit} className="flex flex-col gap-4 sm:flex-row">
                         <Input 
-                            value={orderId}
-                            onChange={(e) => setOrderId(e.target.value)}
-                            placeholder="Enter your Order ID"
+                            value={shipmentId}
+                            onChange={(e) => setShipmentId(e.target.value)}
+                            placeholder="Enter your Shipment ID"
                             className="flex-grow"
                         />
                         <Button type="submit" disabled={isLoading} className="bg-accent text-accent-foreground hover:bg-accent/90">
@@ -88,14 +89,14 @@ export function TrackOrderClient() {
                    <Card className="bg-destructive/10 border-destructive text-destructive-foreground">
                       <CardContent className="p-6 text-center">
                           <Package className="h-12 w-12 text-destructive mx-auto mb-4"/>
-                          <h3 className="font-bold text-xl">Order Not Found</h3>
-                          <p>Please check your order ID and try again.</p>
+                          <h3 className="font-bold text-xl">Shipment Not Found</h3>
+                          <p>Please check your shipment ID and try again.</p>
                       </CardContent>
                    </Card>
               ) : order ? (
                   <Card>
                       <CardHeader>
-                          <CardTitle>Order #{order.razorpay_order_id.replace('order_', '')}</CardTitle>
+                          <CardTitle>Order #{order.razorpay_order_id.replace('order_', '').replace('cod_', 'COD-')}</CardTitle>
                           <CardDescription>
                               {trackingDetails?.awb_code ? `AWB #${trackingDetails.awb_code}` : 'Awaiting shipment details...'}
                           </CardDescription>
