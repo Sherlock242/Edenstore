@@ -5,7 +5,7 @@ import Razorpay from 'razorpay';
 import crypto from 'crypto';
 import { createClient } from '@/lib/supabase/server';
 import { getCartItems } from '../cart/actions';
-import { assignCourierAndGenerateAwb } from '@/lib/shiprocket-client';
+import { assignCourierAndGenerateAwb, getShippingRates } from '@/lib/shiprocket-client';
 import { randomBytes } from 'crypto';
 import { cookies } from 'next/headers';
 import type { FullOrderDetails } from '@/app/admin/orders/actions';
