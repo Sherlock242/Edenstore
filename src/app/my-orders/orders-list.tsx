@@ -54,7 +54,7 @@ export function OrdersList({ orders }: OrdersListProps) {
                   </div>
                 </CardHeader>
                 <CardContent>
-                  <Accordion type="single" collapsible>
+                  <Accordion type="multiple">
                       <AccordionItem value="items">
                           <AccordionTrigger>{order.items.length} item(s)</AccordionTrigger>
                           <AccordionContent>
