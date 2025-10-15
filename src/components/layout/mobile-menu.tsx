@@ -33,7 +33,6 @@ type MobileMenuSheetProps = {
 
 const navLinks = [
   { href: '/products', label: 'T-Shirts' },
-  { href: '/track', label: 'Track Order' },
 ];
 
 const getAvatarFallback = (email: string | null | undefined) => {

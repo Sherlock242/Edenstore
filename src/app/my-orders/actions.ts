@@ -3,11 +3,26 @@
 
 import { createClient } from '@/lib/supabase/server';
 import type { Product } from '@/app/actions';
-import type { OrderDetails, OrderItem } from '@/app/track/actions';
 import { cookies } from 'next/headers';
+import { trackShipmentById } from '@/lib/shiprocket-client';
 
-export type OrderSummary = Omit<OrderDetails, 'shipping_address' | 'tracking_data' | 'shiprocket_order_id' | 'payment_method'> & {
+
+export type OrderItem = {
+    quantity: number;
+    size: string;
+    color: string;
+    price_at_purchase: number;
+    product: Product;
+};
+
+export type OrderSummary = {
+    id: string;
+    created_at: string;
+    status: 'pending-shipment' | 'processing' | 'shipped' | 'delivered';
+    razorpay_order_id: string;
     shipment_id: number | null;
+    items: OrderItem[];
+    tracking_data?: any; // To hold live tracking info from Shiprocket
 };
 
 
@@ -75,25 +90,34 @@ export async function getUserOrders(): Promise<{ success: boolean; orders?: Orde
         }
     ]));
 
-    // 4. Construct the final array of OrderSummary objects
-    const orders: OrderSummary[] = ordersData.map(order => {
-        const items: OrderItem[] = order.order_items.map(item => ({
-            quantity: item.quantity,
-            size: item.size,
-            color: item.color,
-            price_at_purchase: item.price_at_purchase,
-            product: productsMap.get(item.product_id.toString())!,
-        })).filter(item => item.product); // Filter out items where product details might be missing
+    // 4. Construct the final array of OrderSummary objects, now including tracking data
+    const orders: OrderSummary[] = await Promise.all(
+        ordersData.map(async (order) => {
+            const items: OrderItem[] = order.order_items.map(item => ({
+                quantity: item.quantity,
+                size: item.size,
+                color: item.color,
+                price_at_purchase: item.price_at_purchase,
+                product: productsMap.get(item.product_id.toString())!,
+            })).filter(item => item.product);
 
-        return {
-            id: order.id,
-            created_at: order.created_at,
-            status: order.status as OrderDetails['status'],
-            razorpay_order_id: order.razorpay_order_id,
-            shipment_id: order.shipment_id,
-            items: items,
-        };
-    });
+            // Fetch tracking data if shipment_id exists
+            let tracking_data = null;
+            if (order.shipment_id) {
+                tracking_data = await trackShipmentById(order.shipment_id.toString());
+            }
+
+            return {
+                id: order.id,
+                created_at: order.created_at,
+                status: order.status as OrderSummary['status'],
+                razorpay_order_id: order.razorpay_order_id,
+                shipment_id: order.shipment_id,
+                items: items,
+                tracking_data: tracking_data, // Add tracking data here
+            };
+        })
+    );
 
     return { success: true, orders, message: 'Orders fetched successfully.' };
 }

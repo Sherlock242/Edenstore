@@ -1,14 +1,13 @@
 
 'use client';
 
-import Link from 'next/link';
 import Image from 'next/image';
-import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { format } from 'date-fns';
 import type { OrderSummary } from './actions';
+import { Milestone } from 'lucide-react';
 
 type OrdersListProps = {
     orders: OrderSummary[];
@@ -34,6 +33,10 @@ export function OrdersList({ orders }: OrdersListProps) {
         <div className="space-y-6">
           {orders.map(order => {
             const statusInfo = getStatusInfo(order.status);
+            const trackingDetails = order.tracking_data?.tracking_data;
+            const trackingHistory = trackingDetails?.shipment_track_activities?.slice().reverse() || [];
+            const awbCode = trackingDetails?.awb_code;
+
             return (
               <Card key={order.id}>
                 <CardHeader className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
@@ -80,19 +83,42 @@ export function OrdersList({ orders }: OrdersListProps) {
                               </div>
                           </AccordionContent>
                       </AccordionItem>
+                      {order.shipment_id && (
+                        <AccordionItem value="tracking">
+                            <AccordionTrigger>Tracking Details</AccordionTrigger>
+                            <AccordionContent>
+                               {awbCode && <p className="mb-4 text-sm text-muted-foreground">AWB Number: <span className="font-medium text-foreground">{awbCode}</span></p>}
+                                <div className="space-y-6">
+                                {trackingHistory.length > 0 ? (
+                                    <div className="relative pl-6">
+                                        <div className="absolute left-[9px] top-0 h-full w-0.5 bg-border -translate-x-1/2"></div>
+                                        {trackingHistory.map((activity: any, index: number) => (
+                                            <div key={index} className="relative flex items-start gap-6 pb-6 last:pb-0">
+                                                <div className="flex h-5 w-5 items-center justify-center rounded-full bg-primary mt-1.5 z-10 shrink-0">
+                                                    <Milestone className="h-3 w-3 text-primary-foreground" />
+                                                </div>
+                                                <div className="flex-grow">
+                                                    <p className="font-semibold">{activity.activity}</p>
+                                                    <p className="text-sm text-muted-foreground">{activity.location}</p>
+                                                    <p className="text-xs text-muted-foreground">{format(new Date(activity.date), 'MMM dd, yyyy, h:mm a')}</p>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                ): (
+                                    <p className="text-muted-foreground text-sm text-center py-4">No tracking history available yet. This will update once the courier scans your package.</p>
+                                )}
+                                </div>
+                            </AccordionContent>
+                        </AccordionItem>
+                      )}
                   </Accordion>
                 </CardContent>
-                <CardFooter>
-                    {order.shipment_id ? (
-                        <Button variant="outline" asChild>
-                            <Link href={`/track?shipment_id=${order.shipment_id}`}>Track This Order</Link>
-                        </Button>
-                    ) : (
-                        <Button variant="outline" disabled>
-                            Tracking Unavailable
-                        </Button>
-                    )}
-                </CardFooter>
+                {order.status === 'processing' && !order.shipment_id && (
+                    <CardFooter>
+                        <p className="text-sm text-muted-foreground">Tracking details will be available once the order is shipped.</p>
+                    </CardFooter>
+                )}
               </Card>
             )
           })}
