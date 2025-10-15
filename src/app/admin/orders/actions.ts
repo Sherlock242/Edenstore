@@ -145,8 +145,8 @@ export async function sendOrderToShiprocket(order: FullOrderDetails): Promise<{ 
         .from('orders')
         .update({
           shipment_id: shipment_id,
-          shiprocket_order_id: order_id
-          // Status is NOT updated here anymore, it will be updated after AWB generation
+          shiprocket_order_id: order_id,
+          status: 'processing' // Set status to processing after pushing
         })
         .eq('id', order.id);
       

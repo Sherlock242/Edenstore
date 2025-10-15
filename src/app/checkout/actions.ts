@@ -38,7 +38,7 @@ async function pushOrderAndAutomateShipment(order: FullOrderDetails) {
         const awbResult = await assignCourierAndGenerateAwb(shipmentId);
         if (!awbResult.success || !awbResult.awb) {
             console.error(`[AUTOMATION FAILED] Step 2: Could not generate AWB for shipment ${shipmentId}. Reason: ${awbResult.message}`);
-            // The order is pushed, but AWB failed. We should still update the order with what we have and set status to 'processing'
+            // The order is pushed, but AWB failed. We should still update the order with what we have and set status to 'processing' to signify it needs manual attention.
             await supabaseAdmin
                 .from('orders')
                 .update({ shipment_id: shipmentId, shiprocket_order_id: shiprocketOrderId, status: 'processing' })
@@ -232,6 +232,7 @@ export async function verifyPaymentAndCreateOrder(payload: VerifyPaymentPayload)
         user: { display_name: userProfile?.display_name || '', email: userProfile?.email || '' }
     };
 
+    // Don't await this, let it run in the background
     pushOrderAndAutomateShipment(fullOrder);
     
     await supabase
@@ -320,6 +321,7 @@ export async function createCodOrder(payload: CreateCodOrderPayload): Promise<{s
         user: { display_name: userProfile?.display_name || '', email: userProfile?.email || '' }
     };
     
+    // Don't await this, let it run in the background
     pushOrderAndAutomateShipment(fullOrder);
 
     await supabase.from('cart_items').delete().eq('user_id', user.id);
