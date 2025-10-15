@@ -110,8 +110,8 @@ export async function pushOrderToShiprocket(order: FullOrderDetails): Promise<{ 
     const lastName = nameParts.length > 1 ? nameParts.pop() || ' ' : (shippingDetails.lastName || ' ');
     const firstName = nameParts.join(' ');
     
-    const totalOrderValue = order.items.reduce((acc, item) => acc + (item.price_at_purchase * item.quantity), 0);
-    const totalQuantity = order.items.reduce((acc, item) => acc + item.quantity, 0);
+    // Use the final total amount from the order for both COD and Prepaid
+    const totalOrderValue = order.total_amount;
 
     // To ensure the correct total is collected for COD and declared for prepaid,
     // we will send a single consolidated item to Shiprocket representing the full order value.
@@ -120,7 +120,7 @@ export async function pushOrderToShiprocket(order: FullOrderDetails): Promise<{ 
           name: `ANISTORE Order - ${order.razorpay_order_id}`.substring(0, 100),
           sku: `ANISTORE-${order.id}`.substring(0, 50),
           units: 1, // Consolidate into a single unit
-          selling_price: totalOrderValue, // The full value of the products
+          selling_price: totalOrderValue, // The full value of the order
           hsn: 610910,
       }
     ];

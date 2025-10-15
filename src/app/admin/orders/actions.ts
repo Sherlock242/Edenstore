@@ -14,7 +14,7 @@ export type UserProfileInfo = {
     email: string;
 }
 
-export type FullOrderDetails = OrderDetails & { user: UserProfileInfo };
+export type FullOrderDetails = OrderDetails & { user: UserProfileInfo; total_amount: number; };
 
 export async function getAllOrders(): Promise<{ success: boolean; orders?: FullOrderDetails[]; message: string }> {
     const cookieStore = cookies();
@@ -23,7 +23,7 @@ export async function getAllOrders(): Promise<{ success: boolean; orders?: FullO
     const { data: ordersData, error: ordersError } = await supabase
         .from('orders')
         .select(`
-            id, created_at, status, razorpay_order_id, shipping_address, user_id, shipment_id, shiprocket_order_id, payment_method, awb_code,
+            id, created_at, status, razorpay_order_id, shipping_address, user_id, shipment_id, shiprocket_order_id, payment_method, awb_code, total_amount,
             order_items ( product_id, quantity, size, color, price_at_purchase )
         `)
         .order('created_at', { ascending: false });
@@ -97,6 +97,7 @@ export async function getAllOrders(): Promise<{ success: boolean; orders?: FullO
             awb_code: order.awb_code,
             user: user,
             items: items,
+            total_amount: order.total_amount,
         };
     });
 

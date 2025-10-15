@@ -227,6 +227,7 @@ export async function verifyPaymentAndCreateOrder(payload: VerifyPaymentPayload)
         shiprocket_order_id: null,
         payment_method: 'Prepaid',
         awb_code: null,
+        total_amount: newOrder.total_amount,
         items: cart.items.map(ci => ({...ci, product_id: ci.product.id, price_at_purchase: ci.product.price})),
         user: { display_name: userProfile?.display_name || '', email: userProfile?.email || '' }
     };
@@ -314,6 +315,7 @@ export async function createCodOrder(payload: CreateCodOrderPayload): Promise<{s
         shiprocket_order_id: null,
         payment_method: 'COD',
         awb_code: null,
+        total_amount: newOrder.total_amount,
         items: cart.items.map(ci => ({...ci, product_id: ci.product.id, price_at_purchase: ci.product.price})),
         user: { display_name: userProfile?.display_name || '', email: userProfile?.email || '' }
     };
