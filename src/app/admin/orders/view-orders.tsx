@@ -19,7 +19,7 @@ import {
 } from '@/components/ui/accordion';
 import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
-import { updateOrderStatus, type FullOrderDetails, sendOrderToShiprocket } from './actions';
+import { updateOrderStatus, type FullOrderDetails } from './actions';
 import { useToast } from '@/hooks/use-toast';
 import {
   Select,
@@ -40,8 +40,6 @@ type ViewOrdersProps = {
 export function ViewOrders({ orders, onStatusUpdated }: ViewOrdersProps) {
   const [isPending, startTransition] = useTransition();
   const { toast } = useToast();
-  const [isPushing, setIsPushing] = useState<string | null>(null);
-
 
   const getStatusInfo = (status: FullOrderDetails['status']) => {
     switch (status) {
@@ -66,26 +64,6 @@ export function ViewOrders({ orders, onStatusUpdated }: ViewOrdersProps) {
           } else {
               toast({ variant: 'destructive', title: "Error", description: result.message });
           }
-      });
-  }
-
-  const handlePushToShiprocket = (order: FullOrderDetails) => {
-      setIsPushing(order.id);
-      startTransition(async () => {
-        const result = await sendOrderToShiprocket(order);
-        if (result.success && result.shipmentId && result.shiprocketOrderId) {
-            toast({ title: 'Order Pushed!', description: result.message });
-            const updatedOrder: FullOrderDetails = { 
-                ...order, 
-                shipment_id: result.shipmentId, 
-                shiprocket_order_id: result.shiprocketOrderId,
-                status: 'processing'
-            };
-            onStatusUpdated(order.id, 'processing', updatedOrder); 
-        } else {
-            toast({ variant: 'destructive', title: "Push Failed", description: result.message });
-        }
-        setIsPushing(null);
       });
   }
 
@@ -156,31 +134,26 @@ export function ViewOrders({ orders, onStatusUpdated }: ViewOrdersProps) {
                         
                         <div className="mt-4">
                             <h4 className="font-semibold mb-2">Manage Order</h4>
-                            {order.status === 'pending-shipment' ? (
-                                <Button className="w-full" onClick={() => handlePushToShiprocket(order)} disabled={isPushing === order.id}>
-                                    <Send className="mr-2 h-4 w-4" />
-                                    {isPushing === order.id ? 'Pushing...' : 'Push to Shiprocket'}
-                                </Button>
-                            ) : (
-                                <div className="space-y-2">
-                                    <p className="text-xs text-muted-foreground">Shipment ID: {order.shipment_id}</p>
-                                    <Select 
-                                        defaultValue={order.status}
-                                        value={order.status}
-                                        onValueChange={(value) => handleStatusChange(order.id, value as FullOrderDetails['status'])}
-                                        disabled={isPending}
-                                    >
-                                        <SelectTrigger>
-                                            <SelectValue placeholder="Change status..." />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value="processing" disabled>Processing</SelectItem>
-                                            <SelectItem value="shipped">Shipped</SelectItem>
-                                            <SelectItem value="delivered">Delivered</SelectItem>
-                                        </SelectContent>
-                                    </Select>
-                                </div>
-                            )}
+                            <div className="space-y-2">
+                                <p className="text-xs text-muted-foreground">Shipment ID: {order.shipment_id || 'N/A'}</p>
+                                <p className="text-xs text-muted-foreground">AWB Code: {order.awb_code || 'Not Generated'}</p>
+                                <Select 
+                                    defaultValue={order.status}
+                                    value={order.status}
+                                    onValueChange={(value) => handleStatusChange(order.id, value as FullOrderDetails['status'])}
+                                    disabled={isPending}
+                                >
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="Change status..." />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="pending-shipment" disabled>Pending Shipment</SelectItem>
+                                        <SelectItem value="processing">Processing</SelectItem>
+                                        <SelectItem value="shipped">Shipped</SelectItem>
+                                        <SelectItem value="delivered">Delivered</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -191,3 +164,5 @@ export function ViewOrders({ orders, onStatusUpdated }: ViewOrdersProps) {
     </Accordion>
   );
 }
+
+    

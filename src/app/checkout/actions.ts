@@ -6,11 +6,12 @@ import Razorpay from 'razorpay';
 import crypto from 'crypto';
 import { createClient } from '@/lib/supabase/server';
 import { getCartItems } from '../cart/actions';
-import { getShippingRates } from '@/lib/shiprocket-client';
+import { getShippingRates, assignCourierAndGenerateAwb } from '@/lib/shiprocket-client';
 import { randomBytes } from 'crypto';
 import { cookies } from 'next/headers';
 import { sendOrderToShiprocket } from '@/app/admin/orders/actions';
 import type { FullOrderDetails, UserProfileInfo } from '@/app/admin/orders/actions';
+import { createClient as createAdminClient } from '@supabase/supabase-js';
 
 
 export async function fetchShippingRatesAction(pincode: string, paymentMethod: 'online' | 'cod'): Promise<{success: boolean, message: string, rate?: number}> {
@@ -174,14 +175,8 @@ export async function verifyPaymentAndCreateOrder(payload: VerifyPaymentPayload)
         user: { display_name: userProfile?.display_name || '', email: userProfile?.email || '' }
     };
 
-    // Automatically push to Shiprocket
-    const pushResult = await sendOrderToShiprocket(fullOrder);
-
-    if (!pushResult.success) {
-        // Even if push fails, the order is created. Log error and inform user.
-        console.error(`Failed to auto-push order ${newOrder.id} to Shiprocket: ${pushResult.message}`);
-        // Don't fail the whole transaction, but maybe flag it for manual review.
-    }
+    // --- AUTOMATION CHAIN ---
+    await processShipmentAutomation(fullOrder);
     
     // Clear cart after successful order creation
     await supabase
@@ -189,7 +184,7 @@ export async function verifyPaymentAndCreateOrder(payload: VerifyPaymentPayload)
         .delete()
         .eq('user_id', user.id);
     
-    return { success: true, message: "Payment verified and order created successfully.", shipmentId: pushResult.shipmentId };
+    return { success: true, message: "Payment verified and order created successfully." };
 }
 
 
@@ -264,14 +259,59 @@ export async function createCodOrder(payload: CreateCodOrderPayload): Promise<{s
         user: { display_name: userProfile?.display_name || '', email: userProfile?.email || '' }
     };
     
-    // Automatically push to Shiprocket
-    const pushResult = await sendOrderToShiprocket(fullOrder);
-
-    if (!pushResult.success) {
-        console.error(`Failed to auto-push COD order ${newOrder.id} to Shiprocket: ${pushResult.message}`);
-    }
+    // --- AUTOMATION CHAIN ---
+    await processShipmentAutomation(fullOrder);
 
     await supabase.from('cart_items').delete().eq('user_id', user.id);
 
-    return { success: true, message: "COD Order created successfully.", shipmentId: pushResult.shipmentId };
+    return { success: true, message: "COD Order created successfully." };
 }
+
+// This is the new master function for handling shipment automation
+async function processShipmentAutomation(order: FullOrderDetails) {
+    const supabaseAdmin = createAdminClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.SUPABASE_SERVICE_ROLE_KEY!,
+        { auth: { persistSession: false } }
+    );
+
+    // Step 1: Push order to Shiprocket
+    const pushResult = await sendOrderToShiprocket(order);
+    if (!pushResult.success || !pushResult.shipmentId || !pushResult.shiprocketOrderId) {
+        console.error(`[AUTOMATION FAILED] Step 1: Could not push order ${order.id} to Shiprocket. Reason: ${pushResult.message}`);
+        return;
+    }
+    const { shipmentId, shiprocketOrderId } = pushResult;
+
+    // Step 2: Assign courier and get AWB
+    const awbResult = await assignCourierAndGenerateAwb(shipmentId);
+    if (!awbResult.success || !awbResult.awb) {
+        console.error(`[AUTOMATION FAILED] Step 2: Could not generate AWB for shipment ${shipmentId}. Reason: ${awbResult.message}`);
+        // The order is pushed, but AWB failed. We should still update the order with what we have.
+        await supabaseAdmin
+            .from('orders')
+            .update({ shipment_id: shipmentId, shiprocket_order_id: shiprocketOrderId, status: 'processing' })
+            .eq('id', order.id);
+        return;
+    }
+
+    // Step 3: Save AWB and update status to 'processing'
+    const { error: updateError } = await supabaseAdmin
+        .from('orders')
+        .update({
+            shipment_id: shipmentId,
+            shiprocket_order_id: shiprocketOrderId,
+            awb_code: awbResult.awb,
+            status: 'processing'
+        })
+        .eq('id', order.id);
+
+    if (updateError) {
+        console.error(`[AUTOMATION FAILED] Step 3: Failed to save AWB for order ${order.id}. Reason: ${updateError.message}`);
+        // Even if DB update fails, we log it. The most critical parts are done.
+    }
+
+    console.log(`[AUTOMATION SUCCESS] Order ${order.id} processed. Shipment ID: ${shipmentId}, AWB: ${awbResult.awb}`);
+}
+
+    

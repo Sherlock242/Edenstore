@@ -1,4 +1,5 @@
 
+
 'use server';
 
 import { createClient } from '@/lib/supabase/server';
@@ -22,7 +23,7 @@ export async function getAllOrders(): Promise<{ success: boolean; orders?: FullO
     const { data: ordersData, error: ordersError } = await supabase
         .from('orders')
         .select(`
-            id, created_at, status, razorpay_order_id, shipping_address, user_id, shipment_id, shiprocket_order_id, payment_method,
+            id, created_at, status, razorpay_order_id, shipping_address, user_id, shipment_id, shiprocket_order_id, payment_method, awb_code,
             order_items ( product_id, quantity, size, color, price_at_purchase )
         `)
         .order('created_at', { ascending: false });
@@ -93,6 +94,7 @@ export async function getAllOrders(): Promise<{ success: boolean; orders?: FullO
             shipment_id: order.shipment_id,
             shiprocket_order_id: order.shiprocket_order_id,
             payment_method: order.payment_method,
+            awb_code: order.awb_code,
             user: user,
             items: items,
         };
@@ -142,8 +144,8 @@ export async function sendOrderToShiprocket(order: FullOrderDetails): Promise<{ 
         .from('orders')
         .update({
           shipment_id: shipment_id,
-          shiprocket_order_id: order_id,
-          status: 'processing'
+          shiprocket_order_id: order_id
+          // Status is NOT updated here anymore, it will be updated after AWB generation
         })
         .eq('id', order.id);
       
@@ -159,3 +161,5 @@ export async function sendOrderToShiprocket(order: FullOrderDetails): Promise<{ 
         shiprocketOrderId: order_id 
     };
 }
+
+    

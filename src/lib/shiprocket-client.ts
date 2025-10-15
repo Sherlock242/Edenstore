@@ -283,4 +283,41 @@ export async function trackShipmentById(shipmentId: string): Promise<any> {
     }
 }
 
+
+export async function assignCourierAndGenerateAwb(shipmentId: number): Promise<{ success: boolean; message: string; awb?: string }> {
+    const token = await getShiprocketToken();
+    if (!token) {
+        return { success: false, message: "Could not authenticate with Shiprocket." };
+    }
+
+    try {
+        const response = await fetch(`${SHIPROCKET_API_URL}/courier/assign/awb`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`,
+            },
+            body: JSON.stringify({
+                shipment_id: shipmentId,
+            }),
+            cache: 'no-store'
+        });
+
+        const responseBody = await response.json();
+
+        if (response.ok && responseBody.data?.awb_code) {
+            return { success: true, awb: responseBody.data.awb_code, message: "AWB generated successfully." };
+        } else {
+            console.error("Shiprocket AWB Generation Error:", responseBody);
+            // Try to provide a more specific error message if available
+            const errorMessage = responseBody.message || (responseBody.errors ? JSON.stringify(responseBody.errors) : "Failed to generate AWB.");
+            return { success: false, message: errorMessage };
+        }
+    } catch (error) {
+        console.error("Error generating AWB from Shiprocket:", error);
+        return { success: false, message: "An unexpected server error occurred while generating AWB." };
+    }
+}
+    
+
     
