@@ -1,4 +1,3 @@
-
 // src/app/track/track-order-client.tsx
 "use client";
 
@@ -98,7 +97,11 @@ export function TrackOrderClient() {
                       <CardHeader>
                           <CardTitle>Order #{order.razorpay_order_id.replace('order_', '').replace('cod_', 'COD-')}</CardTitle>
                           <CardDescription>
-                              {trackingDetails?.awb_code ? `AWB #${trackingDetails.awb_code}` : 'Awaiting shipment details...'}
+                              {trackingDetails?.awb_code ? (
+                                `AWB #${trackingDetails.awb_code}`
+                               ) : (
+                                'AWB number not yet assigned by courier.'
+                               )}
                           </CardDescription>
                       </CardHeader>
                       <CardContent className="space-y-8">
