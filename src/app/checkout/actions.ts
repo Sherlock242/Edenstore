@@ -5,7 +5,7 @@ import Razorpay from 'razorpay';
 import crypto from 'crypto';
 import { createClient } from '@/lib/supabase/server';
 import { getCartItems } from '../cart/actions';
-import { getShippingRates, assignCourierAndGenerateAwb } from '@/lib/shiprocket-client';
+import { getShippingRates, assignCourierAndGenerateAwb, sendOrderToShiprocket as pushOrderToShiprocketClient } from '@/lib/shiprocket-client';
 import { randomBytes } from 'crypto';
 import { cookies } from 'next/headers';
 import type { FullOrderDetails } from '@/app/admin/orders/actions';
@@ -13,6 +13,45 @@ import { createClient as createAdminClient } from '@supabase/supabase-js';
 
 // This function is defined in checkout/page.tsx, but we need it here as well.
 const GST_RATE = 0.05;
+
+async function sendOrderToShiprocket(order: FullOrderDetails): Promise<{ success: boolean; message: string, shipmentId?: number, shiprocketOrderId?: number }> {
+     // Use the admin client to bypass RLS when updating the order.
+    const supabaseAdmin = createAdminClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.SUPABASE_SERVICE_ROLE_KEY!,
+        { auth: { persistSession: false } }
+    );
+    
+    const pushResult = await pushOrderToShiprocketClient(order);
+    if (!pushResult.success || !pushResult.payload) {
+        return { success: false, message: pushResult.message };
+    }
+
+    const { shipment_id, order_id } = pushResult.payload;
+
+    // Save shipment details and update status to 'processing' using the admin client
+    const { error: updateError } = await supabaseAdmin
+        .from('orders')
+        .update({
+          shipment_id: shipment_id,
+          shiprocket_order_id: order_id
+          // Status is NOT updated here anymore, it will be updated after AWB generation
+        })
+        .eq('id', order.id);
+      
+    if(updateError) {
+        console.error("Failed to save shipment details to order:", updateError.message);
+        return { success: false, message: `Order pushed to Shiprocket, but failed to save details in local DB. Error: ${updateError.message}` };
+    }
+
+    return { 
+        success: true, 
+        message: `Order successfully pushed to Shiprocket. Shipment ID: ${shipment_id}`, 
+        shipmentId: shipment_id, 
+        shiprocketOrderId: order_id 
+    };
+}
+
 
 async function pushOrderAndAutomateShipment(order: FullOrderDetails) {
     const supabaseAdmin = createAdminClient(
