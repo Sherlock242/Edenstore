@@ -8,6 +8,7 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/
 import { format } from 'date-fns';
 import type { OrderSummary } from './actions';
 import { Milestone } from 'lucide-react';
+import { Separator } from '@/components/ui/separator';
 
 type OrdersListProps = {
     orders: OrderSummary[];
@@ -54,35 +55,31 @@ export function OrdersList({ orders }: OrdersListProps) {
                   </div>
                 </CardHeader>
                 <CardContent>
+                    <div className="space-y-4 mb-4">
+                        {order.items.map(item => (
+                        <div key={`${item.product.id}-${item.size}-${item.color}`} className="flex items-center gap-4">
+                            <Image
+                            src={item.product.images[0].url}
+                            alt={item.product.name}
+                            width={64}
+                            height={80}
+                            className="rounded-md object-cover"
+                            />
+                            <div className="flex-grow">
+                                <p className="font-semibold">{item.product.name}</p>
+                                <p className="text-sm text-muted-foreground">
+                                    {item.quantity} x ₹{item.price_at_purchase.toFixed(2)}
+                                </p>
+                                <p className="text-sm text-muted-foreground">
+                                    {item.size} / {item.color}
+                                </p>
+                            </div>
+                            <p className="font-medium">₹{(item.price_at_purchase * item.quantity).toFixed(2)}</p>
+                        </div>
+                        ))}
+                    </div>
+
                   <Accordion type="multiple">
-                      <AccordionItem value="items">
-                          <AccordionTrigger>{order.items.length} item(s)</AccordionTrigger>
-                          <AccordionContent>
-                              <div className="space-y-4">
-                                  {order.items.map(item => (
-                                  <div key={`${item.product.id}-${item.size}-${item.color}`} className="flex items-center gap-4">
-                                      <Image
-                                      src={item.product.images[0].url}
-                                      alt={item.product.name}
-                                      width={64}
-                                      height={80}
-                                      className="rounded-md object-cover"
-                                      />
-                                      <div className="flex-grow">
-                                          <p className="font-semibold">{item.product.name}</p>
-                                          <p className="text-sm text-muted-foreground">
-                                              {item.quantity} x ₹{item.price_at_purchase.toFixed(2)}
-                                          </p>
-                                          <p className="text-sm text-muted-foreground">
-                                              {item.size} / {item.color}
-                                          </p>
-                                      </div>
-                                      <p className="font-medium">₹{(item.price_at_purchase * item.quantity).toFixed(2)}</p>
-                                  </div>
-                                  ))}
-                              </div>
-                          </AccordionContent>
-                      </AccordionItem>
                       {order.shipment_id && (
                         <AccordionItem value="tracking">
                             <AccordionTrigger>Tracking Details</AccordionTrigger>
