@@ -6,13 +6,15 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Minus, Plus, Trash2, Loader2 } from "lucide-react";
+import { Minus, Plus, Trash2, Loader2, ArrowLeft } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 
 export default function CartPage() {
   const { state, updateQuantity, removeFromCart } = useCart();
   const [updatingItemId, setUpdatingItemId] = useState<string | null>(null);
+  const router = useRouter();
 
   const subtotal = state.items.reduce(
     (acc, item) => acc + item.product.price * item.quantity,
@@ -48,9 +50,15 @@ export default function CartPage() {
 
   return (
     <div className="container mx-auto max-w-7xl px-4 py-8 md:py-12">
-      <h1 className="mb-8 font-headline text-3xl font-bold tracking-tighter md:text-4xl">
-        Your Cart
-      </h1>
+       <div className="flex items-center gap-4 mb-8">
+        <Button variant="outline" size="icon" onClick={() => router.back()}>
+            <ArrowLeft className="h-4 w-4" />
+            <span className="sr-only">Go back</span>
+        </Button>
+        <h1 className="font-headline text-3xl font-bold tracking-tighter md:text-4xl">
+            Your Cart
+        </h1>
+      </div>
       {state.items.length > 0 ? (
         <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
           <div className="lg:col-span-2">
