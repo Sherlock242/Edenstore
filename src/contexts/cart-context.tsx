@@ -209,8 +209,16 @@ export function CartProvider({ children }: { children: ReactNode }) {
         }
      }
   };
+  
+  const clientState = isMounted ? state : { ...initialState, loading: true };
 
-  const value = { state, dispatch, addToCart, updateQuantity, removeFromCart };
+  const value = {
+    state: clientState,
+    dispatch,
+    addToCart,
+    updateQuantity,
+    removeFromCart,
+  };
 
   return (
     <CartContext.Provider value={value}>

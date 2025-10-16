@@ -55,7 +55,9 @@ export default async function RootLayout({
         <AppProviders>
           <div className="flex min-h-screen flex-col">
             <Header siteName={siteName} logoUrl={logoResult.url} displayMode={displayMode} />
-            <main className="flex-grow">{children}</main>
+            <main className="flex-grow">
+              {children}
+            </main>
             <Footer siteName={siteName} />
           </div>
           <Toaster />

@@ -90,19 +90,17 @@ export function WishlistProvider({ children }: { children: ReactNode }) {
     return state.items.some(item => item.id === productId);
   };
   
-  const value = { state, dispatch, isInWishlist };
-
-  // Avoid hydration mismatch by not rendering user-specific state on server
   const clientState = isMounted ? state : initialState;
-  const clientValue = {
-    ...value,
+  
+  const value = {
     state: clientState,
+    dispatch,
     isInWishlist: (productId: string) => isMounted ? isInWishlist(productId) : false,
   };
 
 
   return (
-    <WishlistContext.Provider value={clientValue}>
+    <WishlistContext.Provider value={value}>
       {children}
     </WishlistContext.Provider>
   );
