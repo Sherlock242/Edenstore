@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useDebounce } from 'use-debounce';
-import { Search, Loader2 } from "lucide-react";
+import { Search, Loader2, X } from "lucide-react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
@@ -74,21 +74,24 @@ export function SearchSheet() {
                     <span className="sr-only">Search</span>
                 </Button>
             </SheetTrigger>
-            <SheetContent side="top" className="p-0">
+            <SheetContent side="top" className="p-0 bg-black border-0">
                 <div className="container mx-auto max-w-7xl">
-                    <form onSubmit={handleSearchSubmit} className="p-4 border-b">
-                        <div className="relative">
-                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                    <form onSubmit={handleSearchSubmit} className="p-4">
+                        <div className="relative flex items-center">
+                            <Search className="absolute left-3 h-5 w-5 text-white" />
                             <Input 
-                                placeholder="Search for products..." 
-                                className="pl-10"
+                                placeholder="Search" 
+                                className="pl-10 bg-transparent border-white text-white placeholder:text-white"
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
                             />
+                            <Button variant="ghost" size="icon" onClick={closeAndResetSearch} className="absolute right-1 text-white hover:bg-white/10 hover:text-white">
+                                <X className="h-5 w-5"/>
+                            </Button>
                         </div>
                     </form>
                     {searchQuery && (
-                        <div className="bg-background">
+                        <div className="bg-black text-white">
                             <ScrollArea className="max-h-[50vh]">
                                 {isFetchingSuggestions && (
                                 <div className="p-4 text-center text-sm text-muted-foreground">
@@ -102,19 +105,19 @@ export function SearchSheet() {
                                     <div 
                                         key={product.id}
                                         onClick={() => handleSuggestionClick(product.id)}
-                                        className="flex items-center gap-4 p-3 hover:bg-accent cursor-pointer"
+                                        className="flex items-center gap-4 p-3 hover:bg-neutral-800 cursor-pointer"
                                     >
                                         <Image src={product.image.url} alt={product.name} width={40} height={50} className="rounded-md object-cover" data-ai-hint={product.image.hint} />
                                         <div className="flex flex-col">
                                             <p className="font-semibold text-sm">{product.name}</p>
-                                            <p className="text-xs text-muted-foreground">{product.category}</p>
+                                            <p className="text-xs text-neutral-400">{product.category}</p>
                                         </div>
                                     </div>
                                     ))}
                                 </div>
                                 )}
                                 {!isFetchingSuggestions && debouncedSearchQuery && suggestions.length === 0 && (
-                                <div className="p-4 text-center text-sm text-muted-foreground">
+                                <div className="p-4 text-center text-sm text-neutral-400">
                                     No results found for &quot;{debouncedSearchQuery}&quot;
                                 </div>
                                 )}
