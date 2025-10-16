@@ -1,8 +1,7 @@
-
 "use client";
 
 import type { Product } from "@/app/actions";
-import {
+import React, {
   createContext,
   useContext,
   useReducer,
@@ -70,9 +69,13 @@ export function WishlistProvider({ children }: { children: ReactNode }) {
     return state.items.some(item => item.id === productId);
   };
 
+  if (!isMounted) {
+    return null;
+  }
+
   return (
     <WishlistContext.Provider value={{ state, dispatch, isInWishlist }}>
-      {isMounted ? children : null}
+      {children}
     </WishlistContext.Provider>
   );
 }
