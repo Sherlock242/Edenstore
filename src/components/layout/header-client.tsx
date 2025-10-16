@@ -30,9 +30,8 @@ import md5 from 'md5';
 import { MobileMenuSheet } from './mobile-menu';
 import { CartSheet } from '../cart-sheet';
 import { SearchSheet } from './search-sheet';
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import type { HeaderDisplayMode } from '@/app/admin/settings/actions';
-import { Skeleton } from '../ui/skeleton';
 
 const navLinks = [
   { href: '/products', label: 'T-Shirts' },
@@ -83,11 +82,6 @@ function Brand({ siteName, logoUrl, displayMode }: Pick<HeaderClientProps, 'site
 
 export function HeaderClient({ user, userProfile, isadmin, siteName, logoUrl, displayMode }: HeaderClientProps) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [isMounted, setIsMounted] = useState(false);
-
-  useEffect(() => {
-    setIsMounted(true);
-  }, []);
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -198,15 +192,9 @@ export function HeaderClient({ user, userProfile, isadmin, siteName, logoUrl, di
                         </DropdownMenuContent>
                     </DropdownMenu>
                 ) : (
-                  <>
-                    {!isMounted ? (
-                       <Skeleton className="h-9 w-20 hidden md:block" />
-                    ) : (
-                       <Button variant="ghost" asChild className="hidden md:flex">
-                          <Link href="/login">Login</Link>
-                       </Button>
-                    )}
-                  </>
+                    <Button variant="ghost" asChild className="hidden md:flex">
+                        <Link href="/login">Login</Link>
+                    </Button>
                 )}
             </div>
         </div>
