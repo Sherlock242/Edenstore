@@ -68,23 +68,37 @@ export async function getReviewsForProduct(productId: string): Promise<{ success
     const cookieStore = cookies();
     const supabase = createClient(cookieStore);
 
+    // Fetch total count and average rating first
+    const { data: reviewStats, error: statsError } = await supabase
+        .from('reviews')
+        .select('rating', { count: 'exact' })
+        .eq('product_id', productId);
+
+    if (statsError) {
+        console.error('Error fetching review stats:', statsError);
+        return { success: false, message: 'Could not fetch review statistics.' };
+    }
+    
+    const totalReviews = reviewStats?.length || 0;
+    
+    if (totalReviews === 0) {
+        return { success: true, message: 'No reviews yet.', reviews: [], averageRating: 0, totalReviews: 0 };
+    }
+
+    // Now fetch the actual reviews, limited to 50
     const { data, error } = await supabase
         .from('reviews')
         .select('*')
         .eq('product_id', productId)
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false })
+        .limit(50);
 
     if (error) {
         console.error('Error fetching reviews:', error);
         return { success: false, message: 'Could not fetch reviews.' };
     }
-
-    if (!data || data.length === 0) {
-        return { success: true, message: 'No reviews yet.', reviews: [], averageRating: 0, totalReviews: 0 };
-    }
     
-    const totalReviews = data.length;
-    const averageRating = data.reduce((acc, review) => acc + review.rating, 0) / totalReviews;
+    const averageRating = reviewStats.reduce((acc, review) => acc + review.rating, 0) / totalReviews;
 
     return {
         success: true,
