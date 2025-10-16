@@ -273,6 +273,7 @@ export async function updateProduct(cookieStore: ReadonlyRequestCookies, data: U
                   console.error(`Invalid URL format, 'product-images/' not found: ${img.url}`);
                   return null;
                 }
+                // Correctly extract the path from after the bucket name
                 return url.pathname.substring(pathStartIndex);
             } catch (e) {
                 console.error(`Invalid URL for old image, cannot extract path: ${img.url}`);
@@ -438,11 +439,16 @@ export async function deleteProduct(cookieStore: ReadonlyRequestCookies, product
       const imagePaths = productData.product_images.map(img => {
         try {
             const url = new URL(img.url);
+            // Robustly find the start of the path after the bucket name
             const pathStartIndex = url.pathname.indexOf('product-images/');
-            if (pathStartIndex === -1) return null;
+            if (pathStartIndex === -1) {
+              console.error(`Invalid URL format, 'product-images/' not found: ${img.url}`);
+              return null;
+            }
+            // Correctly extract the path from after the bucket name
             return url.pathname.substring(pathStartIndex);
         } catch (e) {
-            console.error(`Invalid URL, cannot extract path: ${img.url}`);
+            console.error(`Invalid URL for old image, cannot extract path: ${img.url}`);
             return null;
         }
       }).filter((p): p is string => p !== null);
