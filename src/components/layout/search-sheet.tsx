@@ -85,9 +85,6 @@ export function SearchSheet() {
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
                             />
-                            <Button variant="ghost" size="icon" onClick={closeAndResetSearch} className="absolute right-1 text-white hover:bg-white/10 hover:text-white">
-                                <X className="h-5 w-5"/>
-                            </Button>
                         </div>
                     </form>
                     {searchQuery && (
