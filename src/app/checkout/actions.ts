@@ -10,7 +10,7 @@ import { randomBytes } from 'crypto';
 import { cookies } from 'next/headers';
 import type { FullOrderDetails } from '@/app/admin/orders/actions';
 import { createClient as createAdminClient } from '@supabase/supabase-js';
-import { fetchShippingRates } from '@/lib/shiprocket-client';
+import { getShippingRates } from '@/lib/shiprocket-client';
 
 
 async function pushOrderAndAutomateShipment(order: FullOrderDetails) {
@@ -75,7 +75,7 @@ async function pushOrderAndAutomateShipment(order: FullOrderDetails) {
 }
 
 
-export async function fetchShippingRatesAction(pincode: string, paymentMethod: 'online' | 'cod'): Promise<{success: boolean, message: string, rate?: number}> {
+export async function fetchShippingRatesAction(pincode: string): Promise<{success: boolean, message: string, rate?: number}> {
     if (!pincode || pincode.length !== 6) {
         return { success: false, message: 'Invalid Pincode.' };
     }
@@ -95,11 +95,11 @@ export async function fetchShippingRatesAction(pincode: string, paymentMethod: '
     const totalWeight = cart.items.reduce((acc, item) => acc + (item.product.weight * item.quantity), 0);
     const subTotal = cart.items.reduce((acc, item) => acc + (item.product.price * item.quantity), 0);
     
-    const result = await fetchShippingRates({
+    const result = await getShippingRates({
         pickup_postcode: pickupPostcode,
         delivery_postcode: pincode,
         weight: totalWeight > 0 ? totalWeight : 0.1, // Ensure weight is not zero
-        cod: paymentMethod === 'cod' ? 1 : 0,
+        cod: 0,
         declared_value: subTotal,
     });
 
@@ -195,7 +195,6 @@ export async function verifyPaymentAndCreateOrder(payload: VerifyPaymentPayload)
             payment_method: 'Prepaid',
             total_amount: totalAmount,
             shipping_cost: shippingCost,
-            gst_amount: 0,
         })
         .select()
         .single();
