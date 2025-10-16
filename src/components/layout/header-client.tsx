@@ -1,4 +1,3 @@
-
 'use client';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -31,8 +30,9 @@ import md5 from 'md5';
 import { MobileMenuSheet } from './mobile-menu';
 import { CartSheet } from '../cart-sheet';
 import { SearchSheet } from './search-sheet';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import type { HeaderDisplayMode } from '@/app/admin/settings/actions';
+import { Skeleton } from '../ui/skeleton';
 
 const navLinks = [
   { href: '/products', label: 'T-Shirts' },
@@ -83,6 +83,12 @@ function Brand({ siteName, logoUrl, displayMode }: Pick<HeaderClientProps, 'site
 
 export function HeaderClient({ user, userProfile, isadmin, siteName, logoUrl, displayMode }: HeaderClientProps) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container mx-auto flex h-16 max-w-7xl items-center px-4">
@@ -129,73 +135,81 @@ export function HeaderClient({ user, userProfile, isadmin, siteName, logoUrl, di
 
         {/* Right Section (Icons) */}
         <div className="flex flex-1 items-center justify-end gap-2 md:gap-4">
-            {isadmin && (
-              <div className="hidden items-center md:flex">
-                  <Button variant="ghost" size="sm" asChild>
-                      <Link href="/admin" className="flex items-center gap-1 text-foreground/60">
-                          <Shield className="h-4 w-4" />
-                          Admin
-                      </Link>
-                  </Button>
-              </div>
-            )}
-
             <div className="flex items-center space-x-0 md:space-x-2">
                 <SearchSheet />
                 <CartSheet />
-
-                {user ? (
-                     <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" className="relative hidden h-9 w-9 rounded-full md:flex">
-                                <Avatar className="h-9 w-9">
-                                    <AvatarImage src={getGravatarUrl(user.email)} alt={userProfile?.display_name || user.email || 'User'} />
-                                    <AvatarFallback>{getAvatarFallback(userProfile?.display_name || user.email)}</AvatarFallback>
-                                </Avatar>
-                            </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent className="w-56" align="end" forceMount>
-                            <DropdownMenuLabel className="font-normal">
-                                <div className="flex flex-col space-y-1">
-                                    <p className="text-sm font-medium leading-none">{userProfile?.display_name || user.email}</p>
-                                    {userProfile?.display_name && <p className="text-xs leading-none text-muted-foreground">{user.email}</p>}
-                                </div>
-                            </DropdownMenuLabel>
-                            <DropdownMenuSeparator />
-                             <DropdownMenuItem asChild>
-                                <Link href="/my-orders">
-                                  <Package className="mr-2 h-4 w-4" />
-                                  <span>My Orders</span>
-                                </Link>
-                            </DropdownMenuItem>
-                            <DropdownMenuItem asChild>
-                                <Link href="/wishlist">
-                                  <Heart className="mr-2 h-4 w-4" />
-                                  <span>Wishlist</span>
-                                </Link>
-                            </DropdownMenuItem>
-                            <DropdownMenuSeparator />
-                            <form action="/auth/signout" method="post">
-                              <DropdownMenuItem asChild>
-                                <button type="submit" className="w-full">
-                                  <LogOut className="mr-2 h-4 w-4" />
-                                  <span>Log out</span>
-                                </button>
-                              </DropdownMenuItem>
-                            </form>
-                            <DropdownMenuSeparator />
-                             <DropdownMenuItem className="text-red-500 focus:bg-red-500/10 focus:text-red-600" asChild>
-                                <Link href="/account/delete">
-                                  <Trash2 className="mr-2 h-4 w-4" />
-                                  <span>Delete Account</span>
-                                </Link>
-                            </DropdownMenuItem>
-                        </DropdownMenuContent>
-                    </DropdownMenu>
+                
+                {!isMounted ? (
+                     <div className="hidden md:flex items-center gap-2">
+                         <Skeleton className="h-9 w-20" />
+                         <Skeleton className="h-9 w-9 rounded-full" />
+                     </div>
                 ) : (
-                    <Button variant="ghost" asChild className="hidden md:flex">
-                       <Link href="/login">Login</Link>
-                    </Button>
+                    <>
+                        {isadmin && (
+                          <div className="hidden items-center md:flex">
+                              <Button variant="ghost" size="sm" asChild>
+                                  <Link href="/admin" className="flex items-center gap-1 text-foreground/60">
+                                      <Shield className="h-4 w-4" />
+                                      Admin
+                                  </Link>
+                              </Button>
+                          </div>
+                        )}
+                        {user ? (
+                             <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                    <Button variant="ghost" className="relative hidden h-9 w-9 rounded-full md:flex">
+                                        <Avatar className="h-9 w-9">
+                                            <AvatarImage src={getGravatarUrl(user.email)} alt={userProfile?.display_name || user.email || 'User'} />
+                                            <AvatarFallback>{getAvatarFallback(userProfile?.display_name || user.email)}</AvatarFallback>
+                                        </Avatar>
+                                    </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent className="w-56" align="end" forceMount>
+                                    <DropdownMenuLabel className="font-normal">
+                                        <div className="flex flex-col space-y-1">
+                                            <p className="text-sm font-medium leading-none">{userProfile?.display_name || user.email}</p>
+                                            {userProfile?.display_name && <p className="text-xs leading-none text-muted-foreground">{user.email}</p>}
+                                        </div>
+                                    </DropdownMenuLabel>
+                                    <DropdownMenuSeparator />
+                                     <DropdownMenuItem asChild>
+                                        <Link href="/my-orders">
+                                          <Package className="mr-2 h-4 w-4" />
+                                          <span>My Orders</span>
+                                        </Link>
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem asChild>
+                                        <Link href="/wishlist">
+                                          <Heart className="mr-2 h-4 w-4" />
+                                          <span>Wishlist</span>
+                                        </Link>
+                                    </DropdownMenuItem>
+                                    <DropdownMenuSeparator />
+                                    <form action="/auth/signout" method="post">
+                                      <DropdownMenuItem asChild>
+                                        <button type="submit" className="w-full">
+                                          <LogOut className="mr-2 h-4 w-4" />
+                                          <span>Log out</span>
+                                        </button>
+                                      </DropdownMenuItem>
+                                    </form>
+                                    <DropdownMenuSeparator />
+                                     <DropdownMenuItem className="text-red-500 focus:bg-red-500/10 focus:text-red-600" asChild>
+                                        <Link href="/account/delete">
+                                          <Trash2 className="mr-2 h-4 w-4" />
+                                          <span>Delete Account</span>
+                                        </Link>
+                                    </DropdownMenuItem>
+                                </DropdownMenuContent>
+                            </DropdownMenu>
+                        ) : (
+                            <Button variant="ghost" asChild className="hidden md:flex">
+                               <Link href="/login">Login</Link>
+                            </Button>
+                        )}
+                    </>
                 )}
             </div>
         </div>
