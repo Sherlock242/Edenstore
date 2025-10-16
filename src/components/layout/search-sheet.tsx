@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useDebounce } from 'use-debounce';
-import { Search, Loader2, X } from "lucide-react";
+import { Search, Loader2 } from "lucide-react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { type SearchProduct } from "@/app/actions";
 import { getProductsForSearchClient } from "@/app/server-actions";
-import { Sheet, SheetContent, SheetTrigger, SheetClose } from "../ui/sheet";
+import { Sheet, SheetContent, SheetTrigger } from "../ui/sheet";
 
 export function SearchSheet() {
     const [isSearchOpen, setIsSearchOpen] = useState(false);
@@ -75,7 +75,7 @@ export function SearchSheet() {
                 </Button>
             </SheetTrigger>
             <SheetContent side="top" className="p-0 bg-black/80 backdrop-blur-sm border-0">
-                <div className="container mx-auto">
+                <div className="w-full">
                     <div className="flex items-center gap-4 p-4">
                          <form onSubmit={handleSearchSubmit} className="flex-grow relative">
                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-white" />
