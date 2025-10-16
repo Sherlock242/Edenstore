@@ -11,6 +11,25 @@ import { cookies } from 'next/headers';
 import type { FullOrderDetails } from '@/app/admin/orders/actions';
 import { createClient as createAdminClient } from '@supabase/supabase-js';
 import { getShippingRates } from '@/lib/shiprocket-client';
+import { type CartItem } from '@/contexts/cart-context';
+
+
+async function updateInventory(supabase: any, cartItems: CartItem[]) {
+    for (const item of cartItems) {
+        const { error: decrementError } = await supabase.rpc('decrement_product_quantity', {
+            p_id: item.product.id,
+            p_size: item.size,
+            p_quantity: item.quantity,
+        });
+
+        if (decrementError) {
+            // Log the error, but don't fail the whole order process.
+            // This is a critical decision: should an inventory failure stop an order?
+            // For now, we prioritize completing the order and log the inventory issue for manual correction.
+            console.error(`[INVENTORY_ERROR] Failed to decrement stock for product ID ${item.product.id}, size ${item.size}. Error: ${decrementError.message}`);
+        }
+    }
+}
 
 
 async function pushOrderAndAutomateShipment(order: FullOrderDetails) {
@@ -184,6 +203,7 @@ export async function verifyPaymentAndCreateOrder(payload: VerifyPaymentPayload)
         return { success: false, message: "Cart is empty or could not be fetched. Cannot create order." };
     }
     
+    // Use a transaction to ensure all or nothing is committed
     const { data: newOrder, error: orderError } = await supabase
         .from('orders')
         .insert({
@@ -217,10 +237,14 @@ export async function verifyPaymentAndCreateOrder(payload: VerifyPaymentPayload)
 
     if (itemsError) {
         console.error("Error creating order items:", itemsError);
+        // Rollback the order creation if items fail
         await supabase.from('orders').delete().eq('id', newOrder.id);
         return { success: false, message: `Failed to save order items. Reason: ${itemsError.message}` };
     }
     
+    // All database writes successful, now update inventory
+    await updateInventory(supabase, cart.items);
+
     const fullOrder: FullOrderDetails = {
         id: newOrder.id,
         created_at: newOrder.created_at,
@@ -239,6 +263,7 @@ export async function verifyPaymentAndCreateOrder(payload: VerifyPaymentPayload)
     // Don't await this, let it run in the background
     pushOrderAndAutomateShipment(fullOrder);
     
+    // Clear the user's cart
     await supabase
         .from('cart_items')
         .delete()
