@@ -1,4 +1,3 @@
-
 // src/app/checkout/actions.ts
 'use server';
 
@@ -6,15 +5,13 @@ import Razorpay from 'razorpay';
 import crypto from 'crypto';
 import { createClient } from '@/lib/supabase/server';
 import { getCartItems } from '../cart/actions';
-import { assignCourierAndGenerateAwb, getShippingRates, pushOrderToShiprocket, generateLabel } from '@/lib/shiprocket-client';
+import { assignCourierAndGenerateAwb, pushOrderToShiprocket, generateLabel } from '@/lib/shiprocket-client';
 import { randomBytes } from 'crypto';
 import { cookies } from 'next/headers';
 import type { FullOrderDetails } from '@/app/admin/orders/actions';
 import { createClient as createAdminClient } from '@supabase/supabase-js';
+import { fetchShippingRates } from '@/lib/shiprocket-client';
 
-
-// This function is defined in checkout/page.tsx, but we need it here as well.
-const GST_RATE = 0.05;
 
 async function pushOrderAndAutomateShipment(order: FullOrderDetails) {
     const supabaseAdmin = createAdminClient(
@@ -98,7 +95,7 @@ export async function fetchShippingRatesAction(pincode: string, paymentMethod: '
     const totalWeight = cart.items.reduce((acc, item) => acc + (item.product.weight * item.quantity), 0);
     const subTotal = cart.items.reduce((acc, item) => acc + (item.product.price * item.quantity), 0);
     
-    const result = await getShippingRates({
+    const result = await fetchShippingRates({
         pickup_postcode: pickupPostcode,
         delivery_postcode: pincode,
         weight: totalWeight > 0 ? totalWeight : 0.1, // Ensure weight is not zero
@@ -156,10 +153,9 @@ type VerifyPaymentPayload = {
     shippingAddress: any;
     totalAmount: number;
     shippingCost: number;
-    gstAmount: number;
 }
 export async function verifyPaymentAndCreateOrder(payload: VerifyPaymentPayload): Promise<{success: boolean; message: string; shipmentId?: number}> {
-    const { razorpay_order_id, razorpay_payment_id, razorpay_signature, shippingAddress, totalAmount, shippingCost, gstAmount } = payload;
+    const { razorpay_order_id, razorpay_payment_id, razorpay_signature, shippingAddress, totalAmount, shippingCost } = payload;
     const key_secret = process.env.RAZORPAY_KEY_SECRET!;
 
     const body = razorpay_order_id + "|" + razorpay_payment_id;
@@ -199,7 +195,7 @@ export async function verifyPaymentAndCreateOrder(payload: VerifyPaymentPayload)
             payment_method: 'Prepaid',
             total_amount: totalAmount,
             shipping_cost: shippingCost,
-            gst_amount: gstAmount,
+            gst_amount: 0,
         })
         .select()
         .single();
@@ -250,90 +246,4 @@ export async function verifyPaymentAndCreateOrder(payload: VerifyPaymentPayload)
         .eq('user_id', user.id);
     
     return { success: true, message: "Payment verified and order created successfully." };
-}
-
-
-type CreateCodOrderPayload = {
-    shippingAddress: any;
-    totalAmount: number;
-    shippingCost: number;
-    gstAmount: number;
-}
-export async function createCodOrder(payload: CreateCodOrderPayload): Promise<{success: boolean; message: string; shipmentId?: number}> {
-    const { shippingAddress, totalAmount, shippingCost, gstAmount } = payload;
-    const cookieStore = cookies();
-    const supabase = createClient(cookieStore);
-    
-    const { data: { user } } = await supabase.auth.getUser();
-
-    if (!user) {
-        return { success: false, message: "User not authenticated. Cannot create order." };
-    }
-    const { data: userProfile } = await supabase.from('users').select('display_name, email').eq('id', user.id).single();
-
-    const cart = await getCartItems();
-    if (!cart.success || !cart.items || cart.items.length === 0) {
-        return { success: false, message: "Cart is empty or could not be fetched." };
-    }
-    
-    const codOrderId = `cod_${randomBytes(6).toString('hex')}`;
-
-    const { data: newOrder, error: orderError } = await supabase
-        .from('orders')
-        .insert({
-            user_id: user.id,
-            status: 'pending-shipment',
-            shipping_address: JSON.stringify(shippingAddress),
-            razorpay_order_id: codOrderId,
-            payment_method: 'COD',
-            total_amount: totalAmount,
-            shipping_cost: shippingCost,
-            gst_amount: gstAmount,
-        })
-        .select()
-        .single();
-    
-    if (orderError || !newOrder) {
-        console.error("Error creating COD order:", orderError);
-        return { success: false, message: `Failed to save order. Reason: ${orderError?.message || 'Unknown'}` };
-    }
-
-    const orderItemsToInsert = cart.items.map(item => ({
-        order_id: newOrder.id,
-        product_id: item.product.id,
-        quantity: item.quantity,
-        price_at_purchase: item.product.price,
-        size: item.size,
-        color: item.color,
-    }));
-
-    const { error: itemsError } = await supabase.from('order_items').insert(orderItemsToInsert);
-
-    if (itemsError) {
-        console.error("Error creating COD order items:", itemsError);
-        await supabase.from('orders').delete().eq('id', newOrder.id);
-        return { success: false, message: `Failed to save order items. Reason: ${itemsError.message}` };
-    }
-    
-     const fullOrder: FullOrderDetails = {
-        id: newOrder.id,
-        created_at: newOrder.created_at,
-        status: 'pending-shipment',
-        shipping_address: newOrder.shipping_address,
-        razorpay_order_id: newOrder.razorpay_order_id,
-        shipment_id: null,
-        shiprocket_order_id: null,
-        payment_method: 'COD',
-        awb_code: null,
-        total_amount: newOrder.total_amount,
-        items: cart.items.map(ci => ({...ci, product_id: ci.product.id, price_at_purchase: ci.product.price})),
-        user: { display_name: userProfile?.display_name || '', email: userProfile?.email || '' }
-    };
-    
-    // Don't await this, let it run in the background
-    pushOrderAndAutomateShipment(fullOrder);
-
-    await supabase.from('cart_items').delete().eq('user_id', user.id);
-
-    return { success: true, message: "COD Order created successfully." };
 }

@@ -10,17 +10,13 @@ import { Separator } from '@/components/ui/separator';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import Script from 'next/script';
 import { useState, useEffect, useTransition } from 'react';
-import { createRazorpayOrder, verifyPaymentAndCreateOrder, fetchShippingRatesAction, createCodOrder } from './actions';
+import { createRazorpayOrder, verifyPaymentAndCreateOrder, fetchShippingRatesAction } from './actions';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
-import { Loader2, CreditCard, Truck } from 'lucide-react';
+import { Loader2, CreditCard } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import type { User } from '@supabase/supabase-js';
 import { getSiteNameClient } from '@/app/server-actions';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { cn } from '@/lib/utils';
-
-const GST_RATE = 0.05; // 5% GST
 
 export default function CheckoutPage() {
   const { state, dispatch } = useCart();
@@ -30,7 +26,6 @@ export default function CheckoutPage() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [siteName, setSiteName] = useState('ANISTORE');
   
-  const [paymentMethod, setPaymentMethod] = useState<'online' | 'cod'>('online');
   // State for shipping information
   const [email, setEmail] = useState('');
   const [firstName, setFirstName] = useState('');
@@ -69,7 +64,7 @@ export default function CheckoutPage() {
     if (pincode && pincode.length === 6) {
         const handler = setTimeout(() => {
             startFetchingRateTransition(async () => {
-                const result = await fetchShippingRatesAction(pincode, paymentMethod);
+                const result = await fetchShippingRatesAction(pincode, 'online');
                 if (result.success && result.rate !== undefined) {
                     setShippingCost(result.rate);
                     setRateError(null);
@@ -84,7 +79,7 @@ export default function CheckoutPage() {
             clearTimeout(handler);
         };
     }
-  }, [pincode, paymentMethod]);
+  }, [pincode]);
 
 
   const subtotal = state.items.reduce(
@@ -92,8 +87,7 @@ export default function CheckoutPage() {
     0
   );
   
-  const gstAmount = subtotal * GST_RATE;
-  const total = subtotal + gstAmount + (shippingCost || 0);
+  const total = subtotal + (shippingCost || 0);
 
   const validateForm = () => {
     if (!firstName || !address || !city || !country || !phone || !email || !pincode || !stateName) {
@@ -143,85 +137,60 @@ export default function CheckoutPage() {
     
     const finalShippingCost = shippingCost || 0;
 
-    if (paymentMethod === 'cod') {
-        const codResult = await createCodOrder({ 
-            shippingAddress,
-            totalAmount: total,
-            shippingCost: finalShippingCost,
-            gstAmount,
-        });
-        if (codResult.success) {
-            toast({
-                title: 'Order Placed!',
-                description: 'Your order has been successfully placed.',
-            });
-            dispatch({ type: 'SET_ITEMS', payload: [] });
-            router.push('/my-orders');
-        } else {
-            toast({
-                variant: 'destructive',
-                title: 'Order Failed',
-                description: codResult.message,
-            });
-        }
-    } else {
-        // Handle Online Payment
-        const keyId = process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID;
-        if (!keyId) {
-            toast({ variant: 'destructive', title: 'Configuration Error', description: 'Razorpay Key ID is not set.' });
-            setIsProcessing(false);
-            return;
-        }
-
-        const orderDetails = await createRazorpayOrder({ amount: total });
-        if (!orderDetails.success || !orderDetails.order) {
-            toast({ variant: 'destructive', title: 'Error', description: orderDetails.message });
-            setIsProcessing(false);
-            return;
-        }
-        
-        const { order } = orderDetails;
-
-        const options = {
-            key: keyId,
-            amount: order.amount,
-            currency: order.currency,
-            name: siteName,
-            description: 'T-Shirt Purchase',
-            order_id: order.id,
-            handler: async function (response: any) {
-                 const verificationResult = await verifyPaymentAndCreateOrder({
-                    razorpay_order_id: response.razorpay_order_id,
-                    razorpay_payment_id: response.razorpay_payment_id,
-                    razorpay_signature: response.razorpay_signature,
-                    shippingAddress: shippingAddress,
-                    totalAmount: total,
-                    shippingCost: finalShippingCost,
-                    gstAmount,
-                 });
-
-                if (verificationResult.success) {
-                    toast({ title: 'Payment Successful!', description: 'Your order has been placed.' });
-                    dispatch({ type: 'SET_ITEMS', payload: [] });
-                    router.push('/my-orders');
-                } else {
-                     toast({ variant: 'destructive', title: 'Order Failed', description: verificationResult.message });
-                }
-            },
-            prefill: {
-                name: `${firstName} ${lastName}`,
-                email: email,
-                contact: phone,
-            },
-            theme: { color: '#DC2626' },
-        };
-
-        const rzp = new (window as any).Razorpay(options);
-        rzp.on('payment.failed', function (response: any) {
-            toast({ variant: 'destructive', title: 'Payment Failed', description: response.error.description });
-        });
-        rzp.open();
+    const keyId = process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID;
+    if (!keyId) {
+        toast({ variant: 'destructive', title: 'Configuration Error', description: 'Razorpay Key ID is not set.' });
+        setIsProcessing(false);
+        return;
     }
+
+    const orderDetails = await createRazorpayOrder({ amount: total });
+    if (!orderDetails.success || !orderDetails.order) {
+        toast({ variant: 'destructive', title: 'Error', description: orderDetails.message });
+        setIsProcessing(false);
+        return;
+    }
+    
+    const { order } = orderDetails;
+
+    const options = {
+        key: keyId,
+        amount: order.amount,
+        currency: order.currency,
+        name: siteName,
+        description: 'T-Shirt Purchase',
+        order_id: order.id,
+        handler: async function (response: any) {
+             const verificationResult = await verifyPaymentAndCreateOrder({
+                razorpay_order_id: response.razorpay_order_id,
+                razorpay_payment_id: response.razorpay_payment_id,
+                razorpay_signature: response.razorpay_signature,
+                shippingAddress: shippingAddress,
+                totalAmount: total,
+                shippingCost: finalShippingCost,
+             });
+
+            if (verificationResult.success) {
+                toast({ title: 'Payment Successful!', description: 'Your order has been placed.' });
+                dispatch({ type: 'SET_ITEMS', payload: [] });
+                router.push('/my-orders');
+            } else {
+                 toast({ variant: 'destructive', title: 'Order Failed', description: verificationResult.message });
+            }
+        },
+        prefill: {
+            name: `${firstName} ${lastName}`,
+            email: email,
+            contact: phone,
+        },
+        theme: { color: '#DC2626' },
+    };
+
+    const rzp = new (window as any).Razorpay(options);
+    rzp.on('payment.failed', function (response: any) {
+        toast({ variant: 'destructive', title: 'Payment Failed', description: response.error.description });
+    });
+    rzp.open();
     
     setIsProcessing(false);
   };
@@ -296,22 +265,13 @@ export default function CheckoutPage() {
                     <CardTitle>Payment Method</CardTitle>
                 </CardHeader>
                 <CardContent>
-                    <RadioGroup defaultValue="online" value={paymentMethod} onValueChange={(val) => setPaymentMethod(val as 'online' | 'cod')}>
-                        <Label htmlFor='payment-online' className={cn("flex items-start gap-4 rounded-lg border p-4 transition", paymentMethod === 'online' && "border-primary")}>
-                            <RadioGroupItem value='online' id='payment-online' className="mt-1"/>
-                            <div>
-                                <h3 className="font-semibold flex items-center gap-2"><CreditCard className="h-4 w-4"/> Pay Online</h3>
-                                <p className="text-sm text-muted-foreground">Use Razorpay for a secure payment with card, UPI, or net banking.</p>
-                            </div>
-                        </Label>
-                        <Label htmlFor='payment-cod' className={cn("flex items-start gap-4 rounded-lg border p-4 transition", paymentMethod === 'cod' && "border-primary")}>
-                            <RadioGroupItem value='cod' id='payment-cod' className="mt-1"/>
-                            <div>
-                                <h3 className="font-semibold flex items-center gap-2"><Truck className="h-4 w-4"/> Cash on Delivery</h3>
-                                <p className="text-sm text-muted-foreground">Pay in cash when your order is delivered. Additional fees may apply.</p>
-                            </div>
-                        </Label>
-                    </RadioGroup>
+                    <div className="flex items-start gap-4 rounded-lg border p-4 transition border-primary">
+                        <CreditCard className="h-6 w-6 mt-1"/>
+                        <div>
+                            <h3 className="font-semibold">Pay Online</h3>
+                            <p className="text-sm text-muted-foreground">Use Razorpay for a secure payment with card, UPI, or net banking.</p>
+                        </div>
+                    </div>
                 </CardContent>
             </Card>
 
@@ -358,10 +318,6 @@ export default function CheckoutPage() {
                   <div className="flex justify-between">
                     <span>Subtotal</span>
                     <span>₹{subtotal.toFixed(2)}</span>
-                  </div>
-                   <div className="flex justify-between">
-                    <span>GST (5%)</span>
-                    <span>₹{gstAmount.toFixed(2)}</span>
                   </div>
                   <div className="flex justify-between">
                     <span>Shipping</span>
