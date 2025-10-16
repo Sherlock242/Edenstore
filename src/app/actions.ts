@@ -268,13 +268,11 @@ export async function updateProduct(cookieStore: ReadonlyRequestCookies, data: U
         const oldImagePaths = oldImages.map(img => {
             try {
                 const url = new URL(img.url);
-                // Robustly find the path after 'product-images/'
                 const pathStartIndex = url.pathname.indexOf('product-images/');
                 if (pathStartIndex === -1) {
                   console.error(`Invalid URL format, 'product-images/' not found: ${img.url}`);
                   return null;
                 }
-                // The path we need is everything after the bucket name itself.
                 return url.pathname.substring(pathStartIndex);
             } catch (e) {
                 console.error(`Invalid URL for old image, cannot extract path: ${img.url}`);
@@ -289,7 +287,6 @@ export async function updateProduct(cookieStore: ReadonlyRequestCookies, data: U
               
           if (storageError) {
               console.error('Error deleting old product images from storage:', storageError);
-              // Don't fail the operation, but log the error.
           }
         }
     }
@@ -409,7 +406,8 @@ export async function updateProduct(cookieStore: ReadonlyRequestCookies, data: U
 
 export async function deleteProduct(cookieStore: ReadonlyRequestCookies, productId: string): Promise<ServerResponse> {
   const supabase = createClient(cookieStore);
-  // First, fetch the product to get the image URLs for deletion from storage
+
+  // 1. Fetch image URLs for deletion from storage
   const { data: productData, error: fetchError } = await supabase
     .from('products')
     .select('id, product_images(url)')
@@ -421,18 +419,27 @@ export async function deleteProduct(cookieStore: ReadonlyRequestCookies, product
     return { success: false, message: 'Could not find the product to delete.' };
   }
 
-  // Delete images from Supabase Storage
+  // 2. Manually delete all related records that have a foreign key to the product
+  // The order matters: delete from tables that depend on the product first.
+
+  // Delete from reviews
+  await supabase.from('reviews').delete().eq('product_id', productId);
+  // Delete from cart_items
+  await supabase.from('cart_items').delete().eq('product_id', productId);
+  // Delete from order_items
+  await supabase.from('order_items').delete().eq('product_id', productId);
+
+  // Delete from junction tables for M-N relationships
+  await supabase.from('product_colors').delete().eq('product_id', productId);
+  await supabase.from('product_sizes').delete().eq('product_id', productId);
+
+  // 3. Delete images from Supabase Storage
   if (productData.product_images && productData.product_images.length > 0) {
       const imagePaths = productData.product_images.map(img => {
         try {
             const url = new URL(img.url);
-            // Robustly find the path after 'product-images/'
             const pathStartIndex = url.pathname.indexOf('product-images/');
-            if (pathStartIndex === -1) {
-              console.error(`Invalid URL format, 'product-images/' not found: ${img.url}`);
-              return null;
-            }
-            // The path we need is everything after the bucket name itself.
+            if (pathStartIndex === -1) return null;
             return url.pathname.substring(pathStartIndex);
         } catch (e) {
             console.error(`Invalid URL, cannot extract path: ${img.url}`);
@@ -451,9 +458,11 @@ export async function deleteProduct(cookieStore: ReadonlyRequestCookies, product
         }
       }
   }
+  
+  // Now, delete from product_images (after storage deletion attempt)
+  await supabase.from('product_images').delete().eq('product_id', productId);
 
-  // Delete the product from the 'products' table.
-  // Cascading delete should handle related tables (images, sizes, colors)
+  // 4. Finally, delete the product itself from the 'products' table.
   const { error: deleteError } = await supabase
     .from('products')
     .delete()
@@ -464,6 +473,7 @@ export async function deleteProduct(cookieStore: ReadonlyRequestCookies, product
     return { success: false, message: 'Failed to delete product.', error: { message: deleteError.message } };
   }
 
+  // 5. Revalidate paths
   revalidatePath('/admin/add-product');
   revalidatePath('/products');
   revalidatePath('/');
@@ -497,9 +507,3 @@ export async function deleteUserAccount(cookieStore: ReadonlyRequestCookies): Pr
 
     return { success: true, message: 'Account deleted successfully.' };
 }
-
-    
-
-    
-
-    
