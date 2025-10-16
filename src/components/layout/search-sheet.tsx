@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { type SearchProduct } from "@/app/actions";
 import { getProductsForSearchClient } from "@/app/server-actions";
-import { Sheet, SheetContent, SheetTrigger } from "../ui/sheet";
+import { Sheet, SheetContent, SheetTrigger, SheetClose } from "../ui/sheet";
 
 export function SearchSheet() {
     const [isSearchOpen, setIsSearchOpen] = useState(false);
@@ -30,11 +30,11 @@ export function SearchSheet() {
         }
     }
 
-    const closeAndResetSearch = () => {
+    const closeAndResetSearch = useCallback(() => {
         setIsSearchOpen(false);
         setSearchQuery('');
         setSuggestions([]);
-    }
+    }, []);
     
     const handleSuggestionClick = (productId: string) => {
         router.push(`/products/${productId}`);
@@ -74,22 +74,24 @@ export function SearchSheet() {
                     <span className="sr-only">Search</span>
                 </Button>
             </SheetTrigger>
-            <SheetContent side="top" className="p-0 bg-black/80 backdrop-blur-sm border-0">
+            <SheetContent side="top" hideCloseButton={true} className="p-0 bg-black/80 backdrop-blur-sm border-0">
                 <div className="container mx-auto max-w-7xl">
                     <div className="flex items-center gap-4 p-4">
                          <form onSubmit={handleSearchSubmit} className="flex-grow relative">
                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-white" />
                             <Input 
                                 placeholder="Search" 
-                                className="pl-10 h-10 bg-transparent border-white text-white placeholder:text-neutral-300 rounded-none focus-visible:ring-0 focus-visible:ring-offset-0"
+                                className="pl-10 h-10 bg-transparent border-white text-white placeholder:text-neutral-300 rounded-none focus-visible:ring-0"
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
                             />
                         </form>
-                         <Button variant="ghost" size="icon" onClick={closeAndResetSearch} className="text-white hover:bg-neutral-700 hover:text-white">
-                            <X className="h-6 w-6" />
-                            <span className="sr-only">Close search</span>
-                        </Button>
+                         <SheetClose asChild>
+                             <Button variant="ghost" size="icon" className="text-white hover:bg-neutral-700 hover:text-white">
+                                <X className="h-6 w-6" />
+                                <span className="sr-only">Close search</span>
+                            </Button>
+                        </SheetClose>
                     </div>
                     {searchQuery && (
                         <div className="bg-black text-white">
