@@ -268,9 +268,14 @@ export async function updateProduct(cookieStore: ReadonlyRequestCookies, data: U
         const oldImagePaths = oldImages.map(img => {
             try {
                 const url = new URL(img.url);
-                // Correctly extract the path from the URL, which is everything after the bucket name
-                const pathParts = url.pathname.split('/product-images/');
-                return pathParts[pathParts.length - 1];
+                // Robustly find the path after 'product-images/'
+                const pathStartIndex = url.pathname.indexOf('product-images/');
+                if (pathStartIndex === -1) {
+                  console.error(`Invalid URL format, 'product-images/' not found: ${img.url}`);
+                  return null;
+                }
+                // The path we need is everything after the bucket name itself.
+                return url.pathname.substring(pathStartIndex);
             } catch (e) {
                 console.error(`Invalid URL for old image, cannot extract path: ${img.url}`);
                 return null;
@@ -421,9 +426,14 @@ export async function deleteProduct(cookieStore: ReadonlyRequestCookies, product
       const imagePaths = productData.product_images.map(img => {
         try {
             const url = new URL(img.url);
-            // Correctly extract the path from the URL, which is everything after the bucket name
-            const pathParts = url.pathname.split('/product-images/');
-            return pathParts[pathParts.length - 1];
+            // Robustly find the path after 'product-images/'
+            const pathStartIndex = url.pathname.indexOf('product-images/');
+            if (pathStartIndex === -1) {
+              console.error(`Invalid URL format, 'product-images/' not found: ${img.url}`);
+              return null;
+            }
+            // The path we need is everything after the bucket name itself.
+            return url.pathname.substring(pathStartIndex);
         } catch (e) {
             console.error(`Invalid URL, cannot extract path: ${img.url}`);
             return null;
@@ -487,6 +497,8 @@ export async function deleteUserAccount(cookieStore: ReadonlyRequestCookies): Pr
 
     return { success: true, message: 'Account deleted successfully.' };
 }
+
+    
 
     
 
