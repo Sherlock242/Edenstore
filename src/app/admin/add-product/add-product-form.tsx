@@ -63,9 +63,9 @@ export function AddProductForm({ productToEdit, onProductAddedOrUpdated }: AddPr
       id: '',
       name: '',
       description: '',
-      price: undefined,
+      price: 0,
       category: '',
-      weight: undefined,
+      weight: 0,
       sizes: [{ size: 'S', quantity: 10 }],
       images: [],
     },
@@ -101,9 +101,9 @@ export function AddProductForm({ productToEdit, onProductAddedOrUpdated }: AddPr
             id: '',
             name: '',
             description: '',
-            price: undefined,
+            price: 0,
             category: '',
-            weight: undefined,
+            weight: 0,
             sizes: [{size: 'S', quantity: 10}, {size: 'M', quantity: 10}],
             images: [{ hint: '' }],
           });
@@ -198,7 +198,7 @@ export function AddProductForm({ productToEdit, onProductAddedOrUpdated }: AddPr
                 <FormItem>
                 <FormLabel>Price</FormLabel>
                 <FormControl>
-                    <Input type="number" step="0.01" placeholder="29.99" {...field} onChange={e => field.onChange(e.target.value === '' ? undefined : e.target.valueAsNumber)} value={field.value ?? ''} />
+                    <Input type="number" step="0.01" placeholder="29.99" {...field} onChange={e => field.onChange(e.target.valueAsNumber || 0)} value={field.value ?? ''} />
                 </FormControl>
                 <FormMessage />
                 </FormItem>
@@ -211,7 +211,7 @@ export function AddProductForm({ productToEdit, onProductAddedOrUpdated }: AddPr
                 <FormItem>
                 <FormLabel>Weight (kg)</FormLabel>
                 <FormControl>
-                    <Input type="number" step="0.1" placeholder="0.5" {...field} onChange={e => field.onChange(e.target.value === '' ? undefined : e.target.valueAsNumber)} value={field.value ?? ''} />
+                    <Input type="number" step="0.1" placeholder="0.5" {...field} onChange={e => field.onChange(e.target.valueAsNumber || 0)} value={field.value ?? ''} />
                 </FormControl>
                 <FormMessage />
                 </FormItem>
@@ -257,7 +257,7 @@ export function AddProductForm({ productToEdit, onProductAddedOrUpdated }: AddPr
                             render={({ field }) => (
                                 <FormItem className="w-28">
                                     <FormControl>
-                                        <Input type="number" placeholder="Qty" {...field} onChange={e => field.onChange(e.target.value === '' ? undefined : e.target.valueAsNumber)} value={field.value ?? ''} />
+                                        <Input type="number" placeholder="Qty" {...field} onChange={e => field.onChange(e.target.valueAsNumber || 0)} value={field.value ?? ''} />
                                     </FormControl>
                                     <FormMessage />
                                 </FormItem>

@@ -64,7 +64,7 @@ export default function CheckoutPage() {
     if (pincode && pincode.length === 6) {
         const handler = setTimeout(() => {
             startFetchingRateTransition(async () => {
-                const result = await fetchShippingRatesAction(pincode, 'online');
+                const result = await fetchShippingRatesAction(pincode);
                 if (result.success && result.rate !== undefined) {
                     setShippingCost(result.rate);
                     setRateError(null);

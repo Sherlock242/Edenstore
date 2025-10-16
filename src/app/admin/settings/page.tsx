@@ -67,7 +67,12 @@ export default function SiteSettingsPage() {
   const [isDisplaySubmitting, setIsDisplaySubmitting] = useState(false);
 
   const heroImageForm = useForm<z.infer<typeof heroImageSchema>>({ resolver: zodResolver(heroImageSchema) });
-  const siteNameForm = useForm<z.infer<typeof siteNameSchema>>({ resolver: zodResolver(siteNameSchema) });
+  const siteNameForm = useForm<z.infer<typeof siteNameSchema>>({ 
+      resolver: zodResolver(siteNameSchema),
+      defaultValues: {
+          siteName: ''
+      }
+  });
   const siteLogoForm = useForm<z.infer<typeof siteLogoSchema>>({ resolver: zodResolver(siteLogoSchema) });
   const headerDisplayForm = useForm<z.infer<typeof headerDisplaySchema>>({ resolver: zodResolver(headerDisplaySchema) });
   
@@ -172,7 +177,7 @@ export default function SiteSettingsPage() {
                                     {logoPreview ? (
                                         <Image src={logoPreview} alt="Logo preview" width={120} height={120} className="h-full w-full object-contain p-4"/>
                                     ) : (
-                                        <div className="flex flex-col items-center justify-center pb-6 pt-5"> <Upload className="mb-4 h-8 w-8 text-muted-foreground" /> <p className="text-xs text-muted-foreground">Click or drag to upload</p> </div>
+                                        <div className="flex flex-col items-center justify-center pb-6 pt-5"> <Upload className="mb-4 h-8 w-8 text-muted-foreground" /> <p className="text-xs text-muted-foreground">Click or drag to upload</p> d`iv>
                                     )}
                                     <Input
                                         id="logo-upload" type="file" className="hidden" accept="image/png, image/jpeg, image/webp, image/svg+xml"
