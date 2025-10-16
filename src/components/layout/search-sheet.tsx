@@ -81,7 +81,7 @@ export function SearchSheet() {
                             <Search className="absolute left-3 h-5 w-5 text-white" />
                             <Input 
                                 placeholder="Search" 
-                                className="pl-10 bg-transparent border-white text-white placeholder:text-white rounded-none"
+                                className="pl-10 bg-transparent border-white text-white placeholder:text-white rounded-none focus-visible:ring-white"
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
                             />
