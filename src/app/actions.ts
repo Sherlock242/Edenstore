@@ -267,10 +267,10 @@ export async function updateProduct(cookieStore: ReadonlyRequestCookies, data: U
     if (oldImages && oldImages.length > 0) {
         const oldImagePaths = oldImages.map(img => {
             try {
-                // Correctly extract the path from the URL
                 const url = new URL(img.url);
+                // Correctly extract the path from the URL, which is everything after the bucket name
                 const pathParts = url.pathname.split('/product-images/');
-                return `product-images/${pathParts[pathParts.length - 1]}`;
+                return pathParts[pathParts.length - 1];
             } catch (e) {
                 console.error(`Invalid URL for old image, cannot extract path: ${img.url}`);
                 return null;
@@ -280,7 +280,7 @@ export async function updateProduct(cookieStore: ReadonlyRequestCookies, data: U
         if(oldImagePaths.length > 0) {
           const { error: storageError } = await supabase.storage
               .from('product-images')
-              .remove(oldImagePaths.map(p => p.replace('product-images/', '')));
+              .remove(oldImagePaths);
               
           if (storageError) {
               console.error('Error deleting old product images from storage:', storageError);
@@ -421,9 +421,11 @@ export async function deleteProduct(cookieStore: ReadonlyRequestCookies, product
       const imagePaths = productData.product_images.map(img => {
         try {
             const url = new URL(img.url);
+            // Correctly extract the path from the URL, which is everything after the bucket name
             const pathParts = url.pathname.split('/product-images/');
-            return `product-images/${pathParts[pathParts.length - 1]}`;
+            return pathParts[pathParts.length - 1];
         } catch (e) {
+            console.error(`Invalid URL, cannot extract path: ${img.url}`);
             return null;
         }
       }).filter((p): p is string => p !== null);
@@ -431,7 +433,7 @@ export async function deleteProduct(cookieStore: ReadonlyRequestCookies, product
       if(imagePaths.length > 0) {
         const { error: storageError } = await supabase.storage
             .from('product-images')
-            .remove(imagePaths.map(p => p.replace('product-images/', '')));
+            .remove(imagePaths);
 
         if (storageError) {
             console.error('Error deleting product images from storage:', storageError);
@@ -485,5 +487,7 @@ export async function deleteUserAccount(cookieStore: ReadonlyRequestCookies): Pr
 
     return { success: true, message: 'Account deleted successfully.' };
 }
+
+    
 
     
