@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import type { Product } from "@/app/actions";
 import { Button } from "@/components/ui/button";
-import { Heart, ShoppingCart } from "lucide-react";
+import { Heart, ShoppingCart, Share2 } from "lucide-react";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { useCart } from "@/contexts/cart-context";
@@ -62,6 +62,38 @@ export function ProductDetailsClient({ product }: { product: Product }) {
     }
   };
 
+  const handleShare = async () => {
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: product.name,
+          text: `Check out this awesome t-shirt: ${product.name}`,
+          url: window.location.href,
+        });
+        toast({ title: "Shared successfully!" });
+      } catch (error) {
+        console.error("Error sharing:", error);
+        toast({
+          variant: "destructive",
+          title: "Could not share",
+          description: "Something went wrong while trying to share.",
+        });
+      }
+    } else {
+      // Fallback for browsers that don't support Web Share API
+      try {
+        await navigator.clipboard.writeText(window.location.href);
+        toast({ title: "Link Copied!", description: "Product link copied to your clipboard." });
+      } catch (err) {
+         toast({
+          variant: "destructive",
+          title: "Could not copy link",
+          description: "Please copy the link from the address bar.",
+        });
+      }
+    }
+  };
+
   return (
     <div className="flex flex-col gap-6">
       <div>
@@ -114,6 +146,9 @@ export function ProductDetailsClient({ product }: { product: Product }) {
       <div className="flex gap-4">
         <Button size="lg" className="flex-grow bg-accent text-accent-foreground hover:bg-accent/90" onClick={handleAddToCart} disabled={isOutOfStock}>
           {isOutOfStock ? "Out of Stock" : <><ShoppingCart className="mr-2 h-5 w-5" /> Add to Cart</>}
+        </Button>
+        <Button size="icon" variant="outline" className="h-12 w-12" onClick={handleShare}>
+          <Share2 className="h-5 w-5" />
         </Button>
         <Button size="icon" variant="outline" className="h-12 w-12" onClick={handleWishlistToggle}>
           <Heart className={cn("h-5 w-5", inWishlist && "fill-red-500 text-red-500")} />
