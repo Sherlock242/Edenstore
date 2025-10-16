@@ -5,7 +5,7 @@ import './globals.css';
 import { Toaster } from '@/components/ui/toaster';
 import { Header } from '@/components/layout/header';
 import { Footer } from '@/components/layout/footer';
-import { AppProviders } from '@/components/providers';
+import { ClientProviders } from '@/components/client-providers';
 import { getSiteName, getSiteLogoUrl, getHeaderDisplayMode } from './admin/settings/actions';
 import { cookies } from 'next/headers';
 
@@ -52,7 +52,7 @@ export default async function RootLayout({
       <body
         className={`${inter.variable} ${spaceGrotesk.variable} font-body antialiased`}
       >
-        <AppProviders>
+        <ClientProviders>
           <div className="flex min-h-screen flex-col">
             <Header siteName={siteName} logoUrl={logoResult.url} displayMode={displayMode} />
             <main className="flex-grow">
@@ -61,7 +61,7 @@ export default async function RootLayout({
             <Footer siteName={siteName} />
           </div>
           <Toaster />
-        </AppProviders>
+        </ClientProviders>
       </body>
     </html>
   );
