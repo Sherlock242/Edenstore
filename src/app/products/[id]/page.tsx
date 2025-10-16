@@ -1,28 +1,29 @@
 
 
-import { getProducts } from "@/app/actions";
-import Image from "next/image";
+import { getProducts, type Product } from "@/app/actions";
 import { notFound } from "next/navigation";
-import { Badge } from "@/components/ui/badge";
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from "@/components/ui/accordion";
-import { Star } from "lucide-react";
 import { ProductDetailsClient } from "@/components/product-details-client";
 import { ProductCard } from "@/components/product-card";
 import { ProductImageCarousel } from "@/components/product-image-carousel";
 import { cookies } from "next/headers";
 import { createClient as createServerClient } from '@/lib/supabase/server';
 import { createClient } from "@supabase/supabase-js";
+import { getReviewsForProduct } from "@/app/reviews/actions";
+import { ProductReviews } from "@/components/product-reviews";
+import { Suspense } from "react";
+import { Loader2 }m "lucide-react";
+import { AverageRating } from "@/components/average-rating";
 
 export const dynamic = 'force-dynamic';
 
 export default async function ProductPage({ params }: { params: { id: string } }) {
   const cookieStore = cookies();
-  const products = await getProducts(cookieStore);
+  // Fetch product and reviews in parallel
+  const [products, reviewsResult] = await Promise.all([
+    getProducts(cookieStore),
+    getReviewsForProduct(params.id)
+  ]);
+  
   const product = products.find((p) => p.id === params.id);
 
   if (!product) {
@@ -32,6 +33,8 @@ export default async function ProductPage({ params }: { params: { id: string } }
   const relatedProducts = products
     .filter((p) => p.category === product.category && p.id !== product.id)
     .slice(0, 4);
+
+  const { reviews = [], averageRating = 0, totalReviews = 0 } = reviewsResult.success ? reviewsResult : {};
 
   return (
     <div className="container mx-auto max-w-7xl px-4 py-8 md:py-12">
@@ -43,36 +46,24 @@ export default async function ProductPage({ params }: { params: { id: string } }
           <h1 className="font-headline text-3xl font-bold tracking-tighter md:text-4xl">
             {product.name}
           </h1>
-          <div className="flex flex-wrap items-center gap-4">
-            <Badge>{product.category}</Badge>
-            <div className="flex items-center gap-1">
-              {[...Array(5)].map((_, i) => (
-                <Star key={i} className="h-5 w-5 fill-yellow-400 text-yellow-400" />
-              ))}
-              <span className="ml-2 text-sm text-muted-foreground">(123 reviews)</span>
-            </div>
-          </div>
+          
+          <AverageRating averageRating={averageRating} totalReviews={totalReviews} />
+
           <p className="text-3xl font-bold">₹{product.price.toFixed(2)}</p>
+
           <ProductDetailsClient product={product} />
-          <Accordion type="single" collapsible className="w-full">
-            <AccordionItem value="description">
-              <AccordionTrigger>Description</AccordionTrigger>
-              <AccordionContent>{product.description}</AccordionContent>
-            </AccordionItem>
-            <AccordionItem value="details">
-              <AccordionTrigger>Product Details</AccordionTrigger>
-              <AccordionContent>
-                <ul className="list-disc space-y-2 pl-4">
-                  <li>100% premium cotton for ultimate comfort.</li>
-                  <li>High-quality, vibrant print that lasts.</li>
-                  <li>Unisex fit, true to size.</li>
-                  <li>Machine wash cold, tumble dry low.</li>
-                </ul>
-              </AccordionContent>
-            </AccordionItem>
-          </Accordion>
         </div>
       </div>
+
+       <div className="mt-16 md:mt-24">
+         <ProductReviews 
+            productId={product.id}
+            initialReviews={reviews}
+            initialAverageRating={averageRating}
+            initialTotalReviews={totalReviews}
+          />
+      </div>
+
       <div className="mt-16 md:mt-24">
         <h2 className="font-headline text-2xl font-bold tracking-tighter md:text-3xl mb-8">
             You Might Also Like
