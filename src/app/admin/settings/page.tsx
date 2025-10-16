@@ -177,7 +177,7 @@ export default function SiteSettingsPage() {
                                     {logoPreview ? (
                                         <Image src={logoPreview} alt="Logo preview" width={120} height={120} className="h-full w-full object-contain p-4"/>
                                     ) : (
-                                        <div className="flex flex-col items-center justify-center pb-6 pt-5"> <Upload className="mb-4 h-8 w-8 text-muted-foreground" /> <p className="text-xs text-muted-foreground">Click or drag to upload</p> d`iv>
+                                        <div className="flex flex-col items-center justify-center pb-6 pt-5"> <Upload className="mb-4 h-8 w-8 text-muted-foreground" /> <p className="text-xs text-muted-foreground">Click or drag to upload</p> </div>
                                     )}
                                     <Input
                                         id="logo-upload" type="file" className="hidden" accept="image/png, image/jpeg, image/webp, image/svg+xml"
@@ -284,3 +284,4 @@ export default function SiteSettingsPage() {
     </div>
   );
 }
+
