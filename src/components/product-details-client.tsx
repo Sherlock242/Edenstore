@@ -72,6 +72,10 @@ export function ProductDetailsClient({ product }: { product: Product }) {
         });
         toast({ title: "Shared successfully!" });
       } catch (error) {
+        // This is expected if the user cancels the share dialog
+        if ((error as DOMException).name === 'AbortError') {
+          return;
+        }
         console.error("Error sharing:", error);
         toast({
           variant: "destructive",
