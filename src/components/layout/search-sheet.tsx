@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { type SearchProduct } from "@/app/actions";
 import { getProductsForSearchClient } from "@/app/server-actions";
-import { Sheet, SheetContent, SheetTrigger } from "../ui/sheet";
+import { Sheet, SheetContent, SheetTrigger, SheetClose } from "../ui/sheet";
 
 export function SearchSheet() {
     const [isSearchOpen, setIsSearchOpen] = useState(false);
@@ -78,10 +78,10 @@ export function SearchSheet() {
                 <div className="w-full">
                     <div className="flex items-center gap-4 p-4">
                          <form onSubmit={handleSearchSubmit} className="flex-grow relative">
-                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-white" />
+                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-6 w-6 text-white" />
                             <Input 
                                 placeholder="Search" 
-                                className="pl-10 h-10 bg-transparent border-white text-white placeholder:text-neutral-300 focus-visible:ring-0 focus-visible:ring-offset-0"
+                                className="pl-12 h-12 bg-transparent border-0 border-b border-neutral-700 text-white placeholder:text-neutral-300 focus-visible:ring-0 focus-visible:ring-offset-0 text-lg rounded-none"
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
                             />
