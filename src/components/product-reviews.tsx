@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useTransition, useEffect } from 'react';
@@ -27,6 +28,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import { cn } from '@/lib/utils';
 
 type ProductReviewsProps = {
     productId: string;
@@ -234,9 +236,9 @@ export function ProductReviews({ productId, initialReviews, initialAverageRating
                                         <div className="flex-1">
                                             <div className="flex items-center justify-between">
                                                 <p className="font-semibold">{review.display_name}</p>
-                                                <div className="flex items-center gap-1">
+                                                <div className="flex items-center gap-0.5">
                                                     {[...Array(5)].map((_, i) => (
-                                                        <Star key={i} className={`h-4 w-4 ${i < review.rating ? 'text-yellow-400 fill-yellow-400' : 'text-gray-300'}`} />
+                                                        <Star key={i} className={cn("h-4 w-4", i < review.rating ? 'text-yellow-400 fill-yellow-400' : 'text-gray-300')} />
                                                     ))}
                                                 </div>
                                             </div>
