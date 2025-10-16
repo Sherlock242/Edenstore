@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useDebounce } from 'use-debounce';
-import { Search, Loader2 } from "lucide-react";
+import { Search, Loader2, X } from "lucide-react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
@@ -81,7 +81,7 @@ export function SearchSheet() {
                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-white" />
                             <Input 
                                 placeholder="Search" 
-                                className="pl-10 h-10 bg-transparent border-white text-white placeholder:text-neutral-300 focus-visible:ring-0 rounded-none focus-visible:ring-offset-0"
+                                className="pl-10 h-10 bg-transparent border-white text-white placeholder:text-neutral-300 focus-visible:ring-0 focus-visible:ring-offset-0"
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
                             />
