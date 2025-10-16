@@ -74,19 +74,25 @@ export function SearchSheet() {
                     <span className="sr-only">Search</span>
                 </Button>
             </SheetTrigger>
-            <SheetContent side="top" className="p-0 bg-black border-0">
+            <SheetContent side="top" className="p-0 bg-black/80 backdrop-blur-sm border-0">
                 <div className="container mx-auto max-w-7xl">
-                    <form onSubmit={handleSearchSubmit} className="p-4">
-                        <div className="relative flex items-center">
-                            <Search className="absolute left-3 h-5 w-5 text-white" />
-                            <Input 
-                                placeholder="Search" 
-                                className="pl-10 bg-transparent border-white text-white placeholder:text-white rounded-none focus-visible:ring-0 focus-visible:ring-offset-0"
-                                value={searchQuery}
-                                onChange={(e) => setSearchQuery(e.target.value)}
-                            />
-                        </div>
-                    </form>
+                    <div className="flex items-center gap-4 p-4">
+                        <form onSubmit={handleSearchSubmit} className="flex-grow">
+                            <div className="relative flex items-center">
+                                <Search className="absolute left-3 h-5 w-5 text-white" />
+                                <Input 
+                                    placeholder="Search" 
+                                    className="pl-10 h-10 bg-transparent border-white text-white placeholder:text-neutral-300 rounded-none focus-visible:ring-0 focus-visible:ring-offset-0"
+                                    value={searchQuery}
+                                    onChange={(e) => setSearchQuery(e.target.value)}
+                                />
+                            </div>
+                        </form>
+                         <Button variant="ghost" size="icon" onClick={closeAndResetSearch} className="text-white hover:bg-neutral-700 hover:text-white">
+                            <X className="h-6 w-6" />
+                            <span className="sr-only">Close search</span>
+                        </Button>
+                    </div>
                     {searchQuery && (
                         <div className="bg-black text-white">
                             <ScrollArea className="max-h-[50vh]">
