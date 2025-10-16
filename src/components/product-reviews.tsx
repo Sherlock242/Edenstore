@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useTransition } from 'react';
+import { useState, useTransition, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -10,13 +10,23 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { Star, Send } from 'lucide-react';
-import { addReview, type Review } from '@/app/reviews/actions';
+import { Star, Send, Edit, Trash2 } from 'lucide-react';
+import { addReview, updateReview, deleteReview, type Review } from '@/app/reviews/actions';
 import { reviewSchema } from '@/lib/zod-schemas';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
-import { Separator } from './ui/separator';
 import { AverageRating } from './average-rating';
+import { useUser } from '@/hooks/use-user';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
 type ProductReviewsProps = {
     productId: string;
@@ -27,10 +37,18 @@ type ProductReviewsProps = {
 
 export function ProductReviews({ productId, initialReviews, initialAverageRating, initialTotalReviews }: ProductReviewsProps) {
     const { toast } = useToast();
+    const { user } = useUser();
     const [isPending, startTransition] = useTransition();
     const [reviews, setReviews] = useState(initialReviews);
     const [averageRating, setAverageRating] = useState(initialAverageRating);
     const [totalReviews, setTotalReviews] = useState(initialTotalReviews);
+    
+    const [reviewToEdit, setReviewToEdit] = useState<Review | null>(null);
+    const [reviewToDelete, setReviewToDelete] = useState<Review | null>(null);
+    const [isDeleteAlertOpen, setIsDeleteAlertOpen] = useState(false);
+
+    const userReview = reviews.find(r => r.user_id === user?.id);
+    const canLeaveReview = user && !userReview && !reviewToEdit;
 
     const form = useForm<z.infer<typeof reviewSchema>>({
         resolver: zodResolver(reviewSchema),
@@ -40,6 +58,20 @@ export function ProductReviews({ productId, initialReviews, initialAverageRating
             comment: '',
         },
     });
+    
+    useEffect(() => {
+        // If user has a review, or is editing one, pre-populate the form
+        const targetReview = reviewToEdit || userReview;
+        if (targetReview) {
+            form.reset({
+                productId: productId,
+                rating: targetReview.rating,
+                comment: targetReview.comment,
+            });
+        } else {
+             form.reset({ productId: productId, rating: 0, comment: '' });
+        }
+    }, [userReview, reviewToEdit, form, productId]);
 
     async function onSubmit(values: z.infer<typeof reviewSchema>) {
         startTransition(async () => {
@@ -48,21 +80,76 @@ export function ProductReviews({ productId, initialReviews, initialAverageRating
             formData.append('comment', values.comment);
             formData.append('productId', values.productId);
 
-            const result = await addReview(formData);
+            let result;
+            if (reviewToEdit) {
+                 formData.append('reviewId', reviewToEdit.id);
+                 result = await updateReview(formData);
+            } else {
+                result = await addReview(formData);
+            }
+           
             if (result.success && result.review) {
-                toast({ title: 'Review Submitted!', description: result.message });
-                setReviews(prev => [result.review!, ...prev]);
-                // Recalculate average rating
-                const newTotal = totalReviews + 1;
-                const newAverage = (averageRating * totalReviews + result.review!.rating) / newTotal;
+                toast({ title: result.message });
+                // If editing, replace the old review. If adding, prepend the new one.
+                if (reviewToEdit) {
+                    setReviews(prev => prev.map(r => r.id === result.review!.id ? result.review! : r));
+                } else {
+                    setReviews(prev => [result.review!, ...prev]);
+                }
+                
+                // Recalculate average (simplified - full recalc is better)
+                const newTotal = reviewToEdit ? totalReviews : totalReviews + 1;
+                const newSum = reviews.reduce((sum, r) => sum + (r.id === result.review!.id ? result.review!.rating : r.rating), reviewToEdit ? 0 : result.review.rating);
+                const newAverage = newSum / newTotal;
+
                 setTotalReviews(newTotal);
                 setAverageRating(parseFloat(newAverage.toFixed(1)));
-                form.reset();
+                setReviewToEdit(null);
+                form.reset({ productId: productId, rating: 0, comment: '' });
             } else {
                 toast({ variant: 'destructive', title: 'Error', description: result.message });
             }
         });
     }
+
+    const handleEditClick = (review: Review) => {
+        setReviewToEdit(review);
+    }
+    
+    const handleDeleteClick = (review: Review) => {
+        setReviewToDelete(review);
+        setIsDeleteAlertOpen(true);
+    }
+
+    const handleConfirmDelete = async () => {
+        if (!reviewToDelete) return;
+        
+        startTransition(async () => {
+            const result = await deleteReview(reviewToDelete.id, productId);
+            if (result.success) {
+                toast({ title: 'Review Deleted', description: result.message });
+                setReviews(prev => prev.filter(r => r.id !== reviewToDelete.id));
+
+                // Recalculate average
+                const newTotal = totalReviews - 1;
+                if (newTotal > 0) {
+                    const newSum = reviews.reduce((sum, r) => r.id === reviewToDelete.id ? sum : sum + r.rating, 0);
+                    const newAverage = newSum / newTotal;
+                    setAverageRating(parseFloat(newAverage.toFixed(1)));
+                } else {
+                    setAverageRating(0);
+                }
+                setTotalReviews(newTotal);
+
+            } else {
+                toast({ variant: 'destructive', title: 'Error', description: result.message });
+            }
+            setIsDeleteAlertOpen(false);
+            setReviewToDelete(null);
+        });
+    }
+    
+    const isFormVisible = user && (!userReview || reviewToEdit);
     
     return (
         <Card>
@@ -75,48 +162,64 @@ export function ProductReviews({ productId, initialReviews, initialAverageRating
             <CardContent>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12">
                     <div className="space-y-4">
-                        <h3 className="font-semibold text-lg">Leave a review</h3>
-                         <Form {...form}>
-                            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-                                <FormField
-                                    control={form.control}
-                                    name="rating"
-                                    render={({ field }) => (
-                                        <FormItem>
-                                            <FormLabel>Your Rating</FormLabel>
-                                            <FormControl>
-                                                <div className="flex items-center gap-1">
-                                                {[1, 2, 3, 4, 5].map((star) => (
-                                                    <Star
-                                                        key={star}
-                                                        className={`h-7 w-7 cursor-pointer transition-colors ${field.value >= star ? 'text-yellow-400 fill-yellow-400' : 'text-gray-300'}`}
-                                                        onClick={() => form.setValue('rating', star, { shouldValidate: true })}
-                                                    />
-                                                ))}
-                                                </div>
-                                            </FormControl>
-                                            <FormMessage />
-                                        </FormItem>
-                                    )}
-                                />
-                                <FormField
-                                    control={form.control}
-                                    name="comment"
-                                    render={({ field }) => (
-                                        <FormItem>
-                                            <FormLabel>Your Comment</FormLabel>
-                                            <FormControl>
-                                                <Textarea placeholder="Share your thoughts on the product..." {...field} />
-                                            </FormControl>
-                                            <FormMessage />
-                                        </FormItem>
-                                    )}
-                                />
-                                <Button type="submit" disabled={isPending}>
-                                    {isPending ? 'Submitting...' : <><Send className="mr-2 h-4 w-4" /> Submit Review</>}
-                                </Button>
-                            </form>
-                        </Form>
+                         {isFormVisible ? (
+                            <>
+                                <h3 className="font-semibold text-lg">{reviewToEdit ? "Edit Your Review" : "Leave a review"}</h3>
+                                <Form {...form}>
+                                    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+                                        <FormField
+                                            control={form.control}
+                                            name="rating"
+                                            render={({ field }) => (
+                                                <FormItem>
+                                                    <FormLabel>Your Rating</FormLabel>
+                                                    <FormControl>
+                                                        <div className="flex items-center gap-1">
+                                                        {[1, 2, 3, 4, 5].map((star) => (
+                                                            <Star
+                                                                key={star}
+                                                                className={`h-7 w-7 cursor-pointer transition-colors ${field.value >= star ? 'text-yellow-400 fill-yellow-400' : 'text-gray-300'}`}
+                                                                onClick={() => form.setValue('rating', star, { shouldValidate: true })}
+                                                            />
+                                                        ))}
+                                                        </div>
+                                                    </FormControl>
+                                                    <FormMessage />
+                                                </FormItem>
+                                            )}
+                                        />
+                                        <FormField
+                                            control={form.control}
+                                            name="comment"
+                                            render={({ field }) => (
+                                                <FormItem>
+                                                    <FormLabel>Your Comment</FormLabel>
+                                                    <FormControl>
+                                                        <Textarea placeholder="Share your thoughts on the product..." {...field} />
+                                                    </FormControl>
+                                                    <FormMessage />
+                                                </FormItem>
+                                            )}
+                                        />
+                                        <div className="flex items-center gap-4">
+                                            <Button type="submit" disabled={isPending}>
+                                                {isPending ? (reviewToEdit ? 'Updating...' : 'Submitting...') : <><Send className="mr-2 h-4 w-4" /> {reviewToEdit ? 'Update Review' : 'Submit Review'}</>}
+                                            </Button>
+                                            {reviewToEdit && (
+                                                <Button variant="ghost" onClick={() => setReviewToEdit(null)}>Cancel</Button>
+                                            )}
+                                        </div>
+                                    </form>
+                                </Form>
+                            </>
+                         ) : (
+                            user && userReview && !reviewToEdit && (
+                                 <div className="p-4 rounded-lg bg-muted/50 text-center">
+                                     <p className="font-semibold">You've already reviewed this product.</p>
+                                     <p className="text-sm text-muted-foreground">You can edit or delete your review from the list.</p>
+                                 </div>
+                            )
+                         )}
                     </div>
 
                     <div className="space-y-6">
@@ -141,6 +244,16 @@ export function ProductReviews({ productId, initialReviews, initialAverageRating
                                                 {format(new Date(review.created_at), 'MMMM dd, yyyy')}
                                             </p>
                                             <p className="text-sm text-muted-foreground">{review.comment}</p>
+                                            {user?.id === review.user_id && (
+                                                <div className="flex items-center gap-2 mt-2">
+                                                    <Button variant="ghost" size="sm" onClick={() => handleEditClick(review)} disabled={isPending}>
+                                                        <Edit className="h-4 w-4 mr-1" /> Edit
+                                                    </Button>
+                                                    <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive" onClick={() => handleDeleteClick(review)} disabled={isPending}>
+                                                         <Trash2 className="h-4 w-4 mr-1" /> Delete
+                                                    </Button>
+                                                </div>
+                                            )}
                                         </div>
                                     </div>
                                 ))}
@@ -150,7 +263,26 @@ export function ProductReviews({ productId, initialReviews, initialAverageRating
                          )}
                     </div>
                 </div>
+
+                <AlertDialog open={isDeleteAlertOpen} onOpenChange={setIsDeleteAlertOpen}>
+                    <AlertDialogContent>
+                        <AlertDialogHeader>
+                            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                                This will permanently delete your review. This action cannot be undone.
+                            </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                            <AlertDialogCancel onClick={() => setReviewToDelete(null)}>Cancel</AlertDialogCancel>
+                            <AlertDialogAction onClick={handleConfirmDelete} disabled={isPending}>
+                                {isPending ? 'Deleting...' : 'Delete'}
+                            </AlertDialogAction>
+                        </AlertDialogFooter>
+                    </AlertDialogContent>
+                </AlertDialog>
+
             </CardContent>
         </Card>
     );
 }
+
