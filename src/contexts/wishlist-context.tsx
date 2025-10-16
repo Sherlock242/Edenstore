@@ -7,6 +7,8 @@ import {
   useContext,
   useReducer,
   type ReactNode,
+  useState,
+  useEffect,
 } from "react";
 
 type WishlistState = {
@@ -58,6 +60,11 @@ const WishlistContext = createContext<WishlistContextType | undefined>(
 
 export function WishlistProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(wishlistReducer, initialState);
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
   
   const isInWishlist = (productId: string) => {
     return state.items.some(item => item.id === productId);
@@ -65,7 +72,7 @@ export function WishlistProvider({ children }: { children: ReactNode }) {
 
   return (
     <WishlistContext.Provider value={{ state, dispatch, isInWishlist }}>
-      {children}
+      {isMounted ? children : null}
     </WishlistContext.Provider>
   );
 }

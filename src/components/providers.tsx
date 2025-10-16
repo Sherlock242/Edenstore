@@ -1,14 +1,15 @@
-
 "use client";
 
-import type { ReactNode } from "react";
 import { CartProvider } from "@/contexts/cart-context";
 import { WishlistProvider } from "@/contexts/wishlist-context";
+import type { ReactNode } from 'react';
 
 export function AppProviders({ children }: { children: ReactNode }) {
   return (
+    <WishlistProvider>
       <CartProvider>
-        <WishlistProvider>{children}</WishlistProvider>
+        {children}
       </CartProvider>
+    </WishlistProvider>
   );
 }
