@@ -1,6 +1,7 @@
 
 'use client';
 import Link from 'next/link';
+import Image from 'next/image';
 import {
   Menu,
   ShoppingBag,
@@ -31,6 +32,7 @@ import { MobileMenuSheet } from './mobile-menu';
 import { CartSheet } from '../cart-sheet';
 import { SearchSheet } from './search-sheet';
 import { useState } from 'react';
+import type { HeaderDisplayMode } from '@/app/admin/settings/actions';
 
 const navLinks = [
   { href: '/products', label: 'T-Shirts' },
@@ -59,9 +61,27 @@ type HeaderClientProps = {
   userProfile: UserProfile | null;
   isadmin: boolean;
   siteName: string;
+  logoUrl: string | null | undefined;
+  displayMode: HeaderDisplayMode;
 };
 
-export function HeaderClient({ user, userProfile, isadmin, siteName }: HeaderClientProps) {
+function Brand({ siteName, logoUrl, displayMode }: Pick<HeaderClientProps, 'siteName' | 'logoUrl' | 'displayMode'>) {
+    const showLogo = (displayMode === 'logo' || displayMode === 'both') && logoUrl;
+    const showTitle = (displayMode === 'title' || displayMode === 'both');
+
+    return (
+        <Link href="/" className="flex items-center space-x-2">
+            {showLogo && <Image src={logoUrl} alt={`${siteName} Logo`} width={32} height={32} className="h-8 w-auto" />}
+            {showTitle && (
+                 <span className="bg-gradient-to-r from-red-600 to-red-500 bg-clip-text font-headline text-lg font-bold uppercase text-transparent">
+                    {siteName}
+                </span>
+            )}
+        </Link>
+    )
+}
+
+export function HeaderClient({ user, userProfile, isadmin, siteName, logoUrl, displayMode }: HeaderClientProps) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -69,11 +89,7 @@ export function HeaderClient({ user, userProfile, isadmin, siteName }: HeaderCli
 
         {/* Desktop: Left side */}
         <div className="hidden flex-1 items-center justify-start md:flex">
-             <Link href="/" className="flex items-center space-x-2">
-              <span className="bg-gradient-to-r from-red-600 to-red-500 bg-clip-text font-headline text-lg font-bold uppercase text-transparent">
-                {siteName}
-              </span>
-            </Link>
+             <Brand siteName={siteName} logoUrl={logoUrl} displayMode={displayMode} />
         </div>
 
         {/* Mobile: Left side */}
@@ -88,18 +104,14 @@ export function HeaderClient({ user, userProfile, isadmin, siteName }: HeaderCli
                 <Menu className="h-5 w-5" />
               </Button>
             </SheetTrigger>
-            <MobileMenuSheet user={user} userProfile={userProfile} isadmin={isadmin} setOpen={setIsMobileMenuOpen} siteName={siteName} />
+            <MobileMenuSheet user={user} userProfile={userProfile} isadmin={isadmin} setOpen={setIsMobileMenuOpen} siteName={siteName} logoUrl={logoUrl} displayMode={displayMode} />
           </Sheet>
         </div>
 
         {/* Center Section (Logo on mobile, nav on desktop) */}
         <div className="flex items-center justify-center">
             <div className="md:hidden">
-              <Link href="/" className="flex items-center space-x-2">
-                <span className="bg-gradient-to-r from-red-600 to-red-500 bg-clip-text font-headline text-lg font-bold uppercase text-transparent">
-                  {siteName}
-                </span>
-              </Link>
+              <Brand siteName={siteName} logoUrl={logoUrl} displayMode={displayMode} />
             </div>
              <nav className="hidden items-center space-x-6 text-sm font-medium md:flex">
                 {navLinks.map(link => (

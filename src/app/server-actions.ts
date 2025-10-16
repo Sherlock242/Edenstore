@@ -1,9 +1,10 @@
+
 // This file is for server-side actions that can be called from client components
 "use server";
 
 import { cookies } from 'next/headers';
 import { addProduct, deleteProduct, getProducts, getProductsForSearch, updateProduct, type ProductFormValues, type UpdateProductFormValues } from './actions';
-import { getHeroImageUrl, getSiteName, updateHeroImage, updateSiteName } from './admin/settings/actions';
+import { getHeroImageUrl, getSiteName, updateHeroImage, updateSiteName, getSiteLogoUrl, updateSiteLogo, getHeaderDisplayMode, updateHeaderDisplayMode, type HeaderDisplayMode } from './admin/settings/actions';
 
 // Product Actions
 export async function getProductsClient() {
@@ -50,4 +51,24 @@ export async function updateHeroImageAction(image: File) {
 export async function updateSiteNameAction(name: string) {
     const cookieStore = cookies();
     return updateSiteName(cookieStore, name);
+}
+
+export async function getSiteLogoUrlClient() {
+    const cookieStore = cookies();
+    return await getSiteLogoUrl(cookieStore);
+}
+
+export async function updateSiteLogoAction(image: File) {
+    const cookieStore = cookies();
+    return await updateSiteLogo(cookieStore, image);
+}
+
+export async function getHeaderDisplayModeClient() {
+    const cookieStore = cookies();
+    return await getHeaderDisplayMode(cookieStore);
+}
+
+export async function updateHeaderDisplayModeAction(mode: HeaderDisplayMode) {
+    const cookieStore = cookies();
+    return await updateHeaderDisplayMode(cookieStore, mode);
 }

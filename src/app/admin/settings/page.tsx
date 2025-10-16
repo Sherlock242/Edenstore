@@ -1,3 +1,4 @@
+
 'use client';
 import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
@@ -16,100 +17,106 @@ import {
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { getHeroImageUrlClient, getSiteNameClient, updateHeroImageAction, updateSiteNameAction } from '@/app/server-actions';
+import { 
+    getHeroImageUrlClient, 
+    getSiteNameClient, 
+    updateHeroImageAction, 
+    updateSiteNameAction,
+    getSiteLogoUrlClient,
+    updateSiteLogoAction,
+    getHeaderDisplayModeClient,
+    updateHeaderDisplayModeAction,
+    type HeaderDisplayMode,
+} from '@/app/server-actions';
 import Image from 'next/image';
 import { Upload } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 
 const heroImageSchema = z.object({
   heroImage: z
     .custom<File>(v => v instanceof File, { message: 'Image is required.'})
-    .refine(
-      file => file.size <= 5000000, // 5MB
-      `Max file size is 5MB.`
-    )
-    .refine(
-      file => ['image/jpeg', 'image/png', 'image/webp'].includes(file.type),
-      'Only .jpg, .png, and .webp formats are supported.'
-    )
+    .refine(file => file.size <= 5000000, `Max file size is 5MB.`)
+    .refine(file => ['image/jpeg', 'image/png', 'image/webp'].includes(file.type), 'Only .jpg, .png, and .webp formats are supported.')
+});
+
+const siteLogoSchema = z.object({
+  siteLogo: z
+    .custom<File>(v => v instanceof File, { message: 'Image is required.'})
+    .refine(file => file.size <= 1000000, `Max file size is 1MB.`)
+    .refine(file => ['image/jpeg', 'image/png', 'image/webp', 'image/svg+xml'].includes(file.type), 'Only .jpg, .png, .webp, and .svg formats are supported.')
 });
 
 const siteNameSchema = z.object({
   siteName: z.string().min(2, { message: 'Site name must be at least 2 characters.' }),
 });
 
+const headerDisplaySchema = z.object({
+  displayMode: z.enum(['title', 'logo', 'both']),
+});
+
+
 export default function SiteSettingsPage() {
   const { toast } = useToast();
-  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [heroPreview, setHeroPreview] = useState<string | null>(null);
+  const [logoPreview, setLogoPreview] = useState<string | null>(null);
+  
   const [isHeroSubmitting, setIsHeroSubmitting] = useState(false);
   const [isNameSubmitting, setIsNameSubmitting] = useState(false);
+  const [isLogoSubmitting, setIsLogoSubmitting] = useState(false);
+  const [isDisplaySubmitting, setIsDisplaySubmitting] = useState(false);
 
-  const heroImageForm = useForm<z.infer<typeof heroImageSchema>>({
-    resolver: zodResolver(heroImageSchema),
-    defaultValues: {
-      heroImage: undefined,
-    },
-  });
-  
-  const siteNameForm = useForm<z.infer<typeof siteNameSchema>>({
-    resolver: zodResolver(siteNameSchema),
-    defaultValues: {
-      siteName: '',
-    },
-  });
+  const heroImageForm = useForm<z.infer<typeof heroImageSchema>>({ resolver: zodResolver(heroImageSchema) });
+  const siteNameForm = useForm<z.infer<typeof siteNameSchema>>({ resolver: zodResolver(siteNameSchema) });
+  const siteLogoForm = useForm<z.infer<typeof siteLogoSchema>>({ resolver: zodResolver(siteLogoSchema) });
+  const headerDisplayForm = useForm<z.infer<typeof headerDisplaySchema>>({ resolver: zodResolver(headerDisplaySchema) });
   
   useEffect(() => {
-      // Fetch initial data for both forms
+      // Fetch initial data for all forms
       getHeroImageUrlClient().then(result => {
-          if (result.success && result.url) {
-              setImagePreview(result.url);
-          }
+          if (result.success && result.url) setHeroPreview(result.url);
+      });
+       getSiteLogoUrlClient().then(result => {
+          if (result.success && result.url) setLogoPreview(result.url);
       });
       getSiteNameClient().then(name => {
           siteNameForm.setValue('siteName', name);
-      })
-  }, [siteNameForm]);
+      });
+       getHeaderDisplayModeClient().then(mode => {
+          headerDisplayForm.setValue('displayMode', mode);
+       });
+  }, [siteNameForm, headerDisplayForm]);
 
   const onHeroImageSubmit = async (values: z.infer<typeof heroImageSchema>) => {
     setIsHeroSubmitting(true);
     const result = await updateHeroImageAction(values.heroImage);
-
-    if (result.success) {
-      toast({
-        title: 'Success!',
-        description: result.message,
-      });
-      if(result.url) {
-          setImagePreview(result.url);
-      }
-      heroImageForm.reset();
-    } else {
-      toast({
-        variant: 'destructive',
-        title: 'Error',
-        description: result.message,
-      });
-    }
+    toast({ title: result.success ? 'Success!' : 'Error', description: result.message, variant: result.success ? 'default' : 'destructive'});
+    if (result.success && result.url) setHeroPreview(result.url);
+    heroImageForm.reset();
     setIsHeroSubmitting(false);
+  }
+
+  const onSiteLogoSubmit = async (values: z.infer<typeof siteLogoSchema>) => {
+    setIsLogoSubmitting(true);
+    const result = await updateSiteLogoAction(values.siteLogo);
+    toast({ title: result.success ? 'Success!' : 'Error', description: result.message, variant: result.success ? 'default' : 'destructive'});
+    if (result.success && result.url) setLogoPreview(result.url);
+    siteLogoForm.reset();
+    setIsLogoSubmitting(false);
   }
 
   const onSiteNameSubmit = async (values: z.infer<typeof siteNameSchema>) => {
       setIsNameSubmitting(true);
       const result = await updateSiteNameAction(values.siteName);
-
-      if (result.success) {
-          toast({
-              title: 'Success!',
-              description: result.message,
-          });
-      } else {
-          toast({
-              variant: 'destructive',
-              title: 'Error',
-              description: result.message,
-          });
-      }
+      toast({ title: result.success ? 'Success!' : 'Error', description: result.message, variant: result.success ? 'default' : 'destructive' });
       setIsNameSubmitting(false);
+  }
+  
+  const onHeaderDisplaySubmit = async (values: z.infer<typeof headerDisplaySchema>) => {
+      setIsDisplaySubmitting(true);
+      const result = await updateHeaderDisplayModeAction(values.displayMode as HeaderDisplayMode);
+      toast({ title: result.success ? 'Success!' : 'Error', description: result.message, variant: result.success ? 'default' : 'destructive' });
+      setIsDisplaySubmitting(false);
   }
 
   return (
@@ -119,98 +126,154 @@ export default function SiteSettingsPage() {
           <CardTitle>Site Settings</CardTitle>
           <CardDescription>Manage global settings for your website.</CardDescription>
         </CardHeader>
-        <CardContent className="space-y-8">
+        <CardContent className="space-y-12">
 
-          {/* Site Name Form */}
-          <Form {...siteNameForm}>
-            <form onSubmit={siteNameForm.handleSubmit(onSiteNameSubmit)} className="space-y-4">
-              <FormField
-                control={siteNameForm.control}
-                name="siteName"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Site Name</FormLabel>
-                    <FormControl>
-                      <Input placeholder="e.g., ANISTORE" {...field} />
-                    </FormControl>
-                    <FormDescription>This is the name displayed in the header and page titles.</FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <Button type="submit" disabled={isNameSubmitting}>
-                {isNameSubmitting ? 'Updating...' : 'Update Site Name'}
-              </Button>
-            </form>
-          </Form>
+            {/* Header Branding Section */}
+            <div className="space-y-8">
+                <h3 className="text-lg font-medium">Header Branding</h3>
+
+                {/* Site Name Form */}
+                <Form {...siteNameForm}>
+                    <form onSubmit={siteNameForm.handleSubmit(onSiteNameSubmit)} className="space-y-4">
+                    <FormField
+                        control={siteNameForm.control}
+                        name="siteName"
+                        render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>Site Name</FormLabel>
+                            <FormControl>
+                            <Input placeholder="e.g., ANISTORE" {...field} />
+                            </FormControl>
+                            <FormDescription>This is displayed in the header and page titles.</FormDescription>
+                            <FormMessage />
+                        </FormItem>
+                        )}
+                    />
+                    <Button type="submit" disabled={isNameSubmitting}>
+                        {isNameSubmitting ? 'Updating...' : 'Update Site Name'}
+                    </Button>
+                    </form>
+                </Form>
+
+                <Separator />
+                
+                {/* Site Logo Form */}
+                <Form {...siteLogoForm}>
+                    <form onSubmit={siteLogoForm.handleSubmit(onSiteLogoSubmit)} className="space-y-4">
+                        <FormField
+                            control={siteLogoForm.control}
+                            name="siteLogo"
+                            render={({ field: { onChange, ...fieldProps } }) => (
+                            <FormItem>
+                                <FormLabel>Site Logo</FormLabel>
+                                <FormControl>
+                                <div className="flex w-full items-center justify-center">
+                                    <label htmlFor="logo-upload" className="flex h-40 w-full cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-border bg-card hover:bg-muted">
+                                    {logoPreview ? (
+                                        <Image src={logoPreview} alt="Logo preview" width={120} height={120} className="h-full w-full object-contain p-4"/>
+                                    ) : (
+                                        <div className="flex flex-col items-center justify-center pb-6 pt-5"> <Upload className="mb-4 h-8 w-8 text-muted-foreground" /> <p className="text-xs text-muted-foreground">Click or drag to upload</p> </div>
+                                    )}
+                                    <Input
+                                        id="logo-upload" type="file" className="hidden" accept="image/png, image/jpeg, image/webp, image/svg+xml"
+                                        {...fieldProps}
+                                        onChange={event => {
+                                            const file = event.target.files?.[0];
+                                            if (file) { onChange(file); const reader = new FileReader(); reader.onloadend = () => { setLogoPreview(reader.result as string); }; reader.readAsDataURL(file); }
+                                        }}
+                                    />
+                                    </label>
+                                </div>
+                                </FormControl>
+                                <FormDescription>Upload your site's logo (PNG, JPG, WEBP, or SVG). Max 1MB.</FormDescription>
+                                <FormMessage />
+                            </FormItem>
+                            )}
+                        />
+                        <Button type="submit" disabled={isLogoSubmitting}>{isLogoSubmitting ? 'Uploading...' : 'Update Logo'}</Button>
+                    </form>
+                </Form>
+
+                 <Separator />
+
+                {/* Header Display Mode */}
+                <Form {...headerDisplayForm}>
+                    <form onSubmit={headerDisplayForm.handleSubmit(onHeaderDisplaySubmit)} className="space-y-4">
+                    <FormField
+                        control={headerDisplayForm.control}
+                        name="displayMode"
+                        render={({ field }) => (
+                        <FormItem className="space-y-3">
+                            <FormLabel>Header Display Style</FormLabel>
+                             <FormDescription>Choose what to display in the header.</FormDescription>
+                            <FormControl>
+                            <RadioGroup onValueChange={field.onChange} defaultValue={field.value} value={field.value} className="flex flex-col space-y-1">
+                                <FormItem className="flex items-center space-x-3 space-y-0">
+                                <FormControl><RadioGroupItem value="title" /></FormControl>
+                                <FormLabel className="font-normal">Title Only</FormLabel>
+                                </FormItem>
+                                <FormItem className="flex items-center space-x-3 space-y-0">
+                                <FormControl><RadioGroupItem value="logo" /></FormControl>
+                                <FormLabel className="font-normal">Logo Only</FormLabel>
+                                </FormItem>
+                                <FormItem className="flex items-center space-x-3 space-y-0">
+                                <FormControl><RadioGroupItem value="both" /></FormControl>
+                                <FormLabel className="font-normal">Both Logo and Title</FormLabel>
+                                </FormItem>
+                            </RadioGroup>
+                            </FormControl>
+                            <FormMessage />
+                        </FormItem>
+                        )}
+                    />
+                    <Button type="submit" disabled={isDisplaySubmitting}>{isDisplaySubmitting ? 'Saving...' : 'Save Display Style'}</Button>
+                    </form>
+                </Form>
+            </div>
+
+            <Separator />
           
-          <Separator />
-
-          {/* Hero Image Form */}
-          <Form {...heroImageForm}>
-            <form onSubmit={heroImageForm.handleSubmit(onHeroImageSubmit)} className="space-y-4">
-              <FormField
-                control={heroImageForm.control}
-                name="heroImage"
-                render={({ field: { onChange, value, ...fieldProps } }) => (
-                  <FormItem>
-                    <FormLabel>Homepage Hero Image</FormLabel>
-                    <FormControl>
-                      <div className="flex w-full items-center justify-center">
-                        <label
-                          htmlFor="image-upload"
-                          className="flex h-64 w-full cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-border bg-card hover:bg-muted"
-                        >
-                          {imagePreview ? (
-                            <Image
-                              src={imagePreview}
-                              alt="Image preview"
-                              width={400}
-                              height={200}
-                              className="h-full w-full object-contain"
-                            />
-                          ) : (
-                            <div className="flex flex-col items-center justify-center pb-6 pt-5">
-                              <Upload className="mb-4 h-8 w-8 text-muted-foreground" />
-                              <p className="mb-2 text-sm text-muted-foreground">
-                                <span className="font-semibold">Click to upload</span> or drag and drop
-                              </p>
-                              <p className="text-xs text-muted-foreground">
-                                PNG, JPG, or WEBP (MAX. 5MB)
-                              </p>
+            {/* Hero Image Form */}
+            <div className="space-y-8">
+                <h3 className="text-lg font-medium">Homepage Hero Image</h3>
+                <Form {...heroImageForm}>
+                    <form onSubmit={heroImageForm.handleSubmit(onHeroImageSubmit)} className="space-y-4">
+                    <FormField
+                        control={heroImageForm.control}
+                        name="heroImage"
+                        render={({ field: { onChange, ...fieldProps } }) => (
+                        <FormItem>
+                            <FormLabel>Hero Image</FormLabel>
+                            <FormControl>
+                            <div className="flex w-full items-center justify-center">
+                                <label htmlFor="image-upload" className="flex h-64 w-full cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-border bg-card hover:bg-muted">
+                                {heroPreview ? (
+                                    <Image src={heroPreview} alt="Image preview" width={400} height={200} className="h-full w-full object-contain"/>
+                                ) : (
+                                    <div className="flex flex-col items-center justify-center pb-6 pt-5"><Upload className="mb-4 h-8 w-8 text-muted-foreground" /><p className="mb-2 text-sm text-muted-foreground"><span className="font-semibold">Click to upload</span> or drag and drop</p><p className="text-xs text-muted-foreground">PNG, JPG, or WEBP (MAX. 5MB)</p></div>
+                                )}
+                                <Input
+                                    id="image-upload" type="file" className="hidden" accept="image/png, image/jpeg, image/webp"
+                                    {...fieldProps}
+                                    onChange={event => {
+                                        const file = event.target.files?.[0];
+                                        if (file) { onChange(file); const reader = new FileReader(); reader.onloadend = () => { setHeroPreview(reader.result as string); }; reader.readAsDataURL(file); }
+                                    }}
+                                />
+                                </label>
                             </div>
-                          )}
-                          <Input
-                            id="image-upload"
-                            type="file"
-                            className="hidden"
-                            accept="image/png, image/jpeg, image/webp"
-                            {...fieldProps}
-                            onChange={event => {
-                              const file = event.target.files?.[0];
-                              if (file) {
-                                onChange(file);
-                                const reader = new FileReader();
-                                reader.onloadend = () => {
-                                  setImagePreview(reader.result as string);
-                                };
-                                reader.readAsDataURL(file);
-                              }
-                            }}
-                          />
-                        </label>
-                      </div>
-                    </FormControl>
-                    <FormDescription>This image will be displayed on the homepage hero section.</FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <Button type="submit" disabled={isHeroSubmitting}>
-                {isHeroSubmitting ? 'Updating...' : 'Update Hero Image'}
-              </Button>
-            </form>
-          </Form>
+                            </FormControl>
+                            <FormDescription>This image will be displayed on the homepage hero section.</FormDescription>
+                            <FormMessage />
+                        </FormItem>
+                        )}
+                    />
+                    <Button type="submit" disabled={isHeroSubmitting}>
+                        {isHeroSubmitting ? 'Updating...' : 'Update Hero Image'}
+                    </Button>
+                    </form>
+                </Form>
+            </div>
         </CardContent>
       </Card>
     </div>

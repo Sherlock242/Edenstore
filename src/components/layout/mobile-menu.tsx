@@ -1,6 +1,7 @@
 
 'use client';
 import Link from 'next/link';
+import Image from 'next/image';
 import {
   LogOut,
   LogIn,
@@ -15,6 +16,7 @@ import { Separator } from '@/components/ui/separator';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import md5 from 'md5';
+import { HeaderDisplayMode } from '@/app/admin/settings/actions';
 
 type UserProfile = {
   id: string;
@@ -29,6 +31,8 @@ type MobileMenuSheetProps = {
   isadmin: boolean;
   setOpen: (open: boolean) => void;
   siteName: string;
+  logoUrl: string | null | undefined;
+  displayMode: HeaderDisplayMode;
 };
 
 const navLinks = [
@@ -46,17 +50,28 @@ const getGravatarUrl = (email: string | null | undefined) => {
     return `https://www.gravatar.com/avatar/${hash}?d=mp`;
 }
 
+function Brand({ siteName, logoUrl, displayMode, onLinkClick }: Pick<MobileMenuSheetProps, 'siteName' | 'logoUrl' | 'displayMode'> & { onLinkClick: () => void }) {
+    const showLogo = (displayMode === 'logo' || displayMode === 'both') && logoUrl;
+    const showTitle = (displayMode === 'title' || displayMode === 'both');
 
-export function MobileMenuSheet({ user, userProfile, isadmin, setOpen, siteName }: MobileMenuSheetProps) {
+    return (
+        <Link href="/" onClick={onLinkClick} className="flex items-center space-x-2">
+            {showLogo && <Image src={logoUrl} alt={`${siteName} Logo`} width={32} height={32} className="h-8 w-auto" />}
+            {showTitle && (
+                 <span className="bg-gradient-to-r from-red-600 to-red-500 bg-clip-text font-headline text-lg font-bold uppercase text-transparent">
+                    {siteName}
+                </span>
+            )}
+        </Link>
+    )
+}
+
+export function MobileMenuSheet({ user, userProfile, isadmin, setOpen, siteName, logoUrl, displayMode }: MobileMenuSheetProps) {
   return (
     <SheetContent side="left" className="flex flex-col">
       <SheetHeader>
         <SheetTitle>
-          <Link href="/" onClick={() => setOpen(false)} className="mb-6 flex items-center space-x-2">
-            <span className="bg-gradient-to-r from-red-600 to-red-500 bg-clip-text font-headline text-lg font-bold uppercase text-transparent">
-              {siteName}
-            </span>
-          </Link>
+          <Brand siteName={siteName} logoUrl={logoUrl} displayMode={displayMode} onLinkClick={() => setOpen(false)} />
         </SheetTitle>
       </SheetHeader>
       <nav className="flex flex-col space-y-4 mt-6">

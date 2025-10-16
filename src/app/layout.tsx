@@ -6,7 +6,7 @@ import { Toaster } from '@/components/ui/toaster';
 import { Header } from '@/components/layout/header';
 import { Footer } from '@/components/layout/footer';
 import { AppProviders } from '@/components/providers';
-import { getSiteName } from './admin/settings/actions';
+import { getSiteName, getSiteLogoUrl, getHeaderDisplayMode } from './admin/settings/actions';
 import { cookies } from 'next/headers';
 
 const inter = Inter({
@@ -44,6 +44,9 @@ export default async function RootLayout({
 }>) {
   const cookieStore = cookies();
   const siteName = await getSiteName(cookieStore);
+  const logoResult = await getSiteLogoUrl(cookieStore);
+  const displayMode = await getHeaderDisplayMode(cookieStore);
+
   return (
     <html lang="en" className="dark">
       <body
@@ -51,7 +54,7 @@ export default async function RootLayout({
       >
         <AppProviders>
           <div className="flex min-h-screen flex-col">
-            <Header siteName={siteName} />
+            <Header siteName={siteName} logoUrl={logoResult.url} displayMode={displayMode} />
             <main className="flex-grow">{children}</main>
             <Footer siteName={siteName} />
           </div>
