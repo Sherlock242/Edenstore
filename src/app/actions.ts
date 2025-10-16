@@ -4,6 +4,7 @@
 import { revalidatePath } from 'next/cache';
 import { createClient } from '@/lib/supabase/server';
 import { type ReadonlyRequestCookies } from 'next/dist/server/web/spec-extension/cookies';
+import { createClient as createAdminClient } from '@supabase/supabase-js';
 
 
 export type Product = {
@@ -126,11 +127,15 @@ type ServerResponse = {
 }
 
 export async function addProduct(cookieStore: ReadonlyRequestCookies, data: ProductFormValues): Promise<ServerResponse> {
-    const supabase = createClient(cookieStore);
+    const supabaseAdmin = createAdminClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.SUPABASE_SERVICE_ROLE_KEY!,
+        { auth: { persistSession: false } }
+    );
     const { images, sizes, colors, ...productData } = data;
     
     // 1. Insert product data into the 'products' table using the admin client
-    const { data: newProductData, error: productInsertError } = await supabase
+    const { data: newProductData, error: productInsertError } = await supabaseAdmin
         .from('products')
         .insert({
             name: productData.name,
@@ -157,17 +162,18 @@ export async function addProduct(cookieStore: ReadonlyRequestCookies, data: Prod
         const fileName = `${Date.now()}-${Math.random()}.${fileExt}`;
         const filePath = `product-images/${fileName}`;
 
-        const { error: uploadError } = await supabase.storage
+        const { error: uploadError } = await supabaseAdmin.storage
             .from('product-images')
             .upload(filePath, image.file);
 
         if (uploadError) {
             console.error('Error uploading image:', uploadError);
             // In a real app, you might want to roll back the product creation here
+            await supabaseAdmin.from('products').delete().eq('id', productId);
             return { success: false, message: `Failed to upload image ${image.file.name}.`, error: { message: uploadError.message } };
         }
 
-        const { data: urlData } = supabase.storage
+        const { data: urlData } = supabaseAdmin.storage
             .from('product-images')
             .getPublicUrl(filePath);
 
@@ -184,7 +190,7 @@ export async function addProduct(cookieStore: ReadonlyRequestCookies, data: Prod
 
     // 3. Insert all image data into 'product_images' table
     if (uploadedImages.length > 0) {
-        const { error: imageInsertError } = await supabase
+        const { error: imageInsertError } = await supabaseAdmin
             .from('product_images')
             .insert(uploadedImages);
 
@@ -197,18 +203,18 @@ export async function addProduct(cookieStore: ReadonlyRequestCookies, data: Prod
 
     // 4. Insert sizes and quantities
     const sizesToInsert = sizes.map(s => ({ product_id: productId, size: s.size, quantity: Number(s.quantity) }));
-    await supabase.from('product_sizes').insert(sizesToInsert);
+    await supabaseAdmin.from('product_sizes').insert(sizesToInsert);
 
     // 5. Insert colors
     const colorsToInsert = colors.map(c => ({ product_id: productId, color: c.color }));
-    await supabase.from('product_colors').insert(colorsToInsert);
+    await supabaseAdmin.from('product_colors').insert(colorsToInsert);
 
     revalidatePath('/');
     revalidatePath('/products');
     revalidatePath('/admin/add-product');
 
     // Fetch the newly created product to return it
-    const { data: finalProductData, error: finalProductError } = await supabase
+    const { data: finalProductData, error: finalProductError } = await supabaseAdmin
       .from('products')
       .select(`
         id, name, description, price, category, popularity, release_date, weight,
@@ -249,12 +255,17 @@ export async function addProduct(cookieStore: ReadonlyRequestCookies, data: Prod
 
 export async function updateProduct(cookieStore: ReadonlyRequestCookies, data: UpdateProductFormValues): Promise<ServerResponse> {
   const supabase = createClient(cookieStore);
+  const supabaseAdmin = createAdminClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    { auth: { persistSession: false } }
+  );
   const { id, images, sizes, colors, ...productData } = data;
 
   // Handle image replacement if new images are provided
   if (images && images.length > 0) {
     // 1. Fetch old image records to delete them from storage
-    const { data: oldImages, error: fetchOldImagesError } = await supabase
+    const { data: oldImages, error: fetchOldImagesError } = await supabaseAdmin
       .from('product_images')
       .select('url')
       .eq('product_id', id);
@@ -268,12 +279,13 @@ export async function updateProduct(cookieStore: ReadonlyRequestCookies, data: U
         const oldImagePaths = oldImages.map(img => {
             try {
                 const url = new URL(img.url);
+                // Find the start of the path after the bucket name
                 const pathStartIndex = url.pathname.indexOf('product-images/');
                 if (pathStartIndex === -1) {
                   console.error(`Invalid URL format, 'product-images/' not found: ${img.url}`);
                   return null;
                 }
-                // Correctly extract the path from after the bucket name
+                // Extract the path from after the bucket name, e.g. "product-images/my-image.png"
                 return url.pathname.substring(pathStartIndex);
             } catch (e) {
                 console.error(`Invalid URL for old image, cannot extract path: ${img.url}`);
@@ -282,7 +294,7 @@ export async function updateProduct(cookieStore: ReadonlyRequestCookies, data: U
         }).filter((p): p is string => p !== null);
 
         if(oldImagePaths.length > 0) {
-          const { error: storageError } = await supabase.storage
+          const { error: storageError } = await supabaseAdmin.storage
               .from('product-images')
               .remove(oldImagePaths);
               
@@ -293,7 +305,7 @@ export async function updateProduct(cookieStore: ReadonlyRequestCookies, data: U
     }
 
     // 3. Delete old image records from the 'product_images' table
-    await supabase.from('product_images').delete().eq('product_id', id);
+    await supabaseAdmin.from('product_images').delete().eq('product_id', id);
 
     // 4. Upload new images and collect their data
     const newUploadedImages = [];
@@ -302,7 +314,7 @@ export async function updateProduct(cookieStore: ReadonlyRequestCookies, data: U
         const fileName = `${Date.now()}-${Math.random()}.${fileExt}`;
         const filePath = `product-images/${fileName}`;
 
-        const { error: uploadError } = await supabase.storage
+        const { error: uploadError } = await supabaseAdmin.storage
             .from('product-images')
             .upload(filePath, image.file);
 
@@ -310,7 +322,7 @@ export async function updateProduct(cookieStore: ReadonlyRequestCookies, data: U
             return { success: false, message: `Failed to upload image ${image.file.name}.`, error: { message: uploadError.message } };
         }
 
-        const { data: urlData } = supabase.storage
+        const { data: urlData } = supabaseAdmin.storage
             .from('product-images')
             .getPublicUrl(filePath);
         
@@ -323,7 +335,7 @@ export async function updateProduct(cookieStore: ReadonlyRequestCookies, data: U
 
     // 5. Insert new image records into 'product_images' table
     if (newUploadedImages.length > 0) {
-        const { error: imageInsertError } = await supabase
+        const { error: imageInsertError } = await supabaseAdmin
             .from('product_images')
             .insert(newUploadedImages);
 
@@ -406,10 +418,15 @@ export async function updateProduct(cookieStore: ReadonlyRequestCookies, data: U
 
 
 export async function deleteProduct(cookieStore: ReadonlyRequestCookies, productId: string): Promise<ServerResponse> {
-  const supabase = createClient(cookieStore);
+  // Use the admin client to bypass RLS for the deletion process.
+  const supabaseAdmin = createAdminClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    { auth: { persistSession: false } }
+  );
 
   // 1. Fetch image URLs for deletion from storage
-  const { data: productData, error: fetchError } = await supabase
+  const { data: productData, error: fetchError } = await supabaseAdmin
     .from('products')
     .select('id, product_images(url)')
     .eq('id', productId)
@@ -421,31 +438,26 @@ export async function deleteProduct(cookieStore: ReadonlyRequestCookies, product
   }
 
   // 2. Manually delete all related records that have a foreign key to the product
-  // The order matters: delete from tables that depend on the product first.
-
-  // Delete from reviews
-  await supabase.from('reviews').delete().eq('product_id', productId);
-  // Delete from cart_items
-  await supabase.from('cart_items').delete().eq('product_id', productId);
-  // Delete from order_items
-  await supabase.from('order_items').delete().eq('product_id', productId);
-
-  // Delete from junction tables for M-N relationships
-  await supabase.from('product_colors').delete().eq('product_id', productId);
-  await supabase.from('product_sizes').delete().eq('product_id', productId);
-
+  // All these operations should use the admin client to ensure they have permissions.
+  
+  await supabaseAdmin.from('reviews').delete().eq('product_id', productId);
+  await supabaseAdmin.from('cart_items').delete().eq('product_id', productId);
+  await supabaseAdmin.from('order_items').delete().eq('product_id', productId);
+  await supabaseAdmin.from('product_colors').delete().eq('product_id', productId);
+  await supabaseAdmin.from('product_sizes').delete().eq('product_id', productId);
+  
   // 3. Delete images from Supabase Storage
   if (productData.product_images && productData.product_images.length > 0) {
       const imagePaths = productData.product_images.map(img => {
         try {
             const url = new URL(img.url);
-            // Robustly find the start of the path after the bucket name
+            // Find the start of the path after the bucket name
             const pathStartIndex = url.pathname.indexOf('product-images/');
             if (pathStartIndex === -1) {
               console.error(`Invalid URL format, 'product-images/' not found: ${img.url}`);
               return null;
             }
-            // Correctly extract the path from after the bucket name
+            // Extract the path from after the bucket name, e.g. "product-images/my-image.png"
             return url.pathname.substring(pathStartIndex);
         } catch (e) {
             console.error(`Invalid URL for old image, cannot extract path: ${img.url}`);
@@ -454,22 +466,22 @@ export async function deleteProduct(cookieStore: ReadonlyRequestCookies, product
       }).filter((p): p is string => p !== null);
 
       if(imagePaths.length > 0) {
-        const { error: storageError } = await supabase.storage
+        const { error: storageError } = await supabaseAdmin.storage
             .from('product-images')
             .remove(imagePaths);
 
         if (storageError) {
             console.error('Error deleting product images from storage:', storageError);
-            // Don't block product deletion if image deletion fails, but log it.
+            // Log but don't block deletion. The DB records will be deleted anyway.
         }
       }
   }
   
-  // Now, delete from product_images (after storage deletion attempt)
-  await supabase.from('product_images').delete().eq('product_id', productId);
+  // Now that storage is cleared (or attempted), delete from product_images table.
+  await supabaseAdmin.from('product_images').delete().eq('product_id', productId);
 
-  // 4. Finally, delete the product itself from the 'products' table.
-  const { error: deleteError } = await supabase
+  // 4. Finally, delete the product itself.
+  const { error: deleteError } = await supabaseAdmin
     .from('products')
     .delete()
     .eq('id', productId);
@@ -479,7 +491,7 @@ export async function deleteProduct(cookieStore: ReadonlyRequestCookies, product
     return { success: false, message: 'Failed to delete product.', error: { message: deleteError.message } };
   }
 
-  // 5. Revalidate paths
+  // 5. Revalidate paths to update the UI
   revalidatePath('/admin/add-product');
   revalidatePath('/products');
   revalidatePath('/');
@@ -490,24 +502,24 @@ export async function deleteProduct(cookieStore: ReadonlyRequestCookies, product
 
 export async function deleteUserAccount(cookieStore: ReadonlyRequestCookies): Promise<ServerResponse> {
     const supabase = createClient(cookieStore);
-    // We need the user's ID. To do this securely, we get the session on the server.
     const { data: { user } } = await supabase.auth.getUser();
 
     if (!user) {
         return { success: false, message: "User not found or not authenticated." };
     }
 
-    // Use the admin client to delete the user from the auth schema.
-    const { error: deleteAuthUserError } = await supabase.auth.admin.deleteUser(user.id);
+    const supabaseAdmin = createAdminClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.SUPABASE_SERVICE_ROLE_KEY!,
+        { auth: { persistSession: false } }
+    );
+
+    const { error: deleteAuthUserError } = await supabaseAdmin.auth.admin.deleteUser(user.id);
 
     if (deleteAuthUserError) {
         console.error('Error deleting user from auth:', deleteAuthUserError);
         return { success: false, message: 'Failed to delete user account.', error: { message: deleteAuthUserError.message } };
     }
-
-    // The trigger in the database should have already deleted the user from the public.users table.
-    // We can now sign the user out on the client, although they are effectively logged out anyway.
-    await supabase.auth.signOut();
     
     revalidatePath('/');
 

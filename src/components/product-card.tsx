@@ -1,3 +1,4 @@
+
 "use client";
 
 import type { Product } from "@/app/actions";
@@ -23,19 +24,28 @@ export function ProductCard({ product }: ProductCardProps) {
     });
   };
 
+  const imageUrl = product.images?.[0]?.url;
+  const imageHint = product.images?.[0]?.hint;
+
   return (
     <Card className="group w-full overflow-hidden border-2 border-transparent transition-all hover:border-primary">
       <CardContent className="p-0">
         <div className="relative overflow-hidden aspect-[4/5]">
           <Link href={`/products/${product.id}`}>
-            <Image
-              src={product.images[0].url}
-              alt={product.name}
-              fill
-              className="object-cover transition-transform duration-300 group-hover:scale-105"
-              data-ai-hint={product.images[0].hint}
-              sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 25vw"
-            />
+            {imageUrl ? (
+              <Image
+                src={imageUrl}
+                alt={product.name}
+                fill
+                className="object-cover transition-transform duration-300 group-hover:scale-105"
+                data-ai-hint={imageHint}
+                sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 25vw"
+              />
+            ) : (
+              <div className="w-full h-full bg-muted flex items-center justify-center">
+                <span className="text-xs text-muted-foreground">No image</span>
+              </div>
+            )}
           </Link>
           <div className="absolute bottom-0 left-0 right-0 flex items-center justify-center gap-2 p-2 opacity-0 pointer-events-none transition-all duration-300 group-hover:opacity-100 group-hover:pointer-events-auto group-hover:bottom-2">
             <Button size="sm" className="flex-grow bg-accent text-accent-foreground hover:bg-accent/90" onClick={handleAddToCart}>

@@ -1,30 +1,21 @@
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { createClient } from "@/lib/supabase/server";
+import { deleteUserAccount } from "@/app/actions";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { cookies } from "next/headers";
 
 export default function DeleteAccountPage() {
-    const deleteAccount = async () => {
+    const deleteAccountWithServerAction = async () => {
         "use server";
         const cookieStore = cookies();
-        const supabase = createClient(cookieStore);
-        const { data: { user } } = await supabase.auth.getUser();
-
-        if (user) {
-            // We need to use the service role key to delete the user from auth.users
-            const adminClient = createClient(
-                cookies()
-            );
-            const { error } = await adminClient.auth.admin.deleteUser(user.id);
-            if (error) {
-                return redirect(`/account/delete?message=Could not delete user: ${error.message}`);
-            }
+        const result = await deleteUserAccount(cookieStore);
+        if (result.success) {
+             return redirect(`/login?message=${result.message}`);
+        } else {
+             return redirect(`/account/delete?message=Could not delete user: ${result.message}`);
         }
-        revalidatePath('/', 'layout');
-        return redirect("/login?message=Account deleted successfully.");
     }
     return (
         <div className="container mx-auto flex min-h-[80vh] items-center justify-center px-4 py-12">
@@ -39,7 +30,7 @@ export default function DeleteAccountPage() {
                     </p>
                 </CardContent>
                 <CardFooter>
-                    <form action={deleteAccount} className="w-full">
+                    <form action={deleteAccountWithServerAction} className="w-full">
                         <Button variant="destructive" className="w-full">
                             Yes, delete my account
                         </Button>
