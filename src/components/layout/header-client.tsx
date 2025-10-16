@@ -149,8 +149,8 @@ export function HeaderClient({ user, userProfile, isadmin, siteName, logoUrl, di
                         <DropdownMenuTrigger asChild>
                             <Button variant="ghost" className="relative hidden h-9 w-9 rounded-full md:flex">
                                 <Avatar className="h-9 w-9">
-                                    <AvatarImage src={getGravatarUrl(user.email)} alt={user.email || 'User'} />
-                                    <AvatarFallback>{getAvatarFallback(user.email)}</AvatarFallback>
+                                    <AvatarImage src={getGravatarUrl(user.email)} alt={userProfile?.display_name || user.email || 'User'} />
+                                    <AvatarFallback>{getAvatarFallback(userProfile?.display_name || user.email)}</AvatarFallback>
                                 </Avatar>
                             </Button>
                         </DropdownMenuTrigger>

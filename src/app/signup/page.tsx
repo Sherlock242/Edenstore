@@ -17,6 +17,7 @@ export default function SignupPage({ searchParams }: { searchParams: { message: 
     const email = formData.get('email') as string
     const password = formData.get('password') as string
     const confirmPassword = formData.get('confirmPassword') as string
+    const displayName = formData.get('displayName') as string;
     const cookieStore = cookies();
     const supabase = createClient(cookieStore);
 
@@ -24,11 +25,18 @@ export default function SignupPage({ searchParams }: { searchParams: { message: 
         return redirect('/signup?message=Passwords do not match');
     }
 
+    if (!displayName) {
+        return redirect('/signup?message=Display name is required');
+    }
+
     const { error } = await supabase.auth.signUp({
       email,
       password,
       options: {
         emailRedirectTo: `${origin}/auth/callback`,
+        data: {
+            display_name: displayName,
+        }
       },
     })
 
@@ -49,6 +57,10 @@ export default function SignupPage({ searchParams }: { searchParams: { message: 
         <CardContent>
           <form className="space-y-6">
             <div className="space-y-4">
+                <div>
+                    <Label htmlFor="displayName">Display Name</Label>
+                    <Input id="displayName" name="displayName" type="text" placeholder="Your display name" required />
+                </div>
                 <div>
                     <Label htmlFor="email">Email Address</Label>
                     <Input id="email" name="email" type="email" placeholder="you@example.com" required />

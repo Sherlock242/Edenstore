@@ -39,9 +39,9 @@ const navLinks = [
   { href: '/products', label: 'T-Shirts' },
 ];
 
-const getAvatarFallback = (email: string | null | undefined) => {
-    if (!email) return "U";
-    return email[0].toUpperCase();
+const getAvatarFallback = (nameOrEmail: string | null | undefined) => {
+    if (!nameOrEmail) return "U";
+    return nameOrEmail[0].toUpperCase();
 };
 
 const getGravatarUrl = (email: string | null | undefined) => {
@@ -105,8 +105,8 @@ export function MobileMenuSheet({ user, userProfile, isadmin, setOpen, siteName,
           <div className="flex w-full flex-col gap-4">
             <div className="flex items-center gap-3">
               <Avatar className="h-9 w-9">
-                <AvatarImage src={getGravatarUrl(user.email)} alt={user.email || 'User'} />
-                <AvatarFallback>{getAvatarFallback(user.email)}</AvatarFallback>
+                <AvatarImage src={getGravatarUrl(user.email)} alt={userProfile?.display_name || user.email || 'User'} />
+                <AvatarFallback>{getAvatarFallback(userProfile?.display_name || user.email)}</AvatarFallback>
               </Avatar>
               <div className="flex flex-col space-y-1">
                 <p className="text-sm font-medium leading-none">{userProfile?.display_name || user.email}</p>
