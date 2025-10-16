@@ -101,6 +101,7 @@ export type ProductFormValues = {
   category: string;
   weight: number;
   sizes: { size: string; quantity: number; }[];
+  colors: { color: string; }[];
   images: { file: File; hint: string; }[];
 };
 
@@ -112,6 +113,7 @@ export type UpdateProductFormValues = {
   category: string;
   weight: number;
   sizes: { size: string; quantity: number; }[];
+  colors: { color: string; }[];
   images?: { file: File; hint: string; }[];
 };
 
@@ -125,7 +127,7 @@ type ServerResponse = {
 
 export async function addProduct(cookieStore: ReadonlyRequestCookies, data: ProductFormValues): Promise<ServerResponse> {
     const supabase = createClient(cookieStore);
-    const { images, sizes, ...productData } = data;
+    const { images, sizes, colors, ...productData } = data;
     
     // 1. Insert product data into the 'products' table using the admin client
     const { data: newProductData, error: productInsertError } = await supabase
@@ -197,9 +199,8 @@ export async function addProduct(cookieStore: ReadonlyRequestCookies, data: Prod
     const sizesToInsert = sizes.map(s => ({ product_id: productId, size: s.size, quantity: Number(s.quantity) }));
     await supabase.from('product_sizes').insert(sizesToInsert);
 
-    // For simplicity, we'll add some default colors. In a real app, this would be part of the form.
-    const defaultColors = ['Black', 'White'];
-    const colorsToInsert = defaultColors.map(color => ({ product_id: productId, color }));
+    // 5. Insert colors
+    const colorsToInsert = colors.map(c => ({ product_id: productId, color: c.color }));
     await supabase.from('product_colors').insert(colorsToInsert);
 
     revalidatePath('/');
@@ -248,7 +249,7 @@ export async function addProduct(cookieStore: ReadonlyRequestCookies, data: Prod
 
 export async function updateProduct(cookieStore: ReadonlyRequestCookies, data: UpdateProductFormValues): Promise<ServerResponse> {
   const supabase = createClient(cookieStore);
-  const { id, images, sizes, ...productData } = data;
+  const { id, images, sizes, colors, ...productData } = data;
 
   // Handle image replacement if new images are provided
   if (images && images.length > 0) {
@@ -347,11 +348,14 @@ export async function updateProduct(cookieStore: ReadonlyRequestCookies, data: U
   }
 
   // Update sizes
-  // 1. Delete existing sizes for the product
   await supabase.from('product_sizes').delete().eq('product_id', id);
-  // 2. Insert new sizes
   const sizesToInsert = sizes.map(s => ({ product_id: id, size: s.size, quantity: Number(s.quantity) }));
   await supabase.from('product_sizes').insert(sizesToInsert);
+
+  // Update colors
+  await supabase.from('product_colors').delete().eq('product_id', id);
+  const colorsToInsert = colors.map(c => ({ product_id: id, color: c.color }));
+  await supabase.from('product_colors').insert(colorsToInsert);
 
 
   revalidatePath('/');
@@ -481,3 +485,5 @@ export async function deleteUserAccount(cookieStore: ReadonlyRequestCookies): Pr
 
     return { success: true, message: 'Account deleted successfully.' };
 }
+
+    

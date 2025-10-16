@@ -1,3 +1,4 @@
+
 "use client";
 
 import type { Product } from "@/app/actions";
@@ -15,6 +16,7 @@ type WishlistState = {
 };
 
 type WishlistAction =
+  | { type: "SET_ITEMS"; payload: Product[] }
   | { type: "ADD_ITEM"; payload: Product }
   | { type: "REMOVE_ITEM"; payload: { productId: string } };
 
@@ -22,11 +24,15 @@ const initialState: WishlistState = {
   items: [],
 };
 
+const WISHLIST_STORAGE_KEY = "anistore_wishlist";
+
 function wishlistReducer(
   state: WishlistState,
   action: WishlistAction
 ): WishlistState {
   switch (action.type) {
+    case "SET_ITEMS":
+      return { ...state, items: action.payload };
     case "ADD_ITEM": {
       const existingItem = state.items.find(
         (item) => item.id === action.payload.id
@@ -34,12 +40,19 @@ function wishlistReducer(
       if (existingItem) {
         return state; // Already in wishlist
       }
-      return { ...state, items: [...state.items, action.payload] };
+      const newItems = [...state.items, action.payload];
+      if (typeof window !== "undefined") {
+        localStorage.setItem(WISHLIST_STORAGE_KEY, JSON.stringify(newItems));
+      }
+      return { ...state, items: newItems };
     }
     case "REMOVE_ITEM": {
       const filteredItems = state.items.filter(
         (item) => item.id !== action.payload.productId
       );
+       if (typeof window !== "undefined") {
+        localStorage.setItem(WISHLIST_STORAGE_KEY, JSON.stringify(filteredItems));
+      }
       return { ...state, items: filteredItems };
     }
     default:
@@ -63,18 +76,33 @@ export function WishlistProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     setIsMounted(true);
+    try {
+      const storedWishlist = localStorage.getItem(WISHLIST_STORAGE_KEY);
+      if (storedWishlist) {
+        dispatch({ type: "SET_ITEMS", payload: JSON.parse(storedWishlist) });
+      }
+    } catch (error) {
+      console.error("Failed to load wishlist from localStorage", error);
+    }
   }, []);
-  
+
   const isInWishlist = (productId: string) => {
     return state.items.some(item => item.id === productId);
   };
+  
+  const value = { state, dispatch, isInWishlist };
 
-  if (!isMounted) {
-    return null;
-  }
+  // Avoid hydration mismatch by not rendering user-specific state on server
+  const clientState = isMounted ? state : initialState;
+  const clientValue = {
+    ...value,
+    state: clientState,
+    isInWishlist: (productId: string) => isMounted ? isInWishlist(productId) : false,
+  };
+
 
   return (
-    <WishlistContext.Provider value={{ state, dispatch, isInWishlist }}>
+    <WishlistContext.Provider value={clientValue}>
       {children}
     </WishlistContext.Provider>
   );

@@ -1,3 +1,4 @@
+
 'use client';
 import { useEffect } from 'react';
 import { useForm, useFieldArray } from 'react-hook-form';
@@ -20,10 +21,15 @@ import { type Product, type ProductFormValues, type UpdateProductFormValues } fr
 import { addProductAction, updateProductAction } from '@/app/server-actions';
 import { Upload, X } from 'lucide-react';
 import Image from 'next/image';
+import { Separator } from '@/components/ui/separator';
 
 const sizeSchema = z.object({
   size: z.string().min(1, 'Size is required.'),
   quantity: z.coerce.number().min(0, 'Quantity must be 0 or more.'),
+});
+
+const colorSchema = z.object({
+  color: z.string().min(1, 'Color is required.'),
 });
 
 const imageSchema = z.object({
@@ -45,6 +51,7 @@ const formSchema = z.object({
   category: z.string().min(2, 'Category must be at least 2 characters.'),
   weight: z.coerce.number().positive('Weight must be a positive number (in kg).'),
   sizes: z.array(sizeSchema).min(1, 'At least one size is required.'),
+  colors: z.array(colorSchema).min(1, 'At least one color is required.'),
   images: z.array(imageSchema).min(1, 'At least one image is required.'),
 });
 
@@ -67,6 +74,7 @@ export function AddProductForm({ productToEdit, onProductAddedOrUpdated }: AddPr
       category: '',
       weight: 0.5,
       sizes: [{ size: 'S', quantity: 10 }],
+      colors: [{ color: 'Black' }],
       images: [],
     },
   });
@@ -74,6 +82,11 @@ export function AddProductForm({ productToEdit, onProductAddedOrUpdated }: AddPr
   const { fields: sizeFields, append: appendSize, remove: removeSize } = useFieldArray({
     control: form.control,
     name: "sizes"
+  });
+
+  const { fields: colorFields, append: appendColor, remove: removeColor } = useFieldArray({
+    control: form.control,
+    name: "colors"
   });
   
   const { fields: imageFields, append: appendImage, remove: removeImage } = useFieldArray({
@@ -91,6 +104,7 @@ export function AddProductForm({ productToEdit, onProductAddedOrUpdated }: AddPr
               category: productToEdit.category,
               weight: productToEdit.weight,
               sizes: productToEdit.sizes,
+              colors: productToEdit.colors.map(c => ({ color: c })),
               images: productToEdit.images.map(img => ({
                 hint: img.hint,
                 preview: img.url
@@ -105,6 +119,7 @@ export function AddProductForm({ productToEdit, onProductAddedOrUpdated }: AddPr
             category: '',
             weight: 0.5,
             sizes: [{size: 'S', quantity: 10}, {size: 'M', quantity: 10}],
+            colors: [{ color: 'Black' }, { color: 'White' }],
             images: [{ hint: '' }],
           });
       }
@@ -124,6 +139,7 @@ export function AddProductForm({ productToEdit, onProductAddedOrUpdated }: AddPr
             category: values.category,
             weight: values.weight,
             sizes: values.sizes,
+            colors: values.colors,
             // Only include images field if new images were uploaded
             ...(imagesWithFiles.length > 0 && { images: imagesWithFiles }),
         };
@@ -234,6 +250,8 @@ export function AddProductForm({ productToEdit, onProductAddedOrUpdated }: AddPr
           )}
         />
 
+        <Separator />
+
         {/* Sizes and Quantities */}
         <div>
             <FormLabel>Sizes & Inventory</FormLabel>
@@ -276,6 +294,41 @@ export function AddProductForm({ productToEdit, onProductAddedOrUpdated }: AddPr
                  {form.formState.errors.sizes && <p className="text-sm font-medium text-destructive">{form.formState.errors.sizes.root?.message}</p>}
             </div>
         </div>
+
+        <Separator />
+        
+        {/* Colors */}
+        <div>
+            <FormLabel>Available Colors</FormLabel>
+            <FormDescription>Add the color variations for the product.</FormDescription>
+            <div className="space-y-4 mt-4">
+                {colorFields.map((field, index) => (
+                    <div key={field.id} className="flex items-center gap-4">
+                        <FormField
+                            control={form.control}
+                            name={`colors.${index}.color`}
+                            render={({ field }) => (
+                                <FormItem className="flex-grow">
+                                    <FormControl>
+                                        <Input placeholder="Color (e.g., Black)" {...field} />
+                                    </FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+                        <Button type="button" variant="destructive" size="icon" onClick={() => removeColor(index)}>
+                            <X className="h-4 w-4" />
+                        </Button>
+                    </div>
+                ))}
+                <Button type="button" variant="outline" size="sm" onClick={() => appendColor({ color: "" })}>
+                    Add Color
+                </Button>
+                 {form.formState.errors.colors && <p className="text-sm font-medium text-destructive">{form.formState.errors.colors.root?.message}</p>}
+            </div>
+        </div>
+
+        <Separator />
 
         {/* Product Images */}
         <div>
@@ -361,3 +414,5 @@ export function AddProductForm({ productToEdit, onProductAddedOrUpdated }: AddPr
     </Form>
   );
 }
+
+    

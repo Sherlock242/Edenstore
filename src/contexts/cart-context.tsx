@@ -1,3 +1,4 @@
+
 "use client";
 
 import type { Product } from '@/app/actions';
@@ -8,6 +9,7 @@ import React, {
   type ReactNode,
   useEffect,
   useCallback,
+  useState,
 } from 'react';
 import {
   getCartItems,
@@ -103,7 +105,12 @@ const CartContext = createContext<CartContextType | undefined>(undefined);
 export function CartProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(cartReducer, initialState);
   const { toast } = useToast();
+  const [isMounted, setIsMounted] = useState(false);
   const supabase = createClient();
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   const loadCart = useCallback(async () => {
     const { data: { user } } = await supabase.auth.getUser();
@@ -121,6 +128,8 @@ export function CartProvider({ children }: { children: ReactNode }) {
   }, [supabase]);
 
   useEffect(() => {
+    if (!isMounted) return;
+    
     loadCart();
 
     const { data: authListener } = supabase.auth.onAuthStateChange(
@@ -134,7 +143,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
     return () => {
       authListener?.subscription.unsubscribe();
     };
-  }, [loadCart, supabase]);
+  }, [isMounted, loadCart, supabase]);
 
   const addToCart = async (item: Omit<CartItem, 'quantity'> & { quantity?: number }) => {
     const { data: { user } } = await supabase.auth.getUser();
