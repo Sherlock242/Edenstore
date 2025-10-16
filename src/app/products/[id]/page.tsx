@@ -11,7 +11,7 @@ import { createClient } from "@supabase/supabase-js";
 import { getReviewsForProduct } from "@/app/reviews/actions";
 import { ProductReviews } from "@/components/product-reviews";
 import { Suspense } from "react";
-import { Loader2 }m "lucide-react";
+import { Loader2 } from "lucide-react";
 import { AverageRating } from "@/components/average-rating";
 
 export const dynamic = 'force-dynamic';
