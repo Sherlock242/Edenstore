@@ -65,7 +65,7 @@ export function AddProductForm({ productToEdit, onProductAddedOrUpdated }: AddPr
       description: '',
       price: 0,
       category: '',
-      weight: 0,
+      weight: 0.5,
       sizes: [{ size: 'S', quantity: 10 }],
       images: [],
     },
@@ -103,7 +103,7 @@ export function AddProductForm({ productToEdit, onProductAddedOrUpdated }: AddPr
             description: '',
             price: 0,
             category: '',
-            weight: 0,
+            weight: 0.5,
             sizes: [{size: 'S', quantity: 10}, {size: 'M', quantity: 10}],
             images: [{ hint: '' }],
           });
@@ -161,6 +161,8 @@ export function AddProductForm({ productToEdit, onProductAddedOrUpdated }: AddPr
     }
   }
 
+  const { register } = form;
+
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
@@ -198,7 +200,7 @@ export function AddProductForm({ productToEdit, onProductAddedOrUpdated }: AddPr
                 <FormItem>
                 <FormLabel>Price</FormLabel>
                 <FormControl>
-                    <Input type="number" step="0.01" placeholder="29.99" {...field} onChange={e => field.onChange(e.target.valueAsNumber || 0)} value={field.value ?? ''} />
+                    <Input type="number" step="0.01" placeholder="29.99" {...field} onChange={e => field.onChange(e.target.valueAsNumber || 0)} />
                 </FormControl>
                 <FormMessage />
                 </FormItem>
@@ -211,7 +213,7 @@ export function AddProductForm({ productToEdit, onProductAddedOrUpdated }: AddPr
                 <FormItem>
                 <FormLabel>Weight (kg)</FormLabel>
                 <FormControl>
-                    <Input type="number" step="0.1" placeholder="0.5" {...field} onChange={e => field.onChange(e.target.valueAsNumber || 0)} value={field.value ?? ''} />
+                    <Input type="number" step="0.1" placeholder="0.5" {...field} onChange={e => field.onChange(e.target.valueAsNumber || 0)} />
                 </FormControl>
                 <FormMessage />
                 </FormItem>
@@ -257,7 +259,7 @@ export function AddProductForm({ productToEdit, onProductAddedOrUpdated }: AddPr
                             render={({ field }) => (
                                 <FormItem className="w-28">
                                     <FormControl>
-                                        <Input type="number" placeholder="Qty" {...field} onChange={e => field.onChange(e.target.valueAsNumber || 0)} value={field.value ?? ''} />
+                                        <Input type="number" placeholder="Qty" {...field} onChange={e => field.onChange(e.target.valueAsNumber || 0)} />
                                     </FormControl>
                                     <FormMessage />
                                 </FormItem>
@@ -282,13 +284,14 @@ export function AddProductForm({ productToEdit, onProductAddedOrUpdated }: AddPr
             <div className="space-y-6 mt-4">
                 {imageFields.map((field, index) => {
                     const imageValue = form.watch(`images.${index}`);
+                    const { ref: fileInputRef, ...fileInputProps } = register(`images.${index}.file`);
                     return (
                         <div key={field.id} className="p-4 border rounded-md space-y-4 relative">
                            <Button type="button" variant="destructive" size="icon" className="absolute -top-3 -right-3 h-7 w-7" onClick={() => removeImage(index)}><X className="h-4 w-4" /></Button>
                             <FormField
                                 control={form.control}
                                 name={`images.${index}.file`}
-                                render={({ field: { onChange, value, ...fieldProps } }) => (
+                                render={({ field: { onChange, ...fieldProps } }) => (
                                 <FormItem>
                                     <FormLabel>Image File</FormLabel>
                                     <FormControl>
@@ -304,11 +307,12 @@ export function AddProductForm({ productToEdit, onProductAddedOrUpdated }: AddPr
                                         )}
                                         <Input
                                             id={`image-upload-${index}`} type="file" className="hidden" accept="image/png, image/jpeg, image/webp"
-                                            {...fieldProps}
+                                            {...fileInputProps}
+                                            ref={fileInputRef}
                                             onChange={event => {
                                                 const file = event.target.files?.[0];
                                                 if (file) {
-                                                    onChange(file);
+                                                    form.setValue(`images.${index}.file`, file);
                                                     const reader = new FileReader();
                                                     reader.onloadend = () => {
                                                         form.setValue(`images.${index}.preview`, reader.result as string)

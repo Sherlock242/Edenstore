@@ -1,4 +1,3 @@
-
 'use client';
 import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
@@ -123,6 +122,12 @@ export default function SiteSettingsPage() {
       toast({ title: result.success ? 'Success!' : 'Error', description: result.message, variant: result.success ? 'default' : 'destructive' });
       setIsDisplaySubmitting(false);
   }
+  
+  const { register: registerHero } = heroImageForm;
+  const { ref: heroInputRef, ...heroInputProps } = registerHero('heroImage');
+  const { register: registerLogo } = siteLogoForm;
+  const { ref: logoInputRef, ...logoInputProps } = registerLogo('siteLogo');
+
 
   return (
     <div className="container mx-auto max-w-4xl px-4 py-8 md:py-12">
@@ -168,7 +173,7 @@ export default function SiteSettingsPage() {
                         <FormField
                             control={siteLogoForm.control}
                             name="siteLogo"
-                            render={({ field: { onChange, ...fieldProps } }) => (
+                            render={({ field }) => (
                             <FormItem>
                                 <FormLabel>Site Logo</FormLabel>
                                 <FormControl>
@@ -181,10 +186,16 @@ export default function SiteSettingsPage() {
                                     )}
                                     <Input
                                         id="logo-upload" type="file" className="hidden" accept="image/png, image/jpeg, image/webp, image/svg+xml"
-                                        {...fieldProps}
+                                        {...logoInputProps}
+                                        ref={logoInputRef}
                                         onChange={event => {
                                             const file = event.target.files?.[0];
-                                            if (file) { onChange(file); const reader = new FileReader(); reader.onloadend = () => { setLogoPreview(reader.result as string); }; reader.readAsDataURL(file); }
+                                            if (file) { 
+                                                field.onChange(file); 
+                                                const reader = new FileReader(); 
+                                                reader.onloadend = () => { setLogoPreview(reader.result as string); }; 
+                                                reader.readAsDataURL(file); 
+                                            }
                                         }}
                                     />
                                     </label>
@@ -246,7 +257,7 @@ export default function SiteSettingsPage() {
                     <FormField
                         control={heroImageForm.control}
                         name="heroImage"
-                        render={({ field: { onChange, ...fieldProps } }) => (
+                        render={({ field }) => (
                         <FormItem>
                             <FormLabel>Hero Image</FormLabel>
                             <FormControl>
@@ -259,10 +270,16 @@ export default function SiteSettingsPage() {
                                 )}
                                 <Input
                                     id="image-upload" type="file" className="hidden" accept="image/png, image/jpeg, image/webp"
-                                    {...fieldProps}
+                                    {...heroInputProps}
+                                    ref={heroInputRef}
                                     onChange={event => {
                                         const file = event.target.files?.[0];
-                                        if (file) { onChange(file); const reader = new FileReader(); reader.onloadend = () => { setHeroPreview(reader.result as string); }; reader.readAsDataURL(file); }
+                                        if (file) { 
+                                          field.onChange(file); 
+                                          const reader = new FileReader(); 
+                                          reader.onloadend = () => { setHeroPreview(reader.result as string); }; 
+                                          reader.readAsDataURL(file); 
+                                        }
                                     }}
                                 />
                                 </label>
@@ -284,4 +301,3 @@ export default function SiteSettingsPage() {
     </div>
   );
 }
-
