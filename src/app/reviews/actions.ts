@@ -4,13 +4,8 @@
 import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
 import { cookies } from 'next/headers';
-import { z } from 'zod';
+import { reviewSchema } from '@/lib/zod-schemas';
 
-export const reviewSchema = z.object({
-  rating: z.coerce.number().min(1, 'Rating is required').max(5),
-  comment: z.string().min(10, 'Comment must be at least 10 characters.'),
-  productId: z.string(),
-});
 
 export type Review = {
     id: string;
