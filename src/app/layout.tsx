@@ -8,6 +8,7 @@ import { Footer } from '@/components/layout/footer';
 import { ClientProviders } from '@/components/client-providers';
 import { getSiteName, getSiteLogoUrl, getHeaderDisplayMode } from './admin/settings/actions';
 import { cookies } from 'next/headers';
+import { AnnouncementBar } from '@/components/layout/announcement-bar';
 
 const inter = Inter({
   subsets: ['latin'],
@@ -54,6 +55,7 @@ export default async function RootLayout({
       >
         <ClientProviders>
           <div className="flex min-h-screen flex-col">
+            <AnnouncementBar />
             <Header siteName={siteName} logoUrl={logoResult.url} displayMode={displayMode} />
             <main className="flex-grow">
               {children}
