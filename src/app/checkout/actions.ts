@@ -172,9 +172,11 @@ type VerifyPaymentPayload = {
     shippingAddress: any;
     totalAmount: number;
     shippingCost: number;
+    couponCode: string | null;
+    discountAmount: number;
 }
 export async function verifyPaymentAndCreateOrder(payload: VerifyPaymentPayload): Promise<{success: boolean; message: string; shipmentId?: number}> {
-    const { razorpay_order_id, razorpay_payment_id, razorpay_signature, shippingAddress, totalAmount, shippingCost } = payload;
+    const { razorpay_order_id, razorpay_payment_id, razorpay_signature, shippingAddress, totalAmount, shippingCost, couponCode, discountAmount } = payload;
     const key_secret = process.env.RAZORPAY_KEY_SECRET!;
 
     const body = razorpay_order_id + "|" + razorpay_payment_id;
@@ -215,6 +217,8 @@ export async function verifyPaymentAndCreateOrder(payload: VerifyPaymentPayload)
             payment_method: 'Prepaid',
             total_amount: totalAmount,
             shipping_cost: shippingCost,
+            coupon_code: couponCode,
+            discount_amount: discountAmount,
         })
         .select()
         .single();
@@ -256,6 +260,8 @@ export async function verifyPaymentAndCreateOrder(payload: VerifyPaymentPayload)
         payment_method: 'Prepaid',
         awb_code: null,
         total_amount: newOrder.total_amount,
+        discount_amount: newOrder.discount_amount,
+        coupon_code: newOrder.coupon_code,
         items: cart.items.map(ci => ({...ci, product_id: ci.product.id, price_at_purchase: ci.product.price})),
         user: { display_name: userProfile?.display_name || '', email: userProfile?.email || '' }
     };

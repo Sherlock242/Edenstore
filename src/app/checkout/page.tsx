@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useCart } from '@/contexts/cart-context';
@@ -9,14 +10,15 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import Script from 'next/script';
-import { useState, useEffect, useTransition } from 'react';
+import { useState, useEffect, useTransition, useMemo } from 'react';
 import { createRazorpayOrder, verifyPaymentAndCreateOrder, fetchShippingRatesAction } from './actions';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
-import { Loader2, CreditCard } from 'lucide-react';
+import { Loader2, CreditCard, Tag, X } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import type { User } from '@supabase/supabase-js';
 import { getSiteNameClient } from '@/app/server-actions';
+import { cn } from '@/lib/utils';
 
 export default function CheckoutPage() {
   const { state, dispatch } = useCart();
@@ -41,6 +43,11 @@ export default function CheckoutPage() {
   const [shippingCost, setShippingCost] = useState<number | null>(null);
   const [isFetchingRate, startFetchingRateTransition] = useTransition();
   const [rateError, setRateError] = useState<string | null>(null);
+  
+  // State for coupon
+  const [couponCode, setCouponCode] = useState('');
+  const [appliedCoupon, setAppliedCoupon] = useState<string | null>(null);
+  const [discount, setDiscount] = useState(0);
 
 
   useEffect(() => {
@@ -81,13 +88,41 @@ export default function CheckoutPage() {
     }
   }, [pincode]);
 
-
-  const subtotal = state.items.reduce(
+  const subtotal = useMemo(() => state.items.reduce(
     (acc, item) => acc + item.product.price * item.quantity,
     0
-  );
+  ), [state.items]);
   
-  const total = subtotal + (shippingCost || 0);
+  const total = useMemo(() => subtotal - discount + (shippingCost || 0), [subtotal, discount, shippingCost]);
+
+  const handleApplyCoupon = () => {
+      if (couponCode.toLowerCase() === 'akatsu10') {
+          const newDiscount = subtotal * 0.10;
+          setDiscount(newDiscount);
+          setAppliedCoupon('akatsu10');
+          toast({
+              title: 'Coupon Applied!',
+              description: `You got a 10% discount (₹${newDiscount.toFixed(2)}).`
+          });
+      } else {
+          toast({
+              variant: 'destructive',
+              title: 'Invalid Coupon',
+              description: 'The coupon code you entered is not valid.'
+          });
+      }
+  };
+
+  const handleRemoveCoupon = () => {
+      setDiscount(0);
+      setAppliedCoupon(null);
+      setCouponCode('');
+      toast({
+          title: 'Coupon Removed',
+          description: 'The discount has been removed from your order.'
+      });
+  };
+
 
   const validateForm = () => {
     if (!firstName || !address || !city || !country || !phone || !email || !pincode || !stateName) {
@@ -168,6 +203,8 @@ export default function CheckoutPage() {
                 shippingAddress: shippingAddress,
                 totalAmount: total,
                 shippingCost: finalShippingCost,
+                couponCode: appliedCoupon,
+                discountAmount: discount,
              });
 
             if (verificationResult.success) {
@@ -319,6 +356,12 @@ export default function CheckoutPage() {
                     <span>Subtotal</span>
                     <span>₹{subtotal.toFixed(2)}</span>
                   </div>
+                  {appliedCoupon && (
+                    <div className="flex justify-between text-green-500">
+                        <span>Discount ({appliedCoupon})</span>
+                        <span>-₹{discount.toFixed(2)}</span>
+                    </div>
+                  )}
                   <div className="flex justify-between">
                     <span>Shipping</span>
                     <span className="text-right">
@@ -341,6 +384,33 @@ export default function CheckoutPage() {
                     </span>
                   </div>
                 </div>
+
+                <Separator className="my-4" />
+
+                <div>
+                    {appliedCoupon ? (
+                        <div className="flex items-center justify-between gap-2 p-2 rounded-lg bg-green-500/10">
+                            <p className="text-sm font-semibold text-green-500">Coupon "{appliedCoupon}" applied!</p>
+                            <Button variant="ghost" size="icon" className="h-6 w-6 text-green-500" onClick={handleRemoveCoupon}>
+                                <X className="h-4 w-4"/>
+                            </Button>
+                        </div>
+                    ) : (
+                        <div className="flex items-center gap-2">
+                            <div className="relative flex-grow">
+                                <Tag className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                                <Input 
+                                    placeholder="Coupon Code" 
+                                    className="pl-9" 
+                                    value={couponCode} 
+                                    onChange={(e) => setCouponCode(e.target.value)}
+                                />
+                            </div>
+                            <Button onClick={handleApplyCoupon}>Apply</Button>
+                        </div>
+                    )}
+                </div>
+
               </CardContent>
             </Card>
           </div>

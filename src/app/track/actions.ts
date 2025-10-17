@@ -37,7 +37,7 @@ export async function getOrderDetailsByRazorpayId(razorpayOrderId: string): Prom
     const { data: orderData, error: orderError } = await supabase
         .from('orders')
         .select(`
-            id, created_at, status, shipping_address, razorpay_order_id, shipment_id, shiprocket_order_id, payment_method,
+            id, created_at, status, shipping_address, razorpay_order_id, shipment_id, shiprocket_order_id, payment_method, awb_code,
             order_items ( product_id, quantity, size, color, price_at_purchase )
         `)
         .eq('razorpay_order_id', razorpayOrderId)
@@ -98,11 +98,10 @@ export async function getOrderDetailsByRazorpayId(razorpayOrderId: string): Prom
         razorpay_order_id: orderData.razorpay_order_id,
         shipment_id: orderData.shipment_id,
         shiprocket_order_id: orderData.shiprocket_order_id,
+        awb_code: orderData.awb_code,
         payment_method: orderData.payment_method as OrderDetails['payment_method'],
         items: itemsWithProducts,
     };
 
     return { success: true, order: finalOrder, message: 'Order details fetched successfully.' };
 }
-
-    

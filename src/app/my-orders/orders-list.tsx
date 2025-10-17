@@ -1,3 +1,4 @@
+
 'use client';
 
 import Image from 'next/image';
@@ -74,6 +75,15 @@ export function OrdersList({ orders }: OrdersListProps) {
                         </div>
                         ))}
                     </div>
+                    { (order.discount_amount && order.discount_amount > 0) && (
+                        <>
+                            <Separator className="my-4" />
+                            <div className="flex justify-between text-sm text-green-500">
+                                <p>Discount ({order.coupon_code})</p>
+                                <p>-₹{order.discount_amount.toFixed(2)}</p>
+                            </div>
+                        </>
+                    )}
 
                   <Accordion type="multiple">
                       {order.shipment_id && (

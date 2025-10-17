@@ -112,18 +112,19 @@ export async function pushOrderToShiprocket(order: FullOrderDetails): Promise<{ 
     
     // Use the final total amount from the order for both COD and Prepaid
     const totalOrderValue = order.total_amount;
+    const totalDiscount = order.discount_amount || 0;
 
-    // To ensure the correct total is collected for COD and declared for prepaid,
-    // we will send a single consolidated item to Shiprocket representing the full order value.
-    const orderItemsForShipment: ShipmentOrderItem[] = [
-      {
-          name: `ANISTORE Order - ${order.razorpay_order_id}`.substring(0, 100),
-          sku: `ANISTORE-${order.id}`.substring(0, 50),
-          units: 1, // Consolidate into a single unit
-          selling_price: totalOrderValue, // The full value of the order
-          hsn: 610910,
-      }
-    ];
+    // Shiprocket expects `sub_total` to be the price including discounts. `total_discount` is for their informational purposes.
+    const subTotalForShiprocket = order.items.reduce((acc, item) => acc + (item.price_at_purchase * item.quantity), 0);
+
+    const orderItemsForShipment: ShipmentOrderItem[] = order.items.map(item => ({
+        name: item.product.name.substring(0, 100),
+        sku: `${item.product.id}-${item.size}-${item.color}`.substring(0, 50),
+        units: item.quantity,
+        selling_price: item.price_at_purchase,
+        hsn: 610910,
+    }));
+    
 
     const payload: ShipmentPayload = {
         order_id: order.razorpay_order_id,
@@ -144,11 +145,11 @@ export async function pushOrderToShiprocket(order: FullOrderDetails): Promise<{ 
         shipping_is_billing: true,
         order_items: orderItemsForShipment,
         payment_method: order.payment_method === 'COD' ? 'COD' : 'Prepaid',
-        shipping_charges: 0,
+        shipping_charges: order.total_amount - subTotalForShiprocket + totalDiscount,
         giftwrap_charges: 0,
         transaction_charges: 0,
-        total_discount: 0,
-        sub_total: totalOrderValue, // This should be the grand total the customer paid or will pay
+        total_discount: totalDiscount,
+        sub_total: subTotalForShiprocket,
         length: 10,
         breadth: 10,
         height: 5,

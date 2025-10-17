@@ -30,6 +30,7 @@ import {
 } from '@/components/ui/select';
 import { Send } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { Separator } from '@/components/ui/separator';
 
 
 type ViewOrdersProps = {
@@ -51,7 +52,7 @@ export function ViewOrders({ orders, onStatusUpdated }: ViewOrdersProps) {
     }
   };
 
-  const calculateOrderTotal = (order: FullOrderDetails) => {
+  const calculateSubtotal = (order: FullOrderDetails) => {
     return order.items.reduce((total, item) => total + item.price_at_purchase * item.quantity, 0);
   };
   
@@ -72,6 +73,7 @@ export function ViewOrders({ orders, onStatusUpdated }: ViewOrdersProps) {
       {orders.map(order => {
         const statusInfo = getStatusInfo(order.status);
         const shippingInfo = JSON.parse(order.shipping_address as string);
+        const subtotal = calculateSubtotal(order);
 
         return (
           <AccordionItem value={order.id} key={order.id} className="rounded-lg border bg-card">
@@ -82,7 +84,7 @@ export function ViewOrders({ orders, onStatusUpdated }: ViewOrdersProps) {
                 <span className="hidden sm:inline">{format(new Date(order.created_at), 'MMM dd, yyyy')}</span>
                 <Badge variant="outline" className={cn(order.payment_method === 'COD' ? 'bg-orange-500/20 text-orange-400 border-orange-500/30' : 'bg-green-500/20 text-green-400 border-green-500/30')}>{order.payment_method || 'Prepaid'}</Badge>
                 <Badge variant="outline" className={`capitalize ${statusInfo.color}`}>{statusInfo.text}</Badge>
-                <span className="font-bold">₹{calculateOrderTotal(order).toFixed(2)}</span>
+                <span className="font-bold">₹{order.total_amount.toFixed(2)}</span>
               </div>
             </AccordionTrigger>
             <AccordionContent className="p-6">
@@ -119,6 +121,15 @@ export function ViewOrders({ orders, onStatusUpdated }: ViewOrdersProps) {
                                     ))}
                                 </TableBody>
                             </Table>
+                        </div>
+                         <Separator className="my-4" />
+                        <div className="space-y-2 text-right">
+                             <p className="text-sm">Subtotal: <span className="font-medium">₹{subtotal.toFixed(2)}</span></p>
+                            {order.discount_amount && order.discount_amount > 0 && (
+                                <p className="text-sm text-green-500">Discount ({order.coupon_code}): <span className="font-medium">-₹{order.discount_amount.toFixed(2)}</span></p>
+                            )}
+                            <p className="text-sm">Shipping: <span className="font-medium">₹{(order.total_amount - subtotal + (order.discount_amount || 0)).toFixed(2)}</span></p>
+                            <p className="text-base font-bold">Grand Total: <span className="text-lg">₹{order.total_amount.toFixed(2)}</span></p>
                         </div>
                     </div>
                      <div>
@@ -164,5 +175,3 @@ export function ViewOrders({ orders, onStatusUpdated }: ViewOrdersProps) {
     </Accordion>
   );
 }
-
-    
