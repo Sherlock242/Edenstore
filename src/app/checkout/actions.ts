@@ -12,6 +12,7 @@ import type { FullOrderDetails } from '@/app/admin/orders/actions';
 import { createClient as createAdminClient } from '@supabase/supabase-js';
 import { getShippingRates } from '@/lib/shiprocket-client';
 import { type CartItem } from '@/contexts/cart-context';
+import { getAnnouncementBarSettings } from '../admin/settings/actions';
 
 
 async function updateInventory(supabase: any, cartItems: CartItem[]) {
@@ -276,4 +277,18 @@ export async function verifyPaymentAndCreateOrder(payload: VerifyPaymentPayload)
         .eq('user_id', user.id);
     
     return { success: true, message: "Payment verified and order created successfully." };
+}
+
+export async function validateCoupon(couponCode: string): Promise<{ success: boolean; message: string; discountPercent?: number }> {
+    const cookieStore = cookies();
+    if (couponCode.toLowerCase() !== 'akatsu10') {
+        return { success: false, message: 'Invalid coupon code.' };
+    }
+
+    const announcementSettings = await getAnnouncementBarSettings(cookieStore);
+    if (!announcementSettings.enabled) {
+        return { success: false, message: 'This coupon is not currently active.' };
+    }
+    
+    return { success: true, message: 'Coupon applied!', discountPercent: 10 };
 }

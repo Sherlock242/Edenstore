@@ -11,7 +11,7 @@ import { Separator } from '@/components/ui/separator';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import Script from 'next/script';
 import { useState, useEffect, useTransition, useMemo } from 'react';
-import { createRazorpayOrder, verifyPaymentAndCreateOrder, fetchShippingRatesAction } from './actions';
+import { createRazorpayOrder, verifyPaymentAndCreateOrder, fetchShippingRatesAction, validateCoupon } from './actions';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
 import { Loader2, CreditCard, Tag, X } from 'lucide-react';
@@ -48,6 +48,7 @@ export default function CheckoutPage() {
   const [couponCode, setCouponCode] = useState('');
   const [appliedCoupon, setAppliedCoupon] = useState<string | null>(null);
   const [discount, setDiscount] = useState(0);
+  const [isApplyingCoupon, startCouponTransition] = useTransition();
 
 
   useEffect(() => {
@@ -95,22 +96,26 @@ export default function CheckoutPage() {
   
   const total = useMemo(() => subtotal - discount + (shippingCost || 0), [subtotal, discount, shippingCost]);
 
-  const handleApplyCoupon = () => {
-      if (couponCode.toLowerCase() === 'akatsu10') {
-          const newDiscount = subtotal * 0.10;
-          setDiscount(newDiscount);
-          setAppliedCoupon('akatsu10');
-          toast({
-              title: 'Coupon Applied!',
-              description: `You got a 10% discount (₹${newDiscount.toFixed(2)}).`
-          });
+ const handleApplyCoupon = () => {
+    if (!couponCode) return;
+    startCouponTransition(async () => {
+      const result = await validateCoupon(couponCode);
+      if (result.success && result.discountPercent) {
+        const newDiscount = subtotal * (result.discountPercent / 100);
+        setDiscount(newDiscount);
+        setAppliedCoupon(couponCode.toLowerCase());
+        toast({
+          title: 'Coupon Applied!',
+          description: `You got a ${result.discountPercent}% discount (₹${newDiscount.toFixed(2)}).`,
+        });
       } else {
-          toast({
-              variant: 'destructive',
-              title: 'Invalid Coupon',
-              description: 'The coupon code you entered is not valid.'
-          });
+        toast({
+          variant: 'destructive',
+          title: 'Invalid Coupon',
+          description: result.message,
+        });
       }
+    });
   };
 
   const handleRemoveCoupon = () => {
@@ -404,9 +409,12 @@ export default function CheckoutPage() {
                                     className="pl-9" 
                                     value={couponCode} 
                                     onChange={(e) => setCouponCode(e.target.value)}
+                                    disabled={isApplyingCoupon}
                                 />
                             </div>
-                            <Button onClick={handleApplyCoupon}>Apply</Button>
+                            <Button onClick={handleApplyCoupon} disabled={isApplyingCoupon}>
+                                {isApplyingCoupon ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Apply'}
+                            </Button>
                         </div>
                     )}
                 </div>
