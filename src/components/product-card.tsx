@@ -47,11 +47,6 @@ export function ProductCard({ product }: ProductCardProps) {
               </div>
             )}
           </Link>
-          <div className="absolute bottom-0 left-0 right-0 flex items-center justify-center gap-2 p-2 opacity-0 pointer-events-none transition-all duration-300 group-hover:opacity-100 group-hover:pointer-events-auto group-hover:bottom-2">
-            <Button size="sm" className="flex-grow bg-accent text-accent-foreground hover:bg-accent/90" onClick={handleAddToCart}>
-              <ShoppingCart className="mr-2 h-4 w-4" /> Add to Cart
-            </Button>
-          </div>
         </div>
         <div className="p-4">
           <Link href={`/products/${product.id}`}>
