@@ -70,9 +70,9 @@ function Brand({ siteName, logoUrl, displayMode }: Pick<HeaderClientProps, 'site
 
     return (
         <Link href="/" className="flex items-center space-x-2">
-            {showLogo && <Image src={logoUrl} alt={`${siteName} Logo`} width={32} height={32} className="h-8 w-auto" />}
+            {showLogo && <Image src={logoUrl} alt={`${siteName} Logo`} width={48} height={48} className="h-12 w-auto" />}
             {showTitle && (
-                 <span className="font-headline text-lg font-bold uppercase text-primary">
+                 <span className="font-headline text-2xl font-bold uppercase text-primary">
                     {siteName}
                 </span>
             )}
@@ -101,7 +101,7 @@ export function HeaderClient({ user, userProfile, isadmin, siteName, logoUrl, di
                 size="icon"
                 aria-label="Toggle navigation menu"
               >
-                <Menu className="h-5 w-5" />
+                <Menu className="h-6 w-6" />
               </Button>
             </SheetTrigger>
             <MobileMenuSheet user={user} userProfile={userProfile} isadmin={isadmin} setOpen={setIsMobileMenuOpen} siteName={siteName} logoUrl={logoUrl} displayMode={displayMode} />

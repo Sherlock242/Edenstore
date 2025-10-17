@@ -55,9 +55,9 @@ function Brand({ siteName, logoUrl, displayMode, onLinkClick }: Pick<MobileMenuS
 
     return (
         <Link href="/" onClick={onLinkClick} className="flex items-center space-x-2">
-            {showLogo && <Image src={logoUrl} alt={`${siteName} Logo`} width={32} height={32} className="h-8 w-auto" />}
+            {showLogo && <Image src={logoUrl} alt={`${siteName} Logo`} width={40} height={40} className="h-10 w-auto" />}
             {showTitle && (
-                 <span className="font-headline text-lg font-bold uppercase text-primary">
+                 <span className="font-headline text-xl font-bold uppercase text-primary">
                     {siteName}
                 </span>
             )}
