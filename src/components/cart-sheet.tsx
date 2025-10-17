@@ -52,7 +52,7 @@ export function CartSheet() {
     <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
         <SheetTrigger asChild>
         <Button variant="ghost" size="icon" className="relative">
-            <ShoppingBag className="h-7 w-7" />
+            <ShoppingBag className="h-8 w-8" />
             {cartItemCount > 0 && (
             <span className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-xs text-primary-foreground">
                 {cartItemCount}

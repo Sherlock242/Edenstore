@@ -101,7 +101,7 @@ export function HeaderClient({ user, userProfile, isadmin, siteName, logoUrl, di
                 size="icon"
                 aria-label="Toggle navigation menu"
               >
-                <Menu className="h-7 w-7" />
+                <Menu className="h-8 w-8" />
               </Button>
             </SheetTrigger>
             <MobileMenuSheet user={user} userProfile={userProfile} isadmin={isadmin} setOpen={setIsMobileMenuOpen} siteName={siteName} logoUrl={logoUrl} displayMode={displayMode} />
