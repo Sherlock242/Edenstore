@@ -73,7 +73,7 @@ function Brand({ siteName, logoUrl, displayMode }: Pick<HeaderClientProps, 'site
         <Link href="/" className="flex items-center space-x-2">
             {showLogo && <Image src={logoUrl} alt={`${siteName} Logo`} width={56} height={56} className="h-14 w-auto" />}
             {showTitle && (
-                 <span className="font-headline text-3xl font-bold uppercase text-primary">
+                 <span className="font-body text-2xl font-semibold uppercase text-primary">
                     {siteName}
                 </span>
             )}
