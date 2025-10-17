@@ -1,4 +1,3 @@
-
 'use client';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -58,7 +57,7 @@ function Brand({ siteName, logoUrl, displayMode, onLinkClick }: Pick<MobileMenuS
         <Link href="/" onClick={onLinkClick} className="flex items-center space-x-2">
             {showLogo && <Image src={logoUrl} alt={`${siteName} Logo`} width={32} height={32} className="h-8 w-auto" />}
             {showTitle && (
-                 <span className="bg-gradient-to-r from-red-600 to-red-500 bg-clip-text font-headline text-lg font-bold uppercase text-transparent">
+                 <span className="font-headline text-lg font-bold uppercase text-primary">
                     {siteName}
                 </span>
             )}
@@ -133,7 +132,7 @@ export function MobileMenuSheet({ user, userProfile, isadmin, setOpen, siteName,
             </Button>
           </div>
         ) : (
-          <Button asChild className="w-full bg-gradient-to-r from-red-600 to-red-500 text-white" onClick={() => setOpen(false)}>
+          <Button asChild className="w-full bg-primary text-primary-foreground hover:bg-primary/90" onClick={() => setOpen(false)}>
             <Link href="/login">
               <LogIn className="mr-2 h-4 w-4" />
               Login
