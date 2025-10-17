@@ -13,6 +13,7 @@ import { createClient as createAdminClient } from '@supabase/supabase-js';
 import { getShippingRates } from '@/lib/shiprocket-client';
 import { type CartItem } from '@/contexts/cart-context';
 import { getAnnouncementBarSettings } from '../admin/settings/actions';
+import { revalidatePath } from 'next/cache';
 
 
 async function updateInventory(supabase: any, cartItems: CartItem[]) {
@@ -249,6 +250,14 @@ export async function verifyPaymentAndCreateOrder(payload: VerifyPaymentPayload)
     
     // All database writes successful, now update inventory
     await updateInventory(supabase, cart.items);
+
+    // After updating inventory, revalidate paths for the products in the cart
+    cart.items.forEach(item => {
+        revalidatePath(`/products/${item.product.id}`);
+    });
+    revalidatePath('/products');
+    revalidatePath('/');
+
 
     const fullOrder: FullOrderDetails = {
         id: newOrder.id,
