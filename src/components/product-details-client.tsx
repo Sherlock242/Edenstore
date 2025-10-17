@@ -12,7 +12,9 @@ import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 
 export function ProductDetailsClient({ product }: { product: Product }) {
-  const [selectedSize, setSelectedSize] = useState(product.sizes[0]?.size);
+  const [selectedSize, setSelectedSize] = useState<string | undefined>(
+    product.sizes.find(s => s.quantity > 0)?.size
+  );
   const [selectedColor, setSelectedColor] = useState(product.colors[0]);
   const [isOutOfStock, setIsOutOfStock] = useState(false);
 
@@ -21,16 +23,25 @@ export function ProductDetailsClient({ product }: { product: Product }) {
   const { toast } = useToast();
   const inWishlist = isInWishlist(product.id);
 
-  useEffect(() => {
-    const sizeInfo = product.sizes.find(s => s.size === selectedSize);
-    if (sizeInfo && sizeInfo.quantity <= 0) {
-        setIsOutOfStock(true);
+   useEffect(() => {
+    if (selectedSize) {
+      const sizeInfo = product.sizes.find(s => s.size === selectedSize);
+      setIsOutOfStock(sizeInfo ? sizeInfo.quantity <= 0 : true);
     } else {
-        setIsOutOfStock(false);
+      // If no size is selected (e.g., all are out of stock initially)
+      setIsOutOfStock(true);
     }
   }, [selectedSize, product.sizes]);
 
   const handleAddToCart = () => {
+    if (!selectedSize) {
+        toast({
+            variant: "destructive",
+            title: "Selection Needed",
+            description: "Please select a size before adding to cart.",
+        });
+        return;
+    }
     if (isOutOfStock) {
         toast({
             variant: "destructive",
@@ -103,26 +114,38 @@ export function ProductDetailsClient({ product }: { product: Product }) {
       <div>
         <Label className="mb-2 block font-semibold">Size</Label>
         <RadioGroup
-          defaultValue={selectedSize}
+          value={selectedSize}
           onValueChange={setSelectedSize}
           className="flex flex-wrap gap-2"
         >
-          {product.sizes.map((sizeInfo) => (
-            <Label
-              key={sizeInfo.size}
-              htmlFor={`size-${sizeInfo.size}`}
-              className={cn(
-                "flex cursor-pointer items-center justify-center rounded-md border-2 border-border p-2 px-4 transition-colors hover:bg-accent hover:text-accent-foreground",
-                selectedSize === sizeInfo.size && "border-primary bg-primary/10 text-primary",
-                sizeInfo.quantity <= 0 && "cursor-not-allowed bg-muted/50 text-muted-foreground line-through hover:bg-muted/50"
-              )}
-            >
-              <RadioGroupItem value={sizeInfo.size} id={`size-${sizeInfo.size}`} className="sr-only" disabled={sizeInfo.quantity <= 0} />
-              {sizeInfo.size}
-            </Label>
-          ))}
+          {product.sizes.map((sizeInfo) => {
+            const isSelected = selectedSize === sizeInfo.size;
+            const isSizeDisabled = sizeInfo.quantity <= 0;
+            const isLowStock = sizeInfo.quantity > 0 && sizeInfo.quantity <= 5;
+
+            return (
+              <Label
+                key={sizeInfo.size}
+                htmlFor={`size-${sizeInfo.size}`}
+                className={cn(
+                  "flex h-auto min-h-10 cursor-pointer flex-col items-center justify-center rounded-md border-2 border-border p-2 px-4 transition-colors hover:bg-accent hover:text-accent-foreground",
+                  isSelected && "border-primary bg-primary/10 text-primary",
+                  isSizeDisabled && "cursor-not-allowed bg-muted/50 text-muted-foreground line-through hover:bg-muted/50"
+                )}
+              >
+                <RadioGroupItem value={sizeInfo.size} id={`size-${sizeInfo.size}`} className="sr-only" disabled={isSizeDisabled} />
+                <span className="font-medium">{sizeInfo.size}</span>
+                <span className={cn("text-xs", 
+                    isLowStock && "text-destructive",
+                    !isSizeDisabled && "text-muted-foreground",
+                    isSelected && "text-primary"
+                )}>
+                  {sizeInfo.quantity > 0 ? `${sizeInfo.quantity} left` : 'Sold Out'}
+                </span>
+              </Label>
+            )
+          })}
         </RadioGroup>
-         {isOutOfStock && <p className="mt-2 text-sm text-destructive">This size is out of stock.</p>}
       </div>
       <div>
         <Label className="mb-2 block font-semibold">Color</Label>
