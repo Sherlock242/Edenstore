@@ -25,12 +25,16 @@ import {
     updateSiteLogoAction,
     getHeaderDisplayModeClient,
     updateHeaderDisplayModeAction,
+    getAnnouncementBarSettingsClient,
+    updateAnnouncementBarSettingsAction,
     type HeaderDisplayMode,
+    type AnnouncementSettings,
 } from '@/app/server-actions';
 import Image from 'next/image';
 import { Upload } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Switch } from '@/components/ui/switch';
 
 const heroImageSchema = z.object({
   heroImage: z
@@ -54,6 +58,11 @@ const headerDisplaySchema = z.object({
   displayMode: z.enum(['title', 'logo', 'both']),
 });
 
+const announcementSchema = z.object({
+    enabled: z.boolean(),
+    message: z.string().min(5, { message: 'Message must be at least 5 characters.' }).max(100, { message: 'Message must be 100 characters or less.'}),
+});
+
 
 export default function SiteSettingsPage() {
   const { toast } = useToast();
@@ -64,6 +73,7 @@ export default function SiteSettingsPage() {
   const [isNameSubmitting, setIsNameSubmitting] = useState(false);
   const [isLogoSubmitting, setIsLogoSubmitting] = useState(false);
   const [isDisplaySubmitting, setIsDisplaySubmitting] = useState(false);
+  const [isAnnouncementSubmitting, setIsAnnouncementSubmitting] = useState(false);
 
   const heroImageForm = useForm<z.infer<typeof heroImageSchema>>({ resolver: zodResolver(heroImageSchema) });
   const siteNameForm = useForm<z.infer<typeof siteNameSchema>>({ 
@@ -74,6 +84,13 @@ export default function SiteSettingsPage() {
   });
   const siteLogoForm = useForm<z.infer<typeof siteLogoSchema>>({ resolver: zodResolver(siteLogoSchema) });
   const headerDisplayForm = useForm<z.infer<typeof headerDisplaySchema>>({ resolver: zodResolver(headerDisplaySchema) });
+  const announcementForm = useForm<z.infer<typeof announcementSchema>>({ 
+      resolver: zodResolver(announcementSchema),
+      defaultValues: {
+          enabled: false,
+          message: ''
+      }
+  });
   
   useEffect(() => {
       // Fetch initial data for all forms
@@ -89,7 +106,10 @@ export default function SiteSettingsPage() {
        getHeaderDisplayModeClient().then(mode => {
           headerDisplayForm.setValue('displayMode', mode);
        });
-  }, [siteNameForm, headerDisplayForm]);
+       getAnnouncementBarSettingsClient().then(settings => {
+            announcementForm.reset(settings);
+       });
+  }, [siteNameForm, headerDisplayForm, announcementForm]);
 
   const onHeroImageSubmit = async (values: z.infer<typeof heroImageSchema>) => {
     setIsHeroSubmitting(true);
@@ -122,6 +142,13 @@ export default function SiteSettingsPage() {
       toast({ title: result.success ? 'Success!' : 'Error', description: result.message, variant: result.success ? 'default' : 'destructive' });
       setIsDisplaySubmitting(false);
   }
+
+  const onAnnouncementSubmit = async (values: z.infer<typeof announcementSchema>) => {
+      setIsAnnouncementSubmitting(true);
+      const result = await updateAnnouncementBarSettingsAction(values);
+      toast({ title: result.success ? 'Success!' : 'Error', description: result.message, variant: result.success ? 'default' : 'destructive' });
+      setIsAnnouncementSubmitting(false);
+  }
   
   const { register: registerHero } = heroImageForm;
   const { ref: heroInputRef, ...heroInputProps } = registerHero('heroImage');
@@ -137,6 +164,49 @@ export default function SiteSettingsPage() {
           <CardDescription>Manage global settings for your website.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-12">
+
+            {/* Announcement Bar Section */}
+            <div className="space-y-8">
+                <h3 className="text-lg font-medium">Promotional Bar</h3>
+                <Form {...announcementForm}>
+                    <form onSubmit={announcementForm.handleSubmit(onAnnouncementSubmit)} className="space-y-6">
+                        <FormField
+                            control={announcementForm.control}
+                            name="enabled"
+                            render={({ field }) => (
+                                <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                                    <div className="space-y-0.5">
+                                        <FormLabel className="text-base">Enable Promotional Bar</FormLabel>
+                                        <FormDescription>Show a scrolling promotional message at the top of the site.</FormDescription>
+                                    </div>
+                                    <FormControl>
+                                        <Switch checked={field.value} onCheckedChange={field.onChange} />
+                                    </FormControl>
+                                </FormItem>
+                            )}
+                        />
+                        <FormField
+                            control={announcementForm.control}
+                            name="message"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Promotional Message</FormLabel>
+                                    <FormControl>
+                                        <Input placeholder="e.g., Free shipping on orders over $50" {...field} />
+                                    </FormControl>
+                                    <FormDescription>The text that will scroll in the announcement bar.</FormDescription>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+                        <Button type="submit" disabled={isAnnouncementSubmitting}>
+                            {isAnnouncementSubmitting ? 'Saving...' : 'Save Promotion Settings'}
+                        </Button>
+                    </form>
+                </Form>
+            </div>
+
+             <Separator />
 
             {/* Header Branding Section */}
             <div className="space-y-8">

@@ -6,7 +6,7 @@ import { Toaster } from '@/components/ui/toaster';
 import { Header } from '@/components/layout/header';
 import { Footer } from '@/components/layout/footer';
 import { ClientProviders } from '@/components/client-providers';
-import { getSiteName, getSiteLogoUrl, getHeaderDisplayMode } from './admin/settings/actions';
+import { getSiteName, getSiteLogoUrl, getHeaderDisplayMode, getAnnouncementBarSettings } from './admin/settings/actions';
 import { cookies } from 'next/headers';
 import { AnnouncementBar } from '@/components/layout/announcement-bar';
 
@@ -44,9 +44,12 @@ export default async function RootLayout({
   children: React.ReactNode;
 }>) {
   const cookieStore = cookies();
-  const siteName = await getSiteName(cookieStore);
-  const logoResult = await getSiteLogoUrl(cookieStore);
-  const displayMode = await getHeaderDisplayMode(cookieStore);
+  const [siteName, logoResult, displayMode, announcementSettings] = await Promise.all([
+    getSiteName(cookieStore),
+    getSiteLogoUrl(cookieStore),
+    getHeaderDisplayMode(cookieStore),
+    getAnnouncementBarSettings(cookieStore),
+  ]);
 
   return (
     <html lang="en" className="dark">
@@ -55,7 +58,7 @@ export default async function RootLayout({
       >
         <ClientProviders>
           <div className="flex min-h-screen flex-col">
-            <AnnouncementBar />
+            {announcementSettings.enabled && <AnnouncementBar message={announcementSettings.message} />}
             <Header siteName={siteName} logoUrl={logoResult.url} displayMode={displayMode} />
             <main className="flex-grow">
               {children}

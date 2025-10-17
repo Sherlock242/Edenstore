@@ -4,7 +4,20 @@
 
 import { cookies } from 'next/headers';
 import { addProduct, deleteProduct, getProducts, getProductsForSearch, updateProduct, type ProductFormValues, type UpdateProductFormValues } from './actions';
-import { getHeroImageUrl, getSiteName, updateHeroImage, updateSiteName, getSiteLogoUrl, updateSiteLogo, getHeaderDisplayMode, updateHeaderDisplayMode, type HeaderDisplayMode } from './admin/settings/actions';
+import { 
+    getHeroImageUrl, 
+    getSiteName, 
+    updateHeroImage, 
+    updateSiteName, 
+    getSiteLogoUrl, 
+    updateSiteLogo, 
+    getHeaderDisplayMode, 
+    updateHeaderDisplayMode, 
+    getAnnouncementBarSettings,
+    updateAnnouncementBarSettings,
+    type HeaderDisplayMode,
+    type AnnouncementSettings
+} from './admin/settings/actions';
 
 // Product Actions
 export async function getProductsClient() {
@@ -71,4 +84,14 @@ export async function getHeaderDisplayModeClient() {
 export async function updateHeaderDisplayModeAction(mode: HeaderDisplayMode) {
     const cookieStore = cookies();
     return await updateHeaderDisplayMode(cookieStore, mode);
+}
+
+export async function getAnnouncementBarSettingsClient() {
+    const cookieStore = cookies();
+    return await getAnnouncementBarSettings(cookieStore);
+}
+
+export async function updateAnnouncementBarSettingsAction(settings: AnnouncementSettings) {
+    const cookieStore = cookies();
+    return await updateAnnouncementBarSettings(cookieStore, settings);
 }

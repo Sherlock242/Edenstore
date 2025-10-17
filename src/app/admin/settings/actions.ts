@@ -9,6 +9,9 @@ const HERO_IMAGE_KEY = 'heroImageUrl';
 const SITE_NAME_KEY = 'siteName';
 const SITE_LOGO_KEY = 'siteLogoUrl';
 const HEADER_DISPLAY_MODE_KEY = 'headerDisplayMode';
+const ANNOUNCEMENT_ENABLED_KEY = 'announcementBarEnabled';
+const ANNOUNCEMENT_MESSAGE_KEY = 'announcementBarMessage';
+
 
 type ServerResponse = {
     success: boolean;
@@ -18,6 +21,10 @@ type ServerResponse = {
 }
 
 export type HeaderDisplayMode = 'title' | 'logo' | 'both';
+export type AnnouncementSettings = {
+    enabled: boolean;
+    message: string;
+};
 
 
 export async function getHeroImageUrl(cookieStore: ReadonlyRequestCookies): Promise<{ success: boolean; url?: string | null; message: string; }> {
@@ -254,4 +261,43 @@ export async function updateHeaderDisplayMode(cookieStore: ReadonlyRequestCookie
     revalidatePath('/', 'layout');
 
     return { success: true, message: 'Header display updated successfully!' };
+}
+
+export async function getAnnouncementBarSettings(cookieStore: ReadonlyRequestCookies): Promise<AnnouncementSettings> {
+    const supabase = createClient(cookieStore);
+    const { data, error } = await supabase
+        .from('site_settings')
+        .select('key, value')
+        .in('key', [ANNOUNCEMENT_ENABLED_KEY, ANNOUNCEMENT_MESSAGE_KEY]);
+
+    if (error) {
+        console.error('Error fetching announcement settings:', error);
+    }
+
+    const settings = new Map(data?.map(item => [item.key, item.value]));
+
+    return {
+        enabled: settings.get(ANNOUNCEMENT_ENABLED_KEY) === 'true',
+        message: settings.get(ANNOUNCEMENT_MESSAGE_KEY) || "Get 10% off using coupon code AKATSU10"
+    };
+}
+
+export async function updateAnnouncementBarSettings(cookieStore: ReadonlyRequestCookies, settings: AnnouncementSettings): Promise<{success: boolean; message: string}> {
+    const supabase = createClient(cookieStore);
+
+    const { error } = await supabase
+        .from('site_settings')
+        .upsert([
+            { key: ANNOUNCEMENT_ENABLED_KEY, value: settings.enabled.toString() },
+            { key: ANNOUNCEMENT_MESSAGE_KEY, value: settings.message }
+        ]);
+
+    if (error) {
+        console.error('Error updating announcement settings:', error);
+        return { success: false, message: 'Failed to update announcement settings.' };
+    }
+
+    revalidatePath('/', 'layout');
+
+    return { success: true, message: 'Announcement bar settings updated successfully!' };
 }
