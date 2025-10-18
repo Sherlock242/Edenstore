@@ -1,3 +1,4 @@
+
 import type {Config} from 'tailwindcss';
 
 export default {
@@ -16,9 +17,6 @@ export default {
       },
     },
     extend: {
-      spacing: {
-        '17': '4.25rem',
-      },
       fontFamily: {
         body: ['var(--font-inter)', 'sans-serif'],
         headline: ['var(--font-space-grotesk)', 'sans-serif'],
