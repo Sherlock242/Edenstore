@@ -71,9 +71,9 @@ function Brand({ siteName, logoUrl, displayMode }: Pick<HeaderClientProps, 'site
 
     return (
         <Link href="/" className="flex items-center space-x-2">
-            {showLogo && <Image src={logoUrl} alt={`${siteName} Logo`} width={56} height={56} className="h-14 w-auto" />}
+            {showLogo && <Image src={logoUrl} alt={`${siteName} Logo`} width={48} height={48} className="h-12 w-auto" />}
             {showTitle && (
-                 <span className="font-body text-2xl font-semibold uppercase tracking-wider text-primary">
+                 <span className="font-body text-xl font-semibold uppercase tracking-wider text-primary">
                     {siteName}
                 </span>
             )}
@@ -86,7 +86,7 @@ export function HeaderClient({ user, userProfile, isadmin, siteName, logoUrl, di
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="container mx-auto flex h-16 max-w-7xl items-center px-4">
+      <div className="container mx-auto flex h-14 max-w-7xl items-center px-4">
 
         {/* Desktop: Left side */}
         <div className="hidden flex-1 items-center justify-start md:flex">
@@ -102,7 +102,7 @@ export function HeaderClient({ user, userProfile, isadmin, siteName, logoUrl, di
                 size="icon"
                 aria-label="Toggle navigation menu"
               >
-                <Menu className="h-8 w-8" />
+                <Menu className="h-6 w-6" />
               </Button>
             </SheetTrigger>
             <MobileMenuSheet user={user} userProfile={userProfile} isadmin={isadmin} setOpen={setIsMobileMenuOpen} siteName={siteName} logoUrl={logoUrl} displayMode={displayMode} />
@@ -147,8 +147,8 @@ export function HeaderClient({ user, userProfile, isadmin, siteName, logoUrl, di
                 {user ? (
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" className="relative hidden h-9 w-9 rounded-full md:flex">
-                                <Avatar className="h-9 w-9">
+                            <Button variant="ghost" className="relative hidden h-8 w-8 rounded-full md:flex">
+                                <Avatar className="h-8 w-8">
                                     <AvatarImage src={getGravatarUrl(user.email)} alt={userProfile?.display_name || user.email || 'User'} />
                                     <AvatarFallback>{getAvatarFallback(userProfile?.display_name || user.email)}</AvatarFallback>
                                 </Avatar>
