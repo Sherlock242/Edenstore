@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { useState, useTransition, useEffect } from 'react';
@@ -101,7 +100,8 @@ export function ProductReviews({ productId, initialReviews, initialAverageRating
                 
                 // Recalculate average (simplified - full recalc is better)
                 const newTotal = reviewToEdit ? totalReviews : totalReviews + 1;
-                const newSum = reviews.reduce((sum, r) => sum + (r.id === result.review!.id ? result.review!.rating : r.rating), reviewToEdit ? 0 : result.review.rating);
+                const updatedReviews = reviewToEdit ? reviews.map(r => r.id === result.review!.id ? result.review! : r) : [result.review, ...reviews];
+                const newSum = updatedReviews.reduce((sum, r) => sum + r.rating, 0);
                 const newAverage = newSum / newTotal;
 
                 setTotalReviews(newTotal);
@@ -130,12 +130,13 @@ export function ProductReviews({ productId, initialReviews, initialAverageRating
             const result = await deleteReview(reviewToDelete.id, productId);
             if (result.success) {
                 toast({ title: 'Review Deleted', description: result.message });
-                setReviews(prev => prev.filter(r => r.id !== reviewToDelete.id));
+                const updatedReviews = reviews.filter(r => r.id !== reviewToDelete.id);
+                setReviews(updatedReviews);
 
                 // Recalculate average
                 const newTotal = totalReviews - 1;
                 if (newTotal > 0) {
-                    const newSum = reviews.reduce((sum, r) => r.id === reviewToDelete.id ? sum : sum + r.rating, 0);
+                    const newSum = updatedReviews.reduce((sum, r) => sum + r.rating, 0);
                     const newAverage = newSum / newTotal;
                     setAverageRating(parseFloat(newAverage.toFixed(1)));
                 } else {
@@ -287,4 +288,3 @@ export function ProductReviews({ productId, initialReviews, initialAverageRating
         </Card>
     );
 }
-
