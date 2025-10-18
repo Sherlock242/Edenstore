@@ -12,9 +12,7 @@ import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 
 export function ProductDetailsClient({ product }: { product: Product }) {
-  const [selectedSize, setSelectedSize] = useState<string | undefined>(
-    product.sizes.find(s => s.quantity > 0)?.size
-  );
+  const [selectedSize, setSelectedSize] = useState<string | undefined>(undefined);
   const [selectedColor, setSelectedColor] = useState(product.colors[0]);
   const [isOutOfStock, setIsOutOfStock] = useState(false);
 
@@ -24,14 +22,20 @@ export function ProductDetailsClient({ product }: { product: Product }) {
   const inWishlist = isInWishlist(product.id);
 
    useEffect(() => {
+    // Set default size on client mount to avoid hydration mismatch
+    if (selectedSize === undefined) {
+      setSelectedSize(product.sizes.find(s => s.quantity > 0)?.size);
+    }
+
     if (selectedSize) {
       const sizeInfo = product.sizes.find(s => s.size === selectedSize);
       setIsOutOfStock(sizeInfo ? sizeInfo.quantity <= 0 : true);
     } else {
       // If no size is selected (e.g., all are out of stock initially)
-      setIsOutOfStock(true);
+      setIsOutOfStock(product.sizes.every(s => s.quantity <= 0));
     }
-  }, [selectedSize, product.sizes]);
+  }, [selectedSize, product.sizes, product.id]);
+
 
   const handleAddToCart = () => {
     if (!selectedSize) {
