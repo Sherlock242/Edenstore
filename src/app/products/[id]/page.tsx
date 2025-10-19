@@ -19,18 +19,18 @@ export const dynamic = 'force-dynamic';
 export default async function ProductPage({ params }: { params: { id: string } }) {
   const cookieStore = cookies();
   // Fetch product and reviews in parallel
-  const [products, reviewsResult] = await Promise.all([
+  const [allProducts, reviewsResult] = await Promise.all([
     getProducts(cookieStore),
     getReviewsForProduct(params.id)
   ]);
   
-  const product = products.find((p) => p.id === params.id);
+  const product = allProducts.find((p) => p.id === params.id);
 
   if (!product) {
     notFound();
   }
 
-  const relatedProducts = products
+  const relatedProducts = allProducts
     .filter((p) => p.category === product.category && p.id !== product.id)
     .slice(0, 4);
 

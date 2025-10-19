@@ -3,7 +3,7 @@
 
 import { createClient } from '@/lib/supabase/server';
 import type { CartItem } from '@/contexts/cart-context';
-import type { Product } from '@/app/actions';
+import type { Product, ProductSize } from '@/app/actions';
 import { cookies } from 'next/headers';
 
 export async function getCartItems(): Promise<{ success: boolean; items?: CartItem[]; message: string }> {
@@ -33,14 +33,13 @@ export async function getCartItems(): Promise<{ success: boolean; items?: CartIt
   // 2. Extract all unique product IDs from the cart.
   const productIds = [...new Set(cartItemsData.map(item => item.product_id))];
 
-  // 3. Fetch all product details for the items in the cart using the admin client.
+  // 3. Fetch all product details for the items in the cart.
   const { data: productsData, error: productsError } = await supabase
     .from('products')
     .select(`
         id, name, description, price, category, popularity, release_date, weight,
         product_images ( id, url, hint ),
-        product_sizes ( size, quantity ),
-        product_colors ( color )
+        product_variants ( size, color, quantity )
     `)
     .in('id', productIds);
     
@@ -50,22 +49,30 @@ export async function getCartItems(): Promise<{ success: boolean; items?: CartIt
   }
 
   // Create a map for quick product lookup.
-  const productsMap = new Map<string, Product>(productsData.map(p => [
-      p.id.toString(), 
-      {
-        id: p.id.toString(),
-        name: p.name,
-        description: p.description,
-        price: p.price,
-        category: p.category,
-        popularity: p.popularity,
-        releaseDate: p.release_date,
-        weight: p.weight,
-        images: p.product_images.map((img: any) => ({ id: img.id.toString(), url: img.url, hint: img.hint })),
-        sizes: p.product_sizes.map((s: any) => ({size: s.size, quantity: s.quantity})),
-        colors: p.product_colors.map((c: any) => c.color),
-      }
-  ]));
+    const productsMap = new Map<string, Product>(productsData.map(p => {
+        const sizesMap = new Map<string, { color: string; quantity: number }[]>();
+        p.product_variants.forEach((variant: any) => {
+            if (!sizesMap.has(variant.size)) sizesMap.set(variant.size, []);
+            sizesMap.get(variant.size)!.push({ color: variant.color, quantity: variant.quantity });
+        });
+        const sizes: ProductSize[] = Array.from(sizesMap.entries()).map(([size, variants]) => ({ size, variants }));
+
+        return [
+            p.id.toString(), 
+            {
+                id: p.id.toString(),
+                name: p.name,
+                description: p.description,
+                price: p.price,
+                category: p.category,
+                popularity: p.popularity,
+                releaseDate: p.release_date,
+                weight: p.weight,
+                images: p.product_images.map((img: any) => ({ id: img.id.toString(), url: img.url, hint: img.hint })),
+                sizes: sizes,
+            }
+        ];
+    }));
 
   // 4. Combine product details with cart item data.
   const fullCartItems: CartItem[] = cartItemsData.map(cartItem => {

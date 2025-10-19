@@ -64,7 +64,6 @@ export function AddProductForm({ productToEdit, onProductAddedOrUpdated }: AddPr
   const { toast } = useToast();
   const isEditMode = !!productToEdit;
 
-  // This form state is temporary and will be updated in the next step.
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -90,16 +89,11 @@ export function AddProductForm({ productToEdit, onProductAddedOrUpdated }: AddPr
   });
 
   useEffect(() => {
-      // NOTE: The data transformation here is a temporary measure.
-      // It will be properly handled when the backend is updated.
       if (productToEdit) {
-          const sizesWithColors = productToEdit.sizes.map(s => {
-              const color = productToEdit.colors[0] || 'Black';
-              return {
-                  size: s.size,
-                  colors: [{ color, quantity: s.quantity ?? 0 }]
-              }
-          });
+          const sizesWithColors = productToEdit.sizes.map(s => ({
+            size: s.size,
+            colors: s.variants.map(v => ({ color: v.color, quantity: v.quantity }))
+          }));
 
           form.reset({
               id: productToEdit.id,
@@ -128,15 +122,30 @@ export function AddProductForm({ productToEdit, onProductAddedOrUpdated }: AddPr
       }
   }, [productToEdit, form]);
 
-  // This onSubmit function is INCOMPLETE. It will not work correctly.
-  // It is a placeholder until the backend actions are updated.
   async function onSubmit(values: z.infer<typeof formSchema>) {
-     toast({
-        variant: 'destructive',
-        title: 'Action Incomplete',
-        description: 'Saving this form is not yet implemented. The backend needs to be updated first.',
-      });
-      return;
+    const imagesWithFiles = values.images.filter(img => img.file instanceof File);
+    if (isEditMode) {
+      const updateValues: UpdateProductFormValues = {
+        ...values,
+        id: productToEdit.id,
+        images: imagesWithFiles.length > 0 ? imagesWithFiles : undefined
+      };
+      const result = await updateProductAction(updateValues);
+      toast({ title: result.success ? 'Success!' : 'Error', description: result.message, variant: result.success ? 'default' : 'destructive'});
+    } else {
+      if (imagesWithFiles.length === 0) {
+        form.setError('images', { message: 'At least one new image file is required to create a product.' });
+        return;
+      }
+      const addValues: ProductFormValues = {
+        ...values,
+        images: imagesWithFiles
+      };
+      const result = await addProductAction(addValues);
+      toast({ title: result.success ? 'Success!' : 'Error', description: result.message, variant: result.success ? 'default' : 'destructive'});
+    }
+    if(!isEditMode) form.reset();
+    onProductAddedOrUpdated();
   }
 
   const { register } = form;

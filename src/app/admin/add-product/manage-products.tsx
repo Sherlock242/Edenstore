@@ -1,3 +1,4 @@
+
 // src/app/admin/add-product/manage-products.tsx
 'use client';
 import { useEffect, useState, useTransition } from 'react';
@@ -40,6 +41,12 @@ export function ManageProducts({ onEditProduct, productAddedOrUpdated, initialPr
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [isPending, startTransition] = useTransition();
   const { toast } = useToast();
+
+  useEffect(() => {
+    // This effect re-fetches products when the `productAddedOrUpdated` counter changes.
+    // It ensures the list is up-to-date after an add or edit operation.
+    getProductsClient().then(setProducts);
+  }, [productAddedOrUpdated]);
 
   useEffect(() => {
     setProducts(initialProducts);
@@ -93,14 +100,7 @@ export function ManageProducts({ onEditProduct, productAddedOrUpdated, initialPr
             </TableRow>
             </TableHeader>
             <TableBody>
-            {isPending && !products.length && (
-                <TableRow>
-                    <TableCell colSpan={6} className="h-24 text-center">
-                        <Loader2 className="h-6 w-6 animate-spin mx-auto" />
-                    </TableCell>
-                </TableRow>
-            )}
-            {!isPending && products.length === 0 && (
+            {products.length === 0 && (
                  <TableRow>
                     <TableCell colSpan={6} className="h-24 text-center">
                         No products found.
@@ -108,7 +108,10 @@ export function ManageProducts({ onEditProduct, productAddedOrUpdated, initialPr
                 </TableRow>
             )}
             {products.map(product => {
-                const totalStock = product.sizes.reduce((acc, size) => acc + size.quantity, 0);
+                const totalStock = product.sizes.reduce((acc, size) => 
+                    acc + size.variants.reduce((colorAcc, variant) => colorAcc + variant.quantity, 0)
+                , 0);
+                const totalColors = new Set(product.sizes.flatMap(s => s.variants.map(v => v.color))).size;
                 return (
                     <TableRow key={product.id}>
                     <TableCell>
@@ -128,7 +131,7 @@ export function ManageProducts({ onEditProduct, productAddedOrUpdated, initialPr
                         <div className="flex flex-col gap-1">
                             <span className="font-semibold">{totalStock} Total</span>
                             <span className="text-xs text-muted-foreground">
-                                {product.sizes.length} size{product.sizes.length === 1 ? '' : 's'}, {product.colors.length} color{product.colors.length === 1 ? '' : 's'}
+                                {product.sizes.length} size{product.sizes.length === 1 ? '' : 's'}, {totalColors} color{totalColors === 1 ? '' : 's'}
                             </span>
                         </div>
                     </TableCell>

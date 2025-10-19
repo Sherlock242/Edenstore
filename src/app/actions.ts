@@ -7,14 +7,22 @@ import { type ReadonlyRequestCookies } from 'next/dist/server/web/spec-extension
 import { createClient as createAdminClient } from '@supabase/supabase-js';
 
 
+export type ProductVariant = {
+  color: string;
+  quantity: number;
+}
+export type ProductSize = {
+  size: string;
+  variants: ProductVariant[];
+}
+
 export type Product = {
   id: string;
   name: string;
   description: string;
   price: number;
   images: { id: string; url: string; hint: string }[];
-  sizes: { size: string; quantity: number; }[];
-  colors: string[];
+  sizes: ProductSize[];
   category: string;
   popularity: number;
   releaseDate: string; // ISO 8601 format
@@ -36,8 +44,7 @@ export const getProducts = async (cookieStore: ReadonlyRequestCookies): Promise<
         release_date,
         weight,
         product_images ( id, url, hint ),
-        product_sizes ( size, quantity ),
-        product_colors ( color )
+        product_variants ( size, color, quantity )
       `)
       .order('created_at', { ascending: false });
 
@@ -46,20 +53,38 @@ export const getProducts = async (cookieStore: ReadonlyRequestCookies): Promise<
         return [];
     }
 
-    // Transform the data to match the Product type
-    return productsData.map((p: any) => ({
-        id: p.id.toString(),
-        name: p.name,
-        description: p.description,
-        price: p.price,
-        category: p.category,
-        popularity: p.popularity,
-        releaseDate: p.release_date,
-        weight: p.weight || 0.5, // Default weight if not set
-        images: p.product_images.map((img: any) => ({ id: img.id.toString(), url: img.url, hint: img.hint })),
-        sizes: p.product_sizes.map((s: any) => ({size: s.size, quantity: s.quantity})),
-        colors: p.product_colors.map((c: any) => c.color),
-    }));
+    // Transform the data to match the new Product type with nested variants
+    return productsData.map((p: any) => {
+        const sizesMap = new Map<string, ProductVariant[]>();
+        
+        p.product_variants.forEach((variant: any) => {
+            if (!sizesMap.has(variant.size)) {
+                sizesMap.set(variant.size, []);
+            }
+            sizesMap.get(variant.size)!.push({
+                color: variant.color,
+                quantity: variant.quantity,
+            });
+        });
+        
+        const sizes: ProductSize[] = Array.from(sizesMap.entries()).map(([size, variants]) => ({
+            size,
+            variants,
+        }));
+
+        return {
+            id: p.id.toString(),
+            name: p.name,
+            description: p.description,
+            price: p.price,
+            category: p.category,
+            popularity: p.popularity,
+            releaseDate: p.release_date,
+            weight: p.weight || 0.5,
+            images: p.product_images.map((img: any) => ({ id: img.id.toString(), url: img.url, hint: img.hint })),
+            sizes: sizes,
+        }
+    });
 };
 
 export type SearchProduct = Pick<Product, 'id' | 'name' | 'category'> & { image: Product['images'][0] };
@@ -101,20 +126,15 @@ export type ProductFormValues = {
   price: number;
   category: string;
   weight: number;
-  sizes: { size: string; quantity: number; }[];
-  colors: { color: string; }[];
+  sizes: { 
+    size: string; 
+    colors: { color: string; quantity: number }[]
+  }[];
   images: { file: File; hint: string; }[];
 };
 
-export type UpdateProductFormValues = {
+export type UpdateProductFormValues = Omit<ProductFormValues, 'images'> & {
   id: string;
-  name: string;
-  description: string;
-  price: number;
-  category: string;
-  weight: number;
-  sizes: { size: string; quantity: number; }[];
-  colors: { color: string; }[];
   images?: { file: File; hint: string; }[];
 };
 
@@ -132,9 +152,9 @@ export async function addProduct(cookieStore: ReadonlyRequestCookies, data: Prod
         process.env.SUPABASE_SERVICE_ROLE_KEY!,
         { auth: { persistSession: false } }
     );
-    const { images, sizes, colors, ...productData } = data;
+    const { images, sizes, ...productData } = data;
     
-    // 1. Insert product data into the 'products' table using the admin client
+    // 1. Insert product data
     const { data: newProductData, error: productInsertError } = await supabaseAdmin
         .from('products')
         .insert({
@@ -155,7 +175,7 @@ export async function addProduct(cookieStore: ReadonlyRequestCookies, data: Prod
 
     const productId = newProductData.id;
 
-    // 2. Upload images and collect their URLs
+    // 2. Upload images
     const uploadedImages = [];
     for (const image of images) {
         const fileExt = image.file.name.split('.').pop();
@@ -167,47 +187,33 @@ export async function addProduct(cookieStore: ReadonlyRequestCookies, data: Prod
             .upload(filePath, image.file);
 
         if (uploadError) {
-            console.error('Error uploading image:', uploadError);
-            // In a real app, you might want to roll back the product creation here
             await supabaseAdmin.from('products').delete().eq('id', productId);
             return { success: false, message: `Failed to upload image ${image.file.name}.`, error: { message: uploadError.message } };
         }
 
-        const { data: urlData } = supabaseAdmin.storage
-            .from('product-images')
-            .getPublicUrl(filePath);
-
-        if (!urlData) {
-            return { success: false, message: `Failed to get URL for image ${image.file.name}.` };
-        }
-
-        uploadedImages.push({
-            product_id: productId,
-            url: urlData.publicUrl,
-            hint: image.hint,
-        });
+        const { data: urlData } = supabaseAdmin.storage.from('product-images').getPublicUrl(filePath);
+        if (!urlData) return { success: false, message: `Failed to get URL for image ${image.file.name}.` };
+        
+        uploadedImages.push({ product_id: productId, url: urlData.publicUrl, hint: image.hint });
     }
-
-    // 3. Insert all image data into 'product_images' table
+    
+    // 3. Insert image data
     if (uploadedImages.length > 0) {
-        const { error: imageInsertError } = await supabaseAdmin
-            .from('product_images')
-            .insert(uploadedImages);
-
-        if (imageInsertError) {
-            console.error('Error inserting product images:', imageInsertError);
-            return { success: false, message: 'Failed to save product images.', error: { message: imageInsertError.message } };
-        }
+        const { error: imageInsertError } = await supabaseAdmin.from('product_images').insert(uploadedImages);
+        if (imageInsertError) return { success: false, message: 'Failed to save product images.', error: { message: imageInsertError.message } };
     }
 
 
-    // 4. Insert sizes and quantities
-    const sizesToInsert = sizes.map(s => ({ product_id: productId, size: s.size, quantity: Number(s.quantity) }));
-    await supabaseAdmin.from('product_sizes').insert(sizesToInsert);
-
-    // 5. Insert colors
-    const colorsToInsert = colors.map(c => ({ product_id: productId, color: c.color }));
-    await supabaseAdmin.from('product_colors').insert(colorsToInsert);
+    // 4. Insert product variants
+    const variantsToInsert = sizes.flatMap(s => 
+        s.colors.map(c => ({
+            product_id: productId,
+            size: s.size,
+            color: c.color,
+            quantity: Number(c.quantity)
+        }))
+    );
+    await supabaseAdmin.from('product_variants').insert(variantsToInsert);
 
     revalidatePath('/');
     revalidatePath('/products');
@@ -219,17 +225,22 @@ export async function addProduct(cookieStore: ReadonlyRequestCookies, data: Prod
       .select(`
         id, name, description, price, category, popularity, release_date, weight,
         product_images ( id, url, hint ),
-        product_sizes ( size, quantity ),
-        product_colors ( color )
+        product_variants ( size, color, quantity )
       `)
       .eq('id', productId)
       .single();
 
     if (finalProductError || !finalProductData) {
-        console.error('Error fetching final product:', finalProductError);
         return { success: true, message: 'Product added, but failed to fetch final details.' };
     }
     
+     const sizesMap = new Map<string, ProductVariant[]>();
+    finalProductData.product_variants.forEach((variant: any) => {
+        if (!sizesMap.has(variant.size)) sizesMap.set(variant.size, []);
+        sizesMap.get(variant.size)!.push({ color: variant.color, quantity: variant.quantity });
+    });
+    const finalSizes: ProductSize[] = Array.from(sizesMap.entries()).map(([size, variants]) => ({ size, variants }));
+
     const finalProduct: Product = {
         id: finalProductData.id.toString(),
         name: finalProductData.name,
@@ -240,16 +251,10 @@ export async function addProduct(cookieStore: ReadonlyRequestCookies, data: Prod
         releaseDate: finalProductData.release_date,
         weight: finalProductData.weight,
         images: finalProductData.product_images.map((img: any) => ({ id: img.id.toString(), url: img.url, hint: img.hint })),
-        sizes: finalProductData.product_sizes.map((s: any) => ({size: s.size, quantity: s.quantity})),
-        colors: finalProductData.product_colors.map((c: any) => c.color),
+        sizes: finalSizes,
     };
 
-
-    return {
-        success: true,
-        message: 'Product added successfully!',
-        product: finalProduct,
-    };
+    return { success: true, message: 'Product added successfully!', product: finalProduct };
 }
 
 
@@ -260,92 +265,39 @@ export async function updateProduct(cookieStore: ReadonlyRequestCookies, data: U
     process.env.SUPABASE_SERVICE_ROLE_KEY!,
     { auth: { persistSession: false } }
   );
-  const { id, images, sizes, colors, ...productData } = data;
+  const { id, images, sizes, ...productData } = data;
 
   // Handle image replacement if new images are provided
-  if (images && images.length > 0) {
-    // 1. Fetch old image records to delete them from storage
-    const { data: oldImages, error: fetchOldImagesError } = await supabaseAdmin
-      .from('product_images')
-      .select('url')
-      .eq('product_id', id);
+  if (images && images.length > 0 && images.some(i => i.file)) {
+    const { data: oldImages } = await supabaseAdmin.from('product_images').select('url').eq('product_id', id);
 
-    if (fetchOldImagesError) {
-      return { success: false, message: 'Could not fetch old images for deletion.', error: { message: fetchOldImagesError.message } };
-    }
-
-    // 2. Delete old image files from Supabase Storage
     if (oldImages && oldImages.length > 0) {
-        const oldImagePaths = oldImages.map(img => {
-            try {
-                const url = new URL(img.url);
-                // Find the start of the path after the bucket name
-                const pathStartIndex = url.pathname.indexOf('product-images/');
-                if (pathStartIndex === -1) {
-                  console.error(`Invalid URL format, 'product-images/' not found: ${img.url}`);
-                  return null;
-                }
-                // Extract the path from after the bucket name, e.g. "product-images/my-image.png"
-                return url.pathname.substring(pathStartIndex);
-            } catch (e) {
-                console.error(`Invalid URL for old image, cannot extract path: ${img.url}`);
-                return null;
-            }
-        }).filter((p): p is string => p !== null);
-
-        if(oldImagePaths.length > 0) {
-          const { error: storageError } = await supabaseAdmin.storage
-              .from('product-images')
-              .remove(oldImagePaths);
-              
-          if (storageError) {
-              console.error('Error deleting old product images from storage:', storageError);
-          }
-        }
+        const oldImagePaths = oldImages.map(img => new URL(img.url).pathname.split('/product-images/')[1]).filter(Boolean);
+        if(oldImagePaths.length > 0) await supabaseAdmin.storage.from('product-images').remove(oldImagePaths);
     }
 
-    // 3. Delete old image records from the 'product_images' table
     await supabaseAdmin.from('product_images').delete().eq('product_id', id);
 
-    // 4. Upload new images and collect their data
     const newUploadedImages = [];
     for (const image of images) {
+        if (!image.file) continue;
         const fileExt = image.file.name.split('.').pop();
         const fileName = `${Date.now()}-${Math.random()}.${fileExt}`;
         const filePath = `product-images/${fileName}`;
 
-        const { error: uploadError } = await supabaseAdmin.storage
-            .from('product-images')
-            .upload(filePath, image.file);
+        const { error: uploadError } = await supabaseAdmin.storage.from('product-images').upload(filePath, image.file);
+        if (uploadError) return { success: false, message: `Failed to upload image ${image.file.name}.`, error: { message: uploadError.message } };
 
-        if (uploadError) {
-            return { success: false, message: `Failed to upload image ${image.file.name}.`, error: { message: uploadError.message } };
-        }
-
-        const { data: urlData } = supabaseAdmin.storage
-            .from('product-images')
-            .getPublicUrl(filePath);
-        
-        newUploadedImages.push({
-            product_id: id,
-            url: urlData!.publicUrl,
-            hint: image.hint,
-        });
+        const { data: urlData } = supabaseAdmin.storage.from('product-images').getPublicUrl(filePath);
+        newUploadedImages.push({ product_id: id, url: urlData!.publicUrl, hint: image.hint });
     }
 
-    // 5. Insert new image records into 'product_images' table
     if (newUploadedImages.length > 0) {
-        const { error: imageInsertError } = await supabaseAdmin
-            .from('product_images')
-            .insert(newUploadedImages);
-
-        if (imageInsertError) {
-            return { success: false, message: 'Failed to save new product images.', error: { message: imageInsertError.message } };
-        }
+        const { error: imageInsertError } = await supabaseAdmin.from('product_images').insert(newUploadedImages);
+        if (imageInsertError) return { success: false, message: 'Failed to save new product images.', error: { message: imageInsertError.message } };
     }
   }
   
-  // Update product details in 'products' table
   const { error: productUpdateError } = await supabase
     .from('products')
     .update({
@@ -357,45 +309,46 @@ export async function updateProduct(cookieStore: ReadonlyRequestCookies, data: U
     })
     .eq('id', id);
 
-  if (productUpdateError) {
-    console.error('Error updating product:', productUpdateError);
-    return { success: false, message: 'Failed to update product details.', error: { message: productUpdateError.message } };
-  }
+  if (productUpdateError) return { success: false, message: 'Failed to update product details.', error: { message: productUpdateError.message } };
 
-  // Update sizes
-  await supabase.from('product_sizes').delete().eq('product_id', id);
-  const sizesToInsert = sizes.map(s => ({ product_id: id, size: s.size, quantity: Number(s.quantity) }));
-  await supabase.from('product_sizes').insert(sizesToInsert);
-
-  // Update colors
-  await supabase.from('product_colors').delete().eq('product_id', id);
-  const colorsToInsert = colors.map(c => ({ product_id: id, color: c.color }));
-  await supabase.from('product_colors').insert(colorsToInsert);
-
+  // Update variants
+  await supabase.from('product_variants').delete().eq('product_id', id);
+  const variantsToInsert = sizes.flatMap(s => 
+    s.colors.map(c => ({
+      product_id: id,
+      size: s.size,
+      color: c.color,
+      quantity: Number(c.quantity)
+    }))
+  );
+  await supabase.from('product_variants').insert(variantsToInsert);
 
   revalidatePath('/');
   revalidatePath('/products');
   revalidatePath(`/products/${id}`);
   revalidatePath('/admin/add-product');
 
-  // Fetch the fully updated product to return it
+  // Fetch the fully updated product
   const { data: finalProductData, error: finalProductError } = await supabase
     .from('products')
     .select(`
       id, name, description, price, category, popularity, release_date, weight,
       product_images ( id, url, hint ),
-      product_sizes ( size, quantity ),
-      product_colors ( color )
+      product_variants ( size, color, quantity )
     `)
     .eq('id', id)
     .single();
   
-  if (finalProductError || !finalProductData) {
-    console.error('Error fetching updated product:', finalProductError);
-    return { success: true, message: 'Product updated, but failed to fetch final details.' };
-  }
+  if (finalProductError || !finalProductData) return { success: true, message: 'Product updated, but failed to fetch final details.' };
+  
+    const sizesMap = new Map<string, ProductVariant[]>();
+    finalProductData.product_variants.forEach((variant: any) => {
+        if (!sizesMap.has(variant.size)) sizesMap.set(variant.size, []);
+        sizesMap.get(variant.size)!.push({ color: variant.color, quantity: variant.quantity });
+    });
+    const finalSizes: ProductSize[] = Array.from(sizesMap.entries()).map(([size, variants]) => ({ size, variants }));
 
-  const finalProduct: Product = {
+    const finalProduct: Product = {
       id: finalProductData.id.toString(),
       name: finalProductData.name,
       description: finalProductData.description,
@@ -405,93 +358,43 @@ export async function updateProduct(cookieStore: ReadonlyRequestCookies, data: U
       releaseDate: finalProductData.release_date,
       weight: finalProductData.weight,
       images: finalProductData.product_images.map((img: any) => ({ id: img.id.toString(), url: img.url, hint: img.hint })),
-      sizes: finalProductData.product_sizes.map((s: any) => ({size: s.size, quantity: s.quantity})),
-      colors: finalProductData.product_colors.map((c: any) => c.color),
-  };
+      sizes: finalSizes,
+    };
 
-  return {
-    success: true,
-    message: 'Product updated successfully!',
-    product: finalProduct,
-  };
+  return { success: true, message: 'Product updated successfully!', product: finalProduct };
 }
 
 
 export async function deleteProduct(cookieStore: ReadonlyRequestCookies, productId: string): Promise<ServerResponse> {
-  // Use the admin client to bypass RLS for the deletion process.
   const supabaseAdmin = createAdminClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.SUPABASE_SERVICE_ROLE_KEY!,
     { auth: { persistSession: false } }
   );
 
-  // 1. Fetch image URLs for deletion from storage
   const { data: productData, error: fetchError } = await supabaseAdmin
     .from('products')
     .select('id, product_images(url)')
     .eq('id', productId)
     .single();
 
-  if (fetchError || !productData) {
-    console.error('Error fetching product for deletion:', fetchError);
-    return { success: false, message: 'Could not find the product to delete.' };
-  }
+  if (fetchError || !productData) return { success: false, message: 'Could not find the product to delete.' };
 
-  // 2. Manually delete all related records that have a foreign key to the product
-  // All these operations should use the admin client to ensure they have permissions.
-  
   await supabaseAdmin.from('reviews').delete().eq('product_id', productId);
   await supabaseAdmin.from('cart_items').delete().eq('product_id', productId);
   await supabaseAdmin.from('order_items').delete().eq('product_id', productId);
-  await supabaseAdmin.from('product_colors').delete().eq('product_id', productId);
-  await supabaseAdmin.from('product_sizes').delete().eq('product_id', productId);
+  await supabaseAdmin.from('product_variants').delete().eq('product_id', productId);
   
-  // 3. Delete images from Supabase Storage
   if (productData.product_images && productData.product_images.length > 0) {
-      const imagePaths = productData.product_images.map(img => {
-        try {
-            const url = new URL(img.url);
-            // Find the start of the path after the bucket name
-            const pathStartIndex = url.pathname.indexOf('product-images/');
-            if (pathStartIndex === -1) {
-              console.error(`Invalid URL format, 'product-images/' not found: ${img.url}`);
-              return null;
-            }
-            // Extract the path from after the bucket name, e.g. "product-images/my-image.png"
-            return url.pathname.substring(pathStartIndex);
-        } catch (e) {
-            console.error(`Invalid URL for old image, cannot extract path: ${img.url}`);
-            return null;
-        }
-      }).filter((p): p is string => p !== null);
-
-      if(imagePaths.length > 0) {
-        const { error: storageError } = await supabaseAdmin.storage
-            .from('product-images')
-            .remove(imagePaths);
-
-        if (storageError) {
-            console.error('Error deleting product images from storage:', storageError);
-            // Log but don't block deletion. The DB records will be deleted anyway.
-        }
-      }
+      const imagePaths = productData.product_images.map(img => new URL(img.url).pathname.split('/product-images/')[1]).filter(Boolean);
+      if(imagePaths.length > 0) await supabaseAdmin.storage.from('product-images').remove(imagePaths);
   }
   
-  // Now that storage is cleared (or attempted), delete from product_images table.
   await supabaseAdmin.from('product_images').delete().eq('product_id', productId);
 
-  // 4. Finally, delete the product itself.
-  const { error: deleteError } = await supabaseAdmin
-    .from('products')
-    .delete()
-    .eq('id', productId);
+  const { error: deleteError } = await supabaseAdmin.from('products').delete().eq('id', productId);
+  if (deleteError) return { success: false, message: 'Failed to delete product.', error: { message: deleteError.message } };
 
-  if (deleteError) {
-    console.error('Error deleting product:', deleteError);
-    return { success: false, message: 'Failed to delete product.', error: { message: deleteError.message } };
-  }
-
-  // 5. Revalidate paths to update the UI
   revalidatePath('/admin/add-product');
   revalidatePath('/products');
   revalidatePath('/');

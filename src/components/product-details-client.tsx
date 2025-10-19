@@ -1,6 +1,6 @@
 
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import type { Product } from "@/app/actions";
 import { Button } from "@/components/ui/button";
 import { Heart, ShoppingCart, Share2 } from "lucide-react";
@@ -13,36 +13,61 @@ import { cn } from "@/lib/utils";
 
 export function ProductDetailsClient({ product }: { product: Product }) {
   const [selectedSize, setSelectedSize] = useState<string | undefined>(undefined);
-  const [selectedColor, setSelectedColor] = useState(product.colors[0]);
-  const [isOutOfStock, setIsOutOfStock] = useState(false);
+  const [selectedColor, setSelectedColor] = useState<string | undefined>(undefined);
 
   const { addToCart } = useCart();
   const { dispatch: wishlistDispatch, isInWishlist } = useWishlist();
   const { toast } = useToast();
   const inWishlist = isInWishlist(product.id);
 
-   useEffect(() => {
-    // Set default size on client mount to avoid hydration mismatch
-    if (selectedSize === undefined) {
-      setSelectedSize(product.sizes.find(s => s.quantity > 0)?.size);
-    }
+  // Memoize available colors for the selected size
+  const availableColors = useMemo(() => {
+    if (!selectedSize) return [];
+    const sizeData = product.sizes.find(s => s.size === selectedSize);
+    return sizeData ? sizeData.variants : [];
+  }, [selectedSize, product.sizes]);
 
-    if (selectedSize) {
-      const sizeInfo = product.sizes.find(s => s.size === selectedSize);
-      setIsOutOfStock(sizeInfo ? sizeInfo.quantity <= 0 : true);
+  // Effect to set default size and color on mount
+  useEffect(() => {
+    const firstAvailableSize = product.sizes.find(s => s.variants.some(v => v.quantity > 0));
+    if (firstAvailableSize) {
+      setSelectedSize(firstAvailableSize.size);
+      const firstAvailableColor = firstAvailableSize.variants.find(v => v.quantity > 0);
+      if (firstAvailableColor) {
+        setSelectedColor(firstAvailableColor.color);
+      }
+    }
+  }, [product.sizes]);
+
+  // Effect to update selected color when size changes
+  useEffect(() => {
+    if (availableColors.length > 0) {
+      const currentColor still available
+      const isCurrentColorAvailable = availableColors.some(c => c.color === selectedColor && c.quantity > 0);
+      if (!isCurrentColorAvailable) {
+        // If current color is not available for new size, pick the first available one
+        const firstAvailable = availableColors.find(c => c.quantity > 0);
+        setSelectedColor(firstAvailable?.color);
+      }
     } else {
-      // If no size is selected (e.g., all are out of stock initially)
-      setIsOutOfStock(product.sizes.every(s => s.quantity <= 0));
+      setSelectedColor(undefined);
     }
-  }, [selectedSize, product.sizes, product.id]);
+  }, [availableColors, selectedColor]);
 
+  const selectedVariant = useMemo(() => {
+    if (!selectedSize || !selectedColor) return null;
+    const sizeData = product.sizes.find(s => s.size === selectedSize);
+    return sizeData?.variants.find(v => v.color === selectedColor) || null;
+  }, [selectedSize, selectedColor, product.sizes]);
+
+  const isOutOfStock = !selectedVariant || selectedVariant.quantity <= 0;
 
   const handleAddToCart = () => {
-    if (!selectedSize) {
+    if (!selectedSize || !selectedColor) {
         toast({
             variant: "destructive",
             title: "Selection Needed",
-            description: "Please select a size before adding to cart.",
+            description: "Please select a size and color.",
         });
         return;
     }
@@ -50,7 +75,7 @@ export function ProductDetailsClient({ product }: { product: Product }) {
         toast({
             variant: "destructive",
             title: "Out of Stock",
-            description: "This size is currently unavailable.",
+            description: "This combination is currently unavailable.",
         });
         return;
     }
@@ -87,28 +112,16 @@ export function ProductDetailsClient({ product }: { product: Product }) {
         });
         toast({ title: "Shared successfully!" });
       } catch (error) {
-        // This is expected if the user cancels the share dialog
-        if ((error as DOMException).name === 'AbortError') {
-          return;
-        }
+        if ((error as DOMException).name === 'AbortError') return;
         console.error("Error sharing:", error);
-        toast({
-          variant: "destructive",
-          title: "Could not share",
-          description: "Something went wrong while trying to share.",
-        });
+        toast({ variant: "destructive", title: "Could not share" });
       }
     } else {
-      // Fallback for browsers that don't support Web Share API
       try {
         await navigator.clipboard.writeText(window.location.href);
         toast({ title: "Link Copied!", description: "Product link copied to your clipboard." });
       } catch (err) {
-         toast({
-          variant: "destructive",
-          title: "Could not copy link",
-          description: "Please copy the link from the address bar.",
-        });
+         toast({ variant: "destructive", title: "Could not copy link" });
       }
     }
   };
@@ -123,56 +136,59 @@ export function ProductDetailsClient({ product }: { product: Product }) {
           className="flex flex-wrap gap-2"
         >
           {product.sizes.map((sizeInfo) => {
-            const isSelected = selectedSize === sizeInfo.size;
-            const isSizeDisabled = sizeInfo.quantity <= 0;
-            const isLowStock = sizeInfo.quantity > 0 && sizeInfo.quantity <= 5;
-
+            const isSizeDisabled = sizeInfo.variants.every(v => v.quantity <= 0);
             return (
               <Label
                 key={sizeInfo.size}
                 htmlFor={`size-${sizeInfo.size}`}
                 className={cn(
-                  "flex h-auto min-h-10 cursor-pointer flex-col items-center justify-center rounded-md border-2 border-border p-2 px-4 transition-colors hover:bg-accent hover:text-accent-foreground",
-                  isSelected && "border-primary bg-primary/10 text-primary",
+                  "flex h-10 cursor-pointer items-center justify-center rounded-md border-2 border-border p-2 px-4 transition-colors hover:bg-accent hover:text-accent-foreground",
+                  selectedSize === sizeInfo.size && "border-primary bg-primary/10 text-primary",
                   isSizeDisabled && "cursor-not-allowed bg-muted/50 text-muted-foreground line-through hover:bg-muted/50"
                 )}
               >
                 <RadioGroupItem value={sizeInfo.size} id={`size-${sizeInfo.size}`} className="sr-only" disabled={isSizeDisabled} />
                 <span className="font-medium">{sizeInfo.size}</span>
-                <span className={cn("text-xs", 
-                    isLowStock && "text-destructive",
-                    !isSizeDisabled && "text-muted-foreground",
-                    isSelected && "text-primary"
-                )}>
-                  {sizeInfo.quantity > 0 ? `${sizeInfo.quantity} left` : 'Sold Out'}
-                </span>
               </Label>
             )
           })}
         </RadioGroup>
       </div>
-      <div>
-        <Label className="mb-2 block font-semibold">Color</Label>
-        <RadioGroup
-          defaultValue={selectedColor}
-          onValueChange={setSelectedColor}
-          className="flex flex-wrap gap-2"
-        >
-          {product.colors.map((color) => (
-            <Label
-              key={color}
-              htmlFor={`color-${color}`}
-              className={cn(
-                "flex cursor-pointer items-center justify-center rounded-md border-2 border-border p-2 px-4 transition-colors hover:bg-accent hover:text-accent-foreground",
-                selectedColor === color && "border-primary bg-primary/10 text-primary"
-              )}
-            >
-              <RadioGroupItem value={color} id={`color-${color}`} className="sr-only" />
-              {color}
-            </Label>
-          ))}
-        </RadioGroup>
-      </div>
+      
+      {selectedSize && (
+        <div>
+          <Label className="mb-2 block font-semibold">Color</Label>
+          <RadioGroup
+            value={selectedColor}
+            onValueChange={setSelectedColor}
+            className="flex flex-wrap gap-2"
+          >
+            {availableColors.map((variant) => {
+              const isColorDisabled = variant.quantity <= 0;
+              return(
+                <Label
+                  key={variant.color}
+                  htmlFor={`color-${variant.color}`}
+                  className={cn(
+                    "flex h-auto min-h-10 cursor-pointer flex-col items-center justify-center rounded-md border-2 border-border p-2 px-4 transition-colors hover:bg-accent hover:text-accent-foreground",
+                    selectedColor === variant.color && "border-primary bg-primary/10 text-primary",
+                    isColorDisabled && "cursor-not-allowed bg-muted/50 text-muted-foreground line-through hover:bg-muted/50"
+                  )}
+                >
+                  <RadioGroupItem value={variant.color} id={`color-${variant.color}`} className="sr-only" disabled={isColorDisabled} />
+                  <span className="font-medium">{variant.color}</span>
+                   <span className={cn("text-xs", 
+                      !isColorDisabled && "text-muted-foreground",
+                      selectedColor === variant.color && "text-primary"
+                  )}>
+                    {variant.quantity > 0 ? `${variant.quantity} left` : 'Sold Out'}
+                  </span>
+                </Label>
+              )
+            })}
+          </RadioGroup>
+        </div>
+      )}
 
       <div className="flex gap-4">
         <Button size="lg" className="flex-grow bg-accent text-accent-foreground hover:bg-accent/90" onClick={handleAddToCart} disabled={isOutOfStock}>
