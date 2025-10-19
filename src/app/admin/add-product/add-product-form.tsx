@@ -71,10 +71,10 @@ export function AddProductForm({ productToEdit, onProductAddedOrUpdated }: AddPr
       id: '',
       name: '',
       description: '',
-      price: 0,
+      price: undefined,
       category: '',
-      weight: 0.5,
-      sizes: [{ size: 'S', colors: [{ color: 'Black', quantity: 10 }] }],
+      weight: undefined,
+      sizes: [],
       images: [],
     },
   });
@@ -108,7 +108,7 @@ export function AddProductForm({ productToEdit, onProductAddedOrUpdated }: AddPr
               price: productToEdit.price,
               category: productToEdit.category,
               weight: productToEdit.weight,
-              sizes: sizesWithColors.length > 0 ? sizesWithColors : [{ size: 'M', colors: [{ color: 'Black', quantity: 10 }] }],
+              sizes: sizesWithColors.length > 0 ? sizesWithColors : [{ size: '', colors: [{ color: '', quantity: undefined }] }],
               images: productToEdit.images.map(img => ({
                 hint: img.hint,
                 preview: img.url
@@ -119,10 +119,10 @@ export function AddProductForm({ productToEdit, onProductAddedOrUpdated }: AddPr
             id: '',
             name: '',
             description: '',
-            price: 0,
+            price: undefined,
             category: '',
-            weight: 0.5,
-            sizes: [{ size: 'M', colors: [{ color: 'Black', quantity: 10 }] }],
+            weight: undefined,
+            sizes: [{ size: '', colors: [{ color: '', quantity: undefined }] }],
             images: [{ hint: '' }],
           });
       }
@@ -244,7 +244,7 @@ export function AddProductForm({ productToEdit, onProductAddedOrUpdated }: AddPr
                         <ColorFields parentIndex={sizeIndex} control={form.control} />
                     </div>
                 ))}
-                <Button type="button" variant="outline" size="sm" onClick={() => appendSize({ size: "", colors: [{color: '', quantity: 0 }] })}>
+                <Button type="button" variant="outline" size="sm" onClick={() => appendSize({ size: "", colors: [{color: '', quantity: undefined }] })}>
                     Add Another Size
                 </Button>
                  {form.formState.errors.sizes && <p className="text-sm font-medium text-destructive">{form.formState.errors.sizes.root?.message}</p>}
@@ -368,7 +368,7 @@ function ColorFields({ parentIndex, control }: { parentIndex: number, control: a
                             <FormItem className="w-28">
                                 <FormLabel>Quantity</FormLabel>
                                 <FormControl>
-                                    <Input type="number" placeholder="Qty" {...field} onChange={e => field.onChange(e.target.valueAsNumber || 0)} />
+                                    <Input type="number" placeholder="Qty" {...field} onChange={e => field.onChange(e.target.valueAsNumber || undefined)} />
                                 </FormControl>
                                 <FormMessage />
                             </FormItem>
@@ -379,9 +379,11 @@ function ColorFields({ parentIndex, control }: { parentIndex: number, control: a
                     </Button>
                 </div>
             ))}
-            <Button type="button" variant="outline" size="sm" onClick={() => append({ color: '', quantity: 0 })}>
+            <Button type="button" variant="outline" size="sm" onClick={() => append({ color: '', quantity: undefined })}>
                 Add Color for this Size
             </Button>
         </div>
     )
 }
+
+    
