@@ -380,6 +380,7 @@ export async function deleteProduct(cookieStore: ReadonlyRequestCookies, product
 
   if (fetchError || !productData) return { success: false, message: 'Could not find the product to delete.' };
 
+  // Cascade delete should handle this, but for explicit safety:
   await supabaseAdmin.from('reviews').delete().eq('product_id', productId);
   await supabaseAdmin.from('cart_items').delete().eq('product_id', productId);
   await supabaseAdmin.from('order_items').delete().eq('product_id', productId);
@@ -392,6 +393,7 @@ export async function deleteProduct(cookieStore: ReadonlyRequestCookies, product
   
   await supabaseAdmin.from('product_images').delete().eq('product_id', productId);
 
+  // Finally, delete the product itself
   const { error: deleteError } = await supabaseAdmin.from('products').delete().eq('id', productId);
   if (deleteError) return { success: false, message: 'Failed to delete product.', error: { message: deleteError.message } };
 

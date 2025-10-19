@@ -128,24 +128,29 @@ export function AddProductForm({ productToEdit, onProductAddedOrUpdated }: AddPr
       const updateValues: UpdateProductFormValues = {
         ...values,
         id: productToEdit.id,
-        images: imagesWithFiles.length > 0 ? imagesWithFiles : undefined
+        images: imagesWithFiles.length > 0 ? imagesWithFiles.map(img => ({ file: img.file!, hint: img.hint })) : undefined,
       };
       const result = await updateProductAction(updateValues);
       toast({ title: result.success ? 'Success!' : 'Error', description: result.message, variant: result.success ? 'default' : 'destructive'});
+       if(result.success) onProductAddedOrUpdated();
+
     } else {
-      if (imagesWithFiles.length === 0) {
+      const imagesToUpload = values.images.filter(img => img.file instanceof File).map(img => ({ file: img.file!, hint: img.hint }));
+      if (imagesToUpload.length === 0) {
         form.setError('images', { message: 'At least one new image file is required to create a product.' });
         return;
       }
       const addValues: ProductFormValues = {
         ...values,
-        images: imagesWithFiles
+        images: imagesToUpload
       };
       const result = await addProductAction(addValues);
       toast({ title: result.success ? 'Success!' : 'Error', description: result.message, variant: result.success ? 'default' : 'destructive'});
+      if (result.success) {
+        form.reset();
+        onProductAddedOrUpdated();
+      }
     }
-    if(!isEditMode) form.reset();
-    onProductAddedOrUpdated();
   }
 
   const { register } = form;

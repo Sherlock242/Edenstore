@@ -18,17 +18,16 @@ import { revalidatePath } from 'next/cache';
 
 async function updateInventory(supabase: any, cartItems: CartItem[]) {
     for (const item of cartItems) {
+        // We now need to specify the color as well
         const { error: decrementError } = await supabase.rpc('decrement_product_quantity', {
             p_id: item.product.id,
             p_size: item.size,
+            p_color: item.color,
             p_quantity: item.quantity,
         });
 
         if (decrementError) {
-            // Log the error, but don't fail the whole order process.
-            // This is a critical decision: should an inventory failure stop an order?
-            // For now, we prioritize completing the order and log the inventory issue for manual correction.
-            console.error(`[INVENTORY_ERROR] Failed to decrement stock for product ID ${item.product.id}, size ${item.size}. Error: ${decrementError.message}`);
+            console.error(`[INVENTORY_ERROR] Failed to decrement stock for product ID ${item.product.id}, size ${item.size}, color ${item.color}. Error: ${decrementError.message}`);
         }
     }
 }
@@ -301,3 +300,4 @@ export async function validateCoupon(couponCode: string): Promise<{ success: boo
     
     return { success: true, message: 'Coupon applied!', discountPercent: 10 };
 }
+

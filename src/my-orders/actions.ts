@@ -2,7 +2,7 @@
 'use server';
 
 import { createClient } from '@/lib/supabase/server';
-import type { Product } from '@/app/actions';
+import type { Product, ProductSize } from '@/app/actions';
 import { cookies } from 'next/headers';
 import { trackShipmentById } from '@/lib/shiprocket-client';
 
@@ -63,8 +63,7 @@ export async function getUserOrders(): Promise<{ success: boolean; orders?: Orde
         .select(`
             id, name, description, price, category, popularity, release_date, weight,
             product_images ( id, url, hint ),
-            product_sizes ( size, quantity ),
-            product_colors ( color )
+            product_variants ( size, color, quantity )
         `)
         .in('id', productIds);
 
@@ -74,22 +73,30 @@ export async function getUserOrders(): Promise<{ success: boolean; orders?: Orde
     }
 
     // Create a map for efficient product lookup
-     const productsMap = new Map<string, Product>(productsData.map(p => [
-        p.id.toString(), 
-        {
-            id: p.id.toString(),
-            name: p.name,
-            description: p.description,
-            price: p.price,
-            category: p.category,
-            popularity: p.popularity,
-            releaseDate: p.release_date,
-            weight: p.weight,
-            images: p.product_images.map((img: any) => ({ id: img.id.toString(), url: img.url, hint: img.hint })),
-            sizes: p.product_sizes.map((s: any) => ({size: s.size, quantity: s.quantity})),
-            colors: p.product_colors.map((c: any) => c.color),
-        }
-    ]));
+     const productsMap = new Map<string, Product>(productsData.map(p => {
+        const sizesMap = new Map<string, { color: string; quantity: number }[]>();
+        p.product_variants.forEach((variant: any) => {
+            if (!sizesMap.has(variant.size)) sizesMap.set(variant.size, []);
+            sizesMap.get(variant.size)!.push({ color: variant.color, quantity: variant.quantity });
+        });
+        const sizes: ProductSize[] = Array.from(sizesMap.entries()).map(([size, variants]) => ({ size, variants }));
+
+        return [
+            p.id.toString(), 
+            {
+                id: p.id.toString(),
+                name: p.name,
+                description: p.description,
+                price: p.price,
+                category: p.category,
+                popularity: p.popularity,
+                releaseDate: p.release_date,
+                weight: p.weight,
+                images: p.product_images.map((img: any) => ({ id: img.id.toString(), url: img.url, hint: img.hint })),
+                sizes: sizes,
+            }
+        ];
+    }));
 
     // 4. Construct the final array of OrderSummary objects, now including tracking data
     const orders: OrderSummary[] = await Promise.all(
@@ -123,3 +130,4 @@ export async function getUserOrders(): Promise<{ success: boolean; orders?: Orde
 
     return { success: true, orders, message: 'Orders fetched successfully.' };
 }
+
