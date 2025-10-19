@@ -23,13 +23,14 @@ import { Upload, X } from 'lucide-react';
 import Image from 'next/image';
 import { Separator } from '@/components/ui/separator';
 
-const sizeSchema = z.object({
-  size: z.string().min(1, 'Size is required.'),
+const colorVariantSchema = z.object({
+  color: z.string().min(1, 'Color is required.'),
   quantity: z.coerce.number().min(0, 'Quantity must be 0 or more.'),
 });
 
-const colorSchema = z.object({
-  color: z.string().min(1, 'Color is required.'),
+const sizeSchema = z.object({
+  size: z.string().min(1, 'Size is required.'),
+  colors: z.array(colorVariantSchema).min(1, 'At least one color variant is required.'),
 });
 
 const imageSchema = z.object({
@@ -51,7 +52,6 @@ const formSchema = z.object({
   category: z.string().min(2, 'Category must be at least 2 characters.'),
   weight: z.coerce.number().positive('Weight must be a positive number (in kg).'),
   sizes: z.array(sizeSchema).min(1, 'At least one size is required.'),
-  colors: z.array(colorSchema).min(1, 'At least one color is required.'),
   images: z.array(imageSchema).min(1, 'At least one image is required.'),
 });
 
@@ -64,6 +64,7 @@ export function AddProductForm({ productToEdit, onProductAddedOrUpdated }: AddPr
   const { toast } = useToast();
   const isEditMode = !!productToEdit;
 
+  // This form state is temporary and will be updated in the next step.
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -73,29 +74,33 @@ export function AddProductForm({ productToEdit, onProductAddedOrUpdated }: AddPr
       price: 0,
       category: '',
       weight: 0.5,
-      sizes: [{ size: 'S', quantity: 10 }],
-      colors: [{ color: 'Black' }],
+      sizes: [{ size: 'S', colors: [{ color: 'Black', quantity: 10 }] }],
       images: [],
     },
   });
-  
+
   const { fields: sizeFields, append: appendSize, remove: removeSize } = useFieldArray({
     control: form.control,
     name: "sizes"
   });
 
-  const { fields: colorFields, append: appendColor, remove: removeColor } = useFieldArray({
-    control: form.control,
-    name: "colors"
-  });
-  
   const { fields: imageFields, append: appendImage, remove: removeImage } = useFieldArray({
     control: form.control,
     name: "images"
   });
 
   useEffect(() => {
+      // NOTE: The data transformation here is a temporary measure.
+      // It will be properly handled when the backend is updated.
       if (productToEdit) {
+          const sizesWithColors = productToEdit.sizes.map(s => {
+              const color = productToEdit.colors[0] || 'Black';
+              return {
+                  size: s.size,
+                  colors: [{ color, quantity: s.quantity }]
+              }
+          });
+
           form.reset({
               id: productToEdit.id,
               name: productToEdit.name,
@@ -103,8 +108,7 @@ export function AddProductForm({ productToEdit, onProductAddedOrUpdated }: AddPr
               price: productToEdit.price,
               category: productToEdit.category,
               weight: productToEdit.weight,
-              sizes: productToEdit.sizes,
-              colors: productToEdit.colors.map(c => ({ color: c })),
+              sizes: sizesWithColors.length > 0 ? sizesWithColors : [{ size: 'M', colors: [{ color: 'Black', quantity: 10 }] }],
               images: productToEdit.images.map(img => ({
                 hint: img.hint,
                 preview: img.url
@@ -118,63 +122,21 @@ export function AddProductForm({ productToEdit, onProductAddedOrUpdated }: AddPr
             price: 0,
             category: '',
             weight: 0.5,
-            sizes: [{size: 'S', quantity: 10}, {size: 'M', quantity: 10}],
-            colors: [{ color: 'Black' }, { color: 'White' }],
+            sizes: [{ size: 'M', colors: [{ color: 'Black', quantity: 10 }] }],
             images: [{ hint: '' }],
           });
       }
   }, [productToEdit, form]);
 
+  // This onSubmit function is INCOMPLETE. It will not work correctly.
+  // It is a placeholder until the backend actions are updated.
   async function onSubmit(values: z.infer<typeof formSchema>) {
-    let result;
-    // Filter for images where a new file has actually been selected.
-    const imagesWithFiles = values.images.filter(img => img.file instanceof File && img.file.size > 0) as { file: File; hint: string }[];
-
-    if (isEditMode && values.id) {
-        const updateValues: UpdateProductFormValues = {
-            id: values.id,
-            name: values.name,
-            description: values.description,
-            price: values.price,
-            category: values.category,
-            weight: values.weight,
-            sizes: values.sizes,
-            colors: values.colors,
-            // Only include images field if new images were uploaded
-            ...(imagesWithFiles.length > 0 && { images: imagesWithFiles }),
-        };
-        result = await updateProductAction(updateValues);
-    } else {
-        // For adding a new product, at least one image file is mandatory.
-        if (imagesWithFiles.length === 0) {
-            form.setError('images', { type: 'manual', message: 'At least one new image file is required to add a product.' });
-            return;
-        }
-        const addValues: ProductFormValues = {
-            ...values,
-            images: imagesWithFiles,
-        };
-        result = await addProductAction(addValues);
-    }
-
-    if (result.success) {
-      toast({
-        title: 'Success!',
-        description: result.message,
-      });
-      form.reset();
-      onProductAddedOrUpdated();
-    } else {
-      let errorMessage = 'Something went wrong.';
-      if (typeof result.error?.message === 'string') {
-          errorMessage = result.error.message;
-      }
-      toast({
+     toast({
         variant: 'destructive',
-        title: 'Error',
-        description: errorMessage,
+        title: 'Action Incomplete',
+        description: 'Saving this form is not yet implemented. The backend needs to be updated first.',
       });
-    }
+      return;
   }
 
   const { register } = form;
@@ -252,79 +214,40 @@ export function AddProductForm({ productToEdit, onProductAddedOrUpdated }: AddPr
 
         <Separator />
 
-        {/* Sizes and Quantities */}
         <div>
-            <FormLabel>Sizes & Inventory</FormLabel>
-            <FormDescription>Add the sizes available and their stock quantity.</FormDescription>
+            <FormLabel>Variants (Size, Color, & Inventory)</FormLabel>
+            <FormDescription>Add product variants and their stock quantity.</FormDescription>
             <div className="space-y-4 mt-4">
-                {sizeFields.map((field, index) => (
-                    <div key={field.id} className="flex items-center gap-4">
-                        <FormField
-                            control={form.control}
-                            name={`sizes.${index}.size`}
-                            render={({ field }) => (
-                                <FormItem className="flex-grow">
-                                    <FormControl>
-                                        <Input placeholder="Size (e.g., M)" {...field} />
-                                    </FormControl>
-                                    <FormMessage />
-                                </FormItem>
-                            )}
-                        />
-                        <FormField
-                            control={form.control}
-                            name={`sizes.${index}.quantity`}
-                            render={({ field }) => (
-                                <FormItem className="w-28">
-                                    <FormControl>
-                                        <Input type="number" placeholder="Qty" {...field} onChange={e => field.onChange(e.target.valueAsNumber || 0)} />
-                                    </FormControl>
-                                    <FormMessage />
-                                </FormItem>
-                            )}
-                        />
-                        <Button type="button" variant="destructive" size="icon" onClick={() => removeSize(index)}>
-                            <X className="h-4 w-4" />
-                        </Button>
+                {sizeFields.map((sizeField, sizeIndex) => (
+                    <div key={sizeField.id} className="p-4 border rounded-md space-y-4 bg-muted/20">
+                         <div className="flex items-center gap-4">
+                            <FormField
+                                control={form.control}
+                                name={`sizes.${sizeIndex}.size`}
+                                render={({ field }) => (
+                                    <FormItem className="flex-grow">
+                                        <FormLabel>Size</FormLabel>
+                                        <FormControl>
+                                            <Input placeholder="e.g., M" {...field} />
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                             <Button type="button" variant="destructive" size="icon" className="mt-8" onClick={() => removeSize(sizeIndex)}>
+                                <X className="h-4 w-4" />
+                            </Button>
+                        </div>
+
+                        <Separator />
+                        <h4 className="font-medium text-sm">Colors & Quantities for Size {form.watch(`sizes.${sizeIndex}.size`) || ''}</h4>
+                        <ColorFields parentIndex={sizeIndex} control={form.control} />
                     </div>
                 ))}
-                <Button type="button" variant="outline" size="sm" onClick={() => appendSize({ size: "", quantity: 0 })}>
-                    Add Size
+                <Button type="button" variant="outline" size="sm" onClick={() => appendSize({ size: "", colors: [{color: '', quantity: 0 }] })}>
+                    Add Another Size
                 </Button>
                  {form.formState.errors.sizes && <p className="text-sm font-medium text-destructive">{form.formState.errors.sizes.root?.message}</p>}
-            </div>
-        </div>
-
-        <Separator />
-        
-        {/* Colors */}
-        <div>
-            <FormLabel>Available Colors</FormLabel>
-            <FormDescription>Add the color variations for the product.</FormDescription>
-            <div className="space-y-4 mt-4">
-                {colorFields.map((field, index) => (
-                    <div key={field.id} className="flex items-center gap-4">
-                        <FormField
-                            control={form.control}
-                            name={`colors.${index}.color`}
-                            render={({ field }) => (
-                                <FormItem className="flex-grow">
-                                    <FormControl>
-                                        <Input placeholder="Color (e.g., Black)" {...field} />
-                                    </FormControl>
-                                    <FormMessage />
-                                </FormItem>
-                            )}
-                        />
-                        <Button type="button" variant="destructive" size="icon" onClick={() => removeColor(index)}>
-                            <X className="h-4 w-4" />
-                        </Button>
-                    </div>
-                ))}
-                <Button type="button" variant="outline" size="sm" onClick={() => appendColor({ color: "" })}>
-                    Add Color
-                </Button>
-                 {form.formState.errors.colors && <p className="text-sm font-medium text-destructive">{form.formState.errors.colors.root?.message}</p>}
             </div>
         </div>
 
@@ -415,4 +338,50 @@ export function AddProductForm({ productToEdit, onProductAddedOrUpdated }: AddPr
   );
 }
 
-    
+function ColorFields({ parentIndex, control }: { parentIndex: number, control: any }) {
+    const { fields, append, remove } = useFieldArray({
+        control,
+        name: `sizes.${parentIndex}.colors`,
+    });
+
+    return (
+        <div className="space-y-4 pl-4 border-l-2 border-border/50">
+            {fields.map((field, index) => (
+                <div key={field.id} className="flex items-end gap-4">
+                    <FormField
+                        control={control}
+                        name={`sizes.${parentIndex}.colors.${index}.color`}
+                        render={({ field }) => (
+                            <FormItem className="flex-grow">
+                                <FormLabel>Color</FormLabel>
+                                <FormControl>
+                                    <Input placeholder="e.g., Black" {...field} />
+                                </FormControl>
+                                <FormMessage />
+                            </FormItem>
+                        )}
+                    />
+                    <FormField
+                        control={control}
+                        name={`sizes.${parentIndex}.colors.${index}.quantity`}
+                        render={({ field }) => (
+                            <FormItem className="w-28">
+                                <FormLabel>Quantity</FormLabel>
+                                <FormControl>
+                                    <Input type="number" placeholder="Qty" {...field} onChange={e => field.onChange(e.target.valueAsNumber || 0)} />
+                                </FormControl>
+                                <FormMessage />
+                            </FormItem>
+                        )}
+                    />
+                    <Button type="button" variant="ghost" size="icon" className="text-destructive" onClick={() => remove(index)}>
+                        <X className="h-4 w-4" />
+                    </Button>
+                </div>
+            ))}
+            <Button type="button" variant="outline" size="sm" onClick={() => append({ color: '', quantity: 0 })}>
+                Add Color for this Size
+            </Button>
+        </div>
+    )
+}

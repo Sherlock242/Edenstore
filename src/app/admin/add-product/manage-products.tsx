@@ -25,6 +25,7 @@ import { type Product } from '@/app/actions';
 import { useToast } from '@/hooks/use-toast';
 import { Edit, Loader2, Trash2 } from 'lucide-react';
 import { deleteProductClient, getProductsClient } from '@/app/server-actions';
+import { Badge } from '@/components/ui/badge';
 
 
 type ManageProductsProps = {
@@ -85,7 +86,7 @@ export function ManageProducts({ onEditProduct, productAddedOrUpdated, initialPr
             <TableRow>
                 <TableHead className="w-[80px]">Image</TableHead>
                 <TableHead>Name</TableHead>
-                <TableHead>Category</TableHead>
+                <TableHead>Inventory</TableHead>
                 <TableHead>Price</TableHead>
                 <TableHead>Weight</TableHead>
                 <TableHead className="w-[100px] text-right">Actions</TableHead>
@@ -106,41 +107,51 @@ export function ManageProducts({ onEditProduct, productAddedOrUpdated, initialPr
                     </TableCell>
                 </TableRow>
             )}
-            {products.map(product => (
-                <TableRow key={product.id}>
-                <TableCell>
-                    {product.images?.[0]?.url ? (
-                        <Image
-                            src={product.images[0].url}
-                            alt={product.name}
-                            width={50}
-                            height={62}
-                            className="rounded-md object-cover"
-                            data-ai-hint={product.images[0].hint}
-                        />
-                    ): <div className="h-[62.5px] w-[50px] bg-muted rounded-md" />}
-                </TableCell>
-                <TableCell className="font-medium">{product.name}</TableCell>
-                <TableCell>{product.category}</TableCell>
-                <TableCell>₹{product.price.toFixed(2)}</TableCell>
-                <TableCell>{product.weight} kg</TableCell>
-                <TableCell className="text-right">
-                    <Button variant="ghost" size="icon" onClick={() => handleEditClick(product)} disabled={isPending}>
-                        <Edit className="h-4 w-4" />
-                        <span className="sr-only">Edit</span>
-                    </Button>
-                    <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => handleDeleteClick(product)}
-                    disabled={isPending}
-                    >
-                    <Trash2 className="h-4 w-4 text-destructive" />
-                    <span className="sr-only">Delete</span>
-                    </Button>
-                </TableCell>
-                </TableRow>
-            ))}
+            {products.map(product => {
+                const totalStock = product.sizes.reduce((acc, size) => acc + size.quantity, 0);
+                return (
+                    <TableRow key={product.id}>
+                    <TableCell>
+                        {product.images?.[0]?.url ? (
+                            <Image
+                                src={product.images[0].url}
+                                alt={product.name}
+                                width={50}
+                                height={62}
+                                className="rounded-md object-cover"
+                                data-ai-hint={product.images[0].hint}
+                            />
+                        ): <div className="h-[62.5px] w-[50px] bg-muted rounded-md" />}
+                    </TableCell>
+                    <TableCell className="font-medium">{product.name}</TableCell>
+                    <TableCell>
+                        <div className="flex flex-col gap-1">
+                            <span className="font-semibold">{totalStock} Total</span>
+                            <span className="text-xs text-muted-foreground">
+                                {product.sizes.length} size{product.sizes.length === 1 ? '' : 's'}, {product.colors.length} color{product.colors.length === 1 ? '' : 's'}
+                            </span>
+                        </div>
+                    </TableCell>
+                    <TableCell>₹{product.price.toFixed(2)}</TableCell>
+                    <TableCell>{product.weight} kg</TableCell>
+                    <TableCell className="text-right">
+                        <Button variant="ghost" size="icon" onClick={() => handleEditClick(product)} disabled={isPending}>
+                            <Edit className="h-4 w-4" />
+                            <span className="sr-only">Edit</span>
+                        </Button>
+                        <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => handleDeleteClick(product)}
+                        disabled={isPending}
+                        >
+                        <Trash2 className="h-4 w-4 text-destructive" />
+                        <span className="sr-only">Delete</span>
+                        </Button>
+                    </TableCell>
+                    </TableRow>
+                )
+            })}
             </TableBody>
         </Table>
       </div>
