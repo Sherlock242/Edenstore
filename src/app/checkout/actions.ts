@@ -288,16 +288,9 @@ export async function verifyPaymentAndCreateOrder(payload: VerifyPaymentPayload)
 }
 
 export async function validateCoupon(couponCode: string): Promise<{ success: boolean; message: string; discountPercent?: number }> {
-    const cookieStore = cookies();
-    if (couponCode.toLowerCase() !== 'akatsu10') {
-        return { success: false, message: 'Invalid coupon code.' };
-    }
-
-    const announcementSettings = await getAnnouncementBarSettings(cookieStore);
-    if (!announcementSettings.enabled) {
-        return { success: false, message: 'This coupon is not currently active.' };
+    if (couponCode.toLowerCase() === 'akatsu10') {
+        return { success: true, message: 'Coupon applied!', discountPercent: 10 };
     }
     
-    return { success: true, message: 'Coupon applied!', discountPercent: 10 };
+    return { success: false, message: 'Invalid coupon code.' };
 }
-
