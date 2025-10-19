@@ -105,12 +105,7 @@ const CartContext = createContext<CartContextType | undefined>(undefined);
 export function CartProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(cartReducer, initialState);
   const { toast } = useToast();
-  const [isMounted, setIsMounted] = useState(false);
-  const supabase = createClient();
-
-  useEffect(() => {
-    setIsMounted(true);
-  }, []);
+  const [supabase] = useState(() => createClient());
 
   const loadCart = useCallback(async () => {
     const { data: { user } } = await supabase.auth.getUser();
@@ -128,13 +123,11 @@ export function CartProvider({ children }: { children: ReactNode }) {
   }, [supabase]);
 
   useEffect(() => {
-    if (!isMounted) return;
-    
     loadCart();
 
     const { data: authListener } = supabase.auth.onAuthStateChange(
       (event, session) => {
-        if (event === 'SIGNED_IN' || event === 'SIGNED_OUT' || event === 'USER_DELETED') {
+        if (event === 'SIGNED_IN' || event === 'SIGNED_OUT' || event === 'TOKEN_REFRESHED' || event === 'USER_DELETED') {
           loadCart();
         }
       }
@@ -143,7 +136,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
     return () => {
       authListener?.subscription.unsubscribe();
     };
-  }, [isMounted, loadCart, supabase]);
+  }, [loadCart, supabase]);
 
   const addToCart = async (item: Omit<CartItem, 'quantity'> & { quantity?: number }) => {
     const { data: { user } } = await supabase.auth.getUser();
@@ -210,10 +203,8 @@ export function CartProvider({ children }: { children: ReactNode }) {
      }
   };
   
-  const clientState = isMounted ? state : { ...initialState, loading: true };
-
   const value = {
-    state: clientState,
+    state,
     dispatch,
     addToCart,
     updateQuantity,
