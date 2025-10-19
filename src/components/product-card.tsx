@@ -17,11 +17,18 @@ export function ProductCard({ product }: ProductCardProps) {
   const { addToCart } = useCart();
 
   const handleAddToCart = () => {
-    addToCart({
-      product,
-      size: product.sizes[0]?.size || 'M',
-      color: product.colors[0] || 'Black',
-    });
+    // Default to the first available variant when adding from a product card
+    const firstAvailableSize = product.sizes.find(s => s.variants.some(v => v.quantity > 0));
+    if (firstAvailableSize) {
+      const firstAvailableColor = firstAvailableSize.variants.find(v => v.quantity > 0);
+      if (firstAvailableColor) {
+        addToCart({
+          product,
+          size: firstAvailableSize.size,
+          color: firstAvailableColor.color,
+        });
+      }
+    }
   };
 
   const imageUrl = product.images?.[0]?.url;
@@ -59,3 +66,5 @@ export function ProductCard({ product }: ProductCardProps) {
     </Card>
   );
 }
+
+    

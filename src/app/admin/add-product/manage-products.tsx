@@ -179,3 +179,5 @@ export function ManageProducts({ onEditProduct, productAddedOrUpdated, initialPr
     </div>
   );
 }
+
+    

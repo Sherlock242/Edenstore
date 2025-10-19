@@ -428,3 +428,5 @@ export async function deleteUserAccount(cookieStore: ReadonlyRequestCookies): Pr
 
     return { success: true, message: 'Account deleted successfully.' };
 }
+
+    

@@ -42,7 +42,7 @@ export function ProductDetailsClient({ product }: { product: Product }) {
   // Effect to update selected color when size changes
   useEffect(() => {
     if (availableColors.length > 0) {
-      const currentColor still available
+      // Check if current color is still available
       const isCurrentColorAvailable = availableColors.some(c => c.color === selectedColor && c.quantity > 0);
       if (!isCurrentColorAvailable) {
         // If current color is not available for new size, pick the first available one
@@ -83,6 +83,7 @@ export function ProductDetailsClient({ product }: { product: Product }) {
       product,
       size: selectedSize,
       color: selectedColor,
+      quantity: 1, // Add one item at a time
     });
   };
 
@@ -204,3 +205,5 @@ export function ProductDetailsClient({ product }: { product: Product }) {
     </div>
   );
 }
+
+    
