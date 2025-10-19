@@ -1,4 +1,3 @@
-
 'use client';
 import { useEffect } from 'react';
 import { useForm, useFieldArray } from 'react-hook-form';
@@ -382,11 +381,11 @@ function ColorFields({ parentIndex, control }: { parentIndex: number, control: a
                             <FormItem className="w-28">
                                 <FormLabel>Quantity</FormLabel>
                                 <FormControl>
-                                    <Input 
-                                      type="number" 
-                                      placeholder="Qty" 
-                                      {...field} 
-                                      value={field.value ?? ''} 
+                                    <Input
+                                      type="number"
+                                      placeholder="Qty"
+                                      {...field}
+                                      value={field.value ?? ''}
                                       onChange={e => field.onChange(e.target.value === '' ? undefined : e.target.valueAsNumber)}
                                     />
                                 </FormControl>
@@ -405,5 +404,3 @@ function ColorFields({ parentIndex, control }: { parentIndex: number, control: a
         </div>
     )
 }
-
-    
