@@ -62,7 +62,7 @@ export default function LoginPage({ searchParams }: { searchParams: { message: s
           <CardDescription>Sign in to continue to your account.</CardDescription>
         </CardHeader>
         <CardContent>
-          <form className="space-y-6">
+          <form action={signIn} className="space-y-6">
             <div className="space-y-4">
               <div>
                 <Label htmlFor="email">Email Address</Label>
@@ -73,7 +73,7 @@ export default function LoginPage({ searchParams }: { searchParams: { message: s
                 <Input id="password" name="password" type="password" placeholder="••••••••" required />
               </div>
             </div>
-            <Button formAction={signIn} className="w-full">
+            <Button type="submit" className="w-full">
               Sign In
             </Button>
             {searchParams?.message && (
