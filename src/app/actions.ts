@@ -419,6 +419,18 @@ export async function deleteUserAccount(cookieStore: ReadonlyRequestCookies): Pr
         { auth: { persistSession: false } }
     );
 
+    // First, delete the user from the public.users table.
+    const { error: deleteProfileError } = await supabaseAdmin
+        .from('users')
+        .delete()
+        .eq('id', user.id);
+
+    if (deleteProfileError) {
+         console.error('Error deleting user profile:', deleteProfileError);
+         // We can choose to continue even if this fails, as the auth user is the critical part.
+    }
+    
+    // Then, delete the user from the auth.users table.
     const { error: deleteAuthUserError } = await supabaseAdmin.auth.admin.deleteUser(user.id);
 
     if (deleteAuthUserError) {
@@ -426,9 +438,14 @@ export async function deleteUserAccount(cookieStore: ReadonlyRequestCookies): Pr
         return { success: false, message: 'Failed to delete user account.', error: { message: deleteAuthUserError.message } };
     }
     
+    // Finally, sign the user out to clear the session cookie.
+    await supabase.auth.signOut();
+    
     revalidatePath('/');
 
     return { success: true, message: 'Account deleted successfully.' };
 }
+
+    
 
     
