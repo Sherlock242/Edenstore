@@ -159,7 +159,7 @@ export function CartSheet() {
                     <h3 className="font-semibold text-lg">Your cart is empty</h3>
                     <p className="text-muted-foreground">Add some awesome anime tees to get started!</p>
                     <Button asChild className="bg-accent text-accent-foreground hover:bg-accent/90" onClick={() => setIsSheetOpen(false)}>
-                        <Link href="/products">Start Shopping</Link>
+                        <Link href="/">Start Shopping</Link>
                     </Button>
                 </div>
             )}

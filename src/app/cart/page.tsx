@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useCart } from "@/contexts/cart-context";
@@ -161,7 +162,7 @@ export default function CartPage() {
           <h2 className="text-xl font-semibold">Your cart is empty.</h2>
           <p className="text-muted-foreground">Looks like you haven't added anything to your cart yet.</p>
           <Button asChild className="bg-accent text-accent-foreground hover:bg-accent/90">
-            <Link href="/products">Start Shopping</Link>
+            <Link href="/">Start Shopping</Link>
           </Button>
         </div>
       )}
