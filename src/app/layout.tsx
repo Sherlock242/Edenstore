@@ -57,15 +57,15 @@ export default async function RootLayout({
         className={`${inter.variable} ${spaceGrotesk.variable} font-body antialiased`}
       >
         <ClientProviders>
-          <div className="flex min-h-screen flex-col">
-            {announcementSettings.enabled && <AnnouncementBar message={announcementSettings.message} />}
-            <Header siteName={siteName} logoUrl={logoResult.url} displayMode={displayMode} />
-            <main className="flex-grow">
-              {children}
-            </main>
-            <Footer siteName={siteName} />
-          </div>
-          <Toaster />
+            <div className="flex min-h-screen flex-col">
+                {announcementSettings.enabled && <AnnouncementBar message={announcementSettings.message} />}
+                <Header siteName={siteName} logoUrl={logoResult.url} displayMode={displayMode} />
+                <main className="flex-grow">
+                {children}
+                </main>
+                <Footer siteName={siteName} />
+            </div>
+            <Toaster />
         </ClientProviders>
       </body>
     </html>
