@@ -85,7 +85,7 @@ export function HeaderClient({ user, userProfile, isadmin, siteName, logoUrl, di
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+    <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background">
       <div className="container mx-auto flex h-14 max-w-7xl items-center px-4">
 
         {/* Desktop: Left side */}
@@ -102,7 +102,7 @@ export function HeaderClient({ user, userProfile, isadmin, siteName, logoUrl, di
                 size="icon"
                 aria-label="Toggle navigation menu"
               >
-                <Menu className="h-6 w-6" />
+                <Menu className="h-10 w-10" />
               </Button>
             </SheetTrigger>
             <MobileMenuSheet user={user} userProfile={userProfile} isadmin={isadmin} setOpen={setIsMobileMenuOpen} siteName={siteName} logoUrl={logoUrl} displayMode={displayMode} />
@@ -203,3 +203,5 @@ export function HeaderClient({ user, userProfile, isadmin, siteName, logoUrl, di
     </header>
   );
 }
+
+    
