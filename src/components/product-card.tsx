@@ -57,7 +57,7 @@ export function ProductCard({ product }: ProductCardProps) {
             )}
           </Link>
         </div>
-        <div className="pt-4 px-1">
+        <div className="pt-2">
           <Link href={`/products/${product.id}`}>
             <h3 className="font-semibold truncate text-base">{product.name}</h3>
           </Link>
@@ -70,7 +70,7 @@ export function ProductCard({ product }: ProductCardProps) {
                 ₹{discountAmount.toFixed(0)} OFF
             </p>
           </div>
-          <p className="text-xs text-muted-foreground mt-1 whitespace-nowrap">lowest price in last 30 days</p>
+          <p className="text-xs text-muted-foreground mt-1 whitespace-nowrap">lowest in last 30 days</p>
         </div>
       </CardContent>
     </Card>
