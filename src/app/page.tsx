@@ -33,12 +33,7 @@ export default async function Home() {
       </section>
 
       <section id="products" className="container mx-auto px-4 pb-16">
-        <div className="mb-12 text-center">
-            <h2 className="font-headline text-3xl font-bold tracking-tighter md:text-4xl">Featured Products</h2>
-            <p className="mt-2 text-muted-foreground max-w-2xl mx-auto">
-                Hand-picked designs that you won't find anywhere else.
-            </p>
-        </div>
+        
         <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4 md:gap-6">
           {products.slice(0, 8).map((product) => (
             <ProductCard key={product.id} product={product} />
