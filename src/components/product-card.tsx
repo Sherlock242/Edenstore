@@ -37,16 +37,16 @@ export function ProductCard({ product }: ProductCardProps) {
   const discountAmount = compareAtPrice - product.price;
 
   return (
-    <Card className="group w-full overflow-hidden border rounded-none shadow-none bg-transparent">
+    <Card className="group w-full overflow-hidden rounded-lg bg-card border border-border/20 shadow-none">
       <CardContent className="p-0">
-        <div className="relative overflow-hidden aspect-[4/5]">
+        <div className="relative overflow-hidden aspect-[4/5] bg-white">
           <Link href={`/products/${product.id}`}>
             {imageUrl ? (
               <Image
                 src={imageUrl}
                 alt={product.name}
                 fill
-                className="object-cover transition-transform duration-300 group-hover:scale-105"
+                className="object-contain transition-transform duration-300 group-hover:scale-105"
                 data-ai-hint={imageHint}
                 sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 25vw"
               />
@@ -57,20 +57,20 @@ export function ProductCard({ product }: ProductCardProps) {
             )}
           </Link>
         </div>
-        <div className="pt-2 px-1">
+        <div className="p-4 bg-card text-card-foreground">
           <Link href={`/products/${product.id}`}>
-            <h3 className="font-semibold truncate text-base">{product.name}</h3>
+            <h3 className="font-semibold truncate text-lg">{product.name}</h3>
           </Link>
-          <div className="mt-1 flex items-baseline gap-2 flex-wrap">
-            <p className="font-bold text-base">₹{product.price.toFixed(0)}</p>
-            <p className="text-sm text-muted-foreground line-through">
+          <div className="mt-2 flex items-baseline gap-2 flex-wrap">
+            <p className="font-bold text-xl">₹{product.price.toFixed(0)}</p>
+            <p className="text-md text-muted-foreground line-through">
               ₹{compareAtPrice.toFixed(0)}
             </p>
-            <p className="text-sm font-bold text-green-500">
+          </div>
+            <p className="text-md font-bold text-green-500 mt-1">
                 ₹{discountAmount.toFixed(0)} OFF
             </p>
-          </div>
-          <p className="text-xs text-muted-foreground mt-1 whitespace-nowrap">lowest in last 30 days</p>
+          <p className="text-xs text-muted-foreground mt-2 whitespace-nowrap">lowest in last 30 days</p>
         </div>
       </CardContent>
     </Card>
