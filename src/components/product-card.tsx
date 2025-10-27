@@ -66,10 +66,10 @@ export function ProductCard({ product }: ProductCardProps) {
             <p className="text-md text-muted-foreground line-through">
               ₹{compareAtPrice.toFixed(0)}
             </p>
-          </div>
-            <p className="text-md font-bold text-green-500 mt-1">
+            <p className="text-md font-bold text-green-500">
                 ₹{discountAmount.toFixed(0)} OFF
             </p>
+          </div>
           <p className="text-xs text-purple-400 mt-2 whitespace-nowrap">lowest in last 30 days</p>
         </div>
       </CardContent>
