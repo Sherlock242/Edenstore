@@ -34,9 +34,10 @@ export function ProductCard({ product }: ProductCardProps) {
   const imageUrl = product.images?.[0]?.url;
   const imageHint = product.images?.[0]?.hint;
   const compareAtPrice = product.price * 2;
+  const discountAmount = compareAtPrice - product.price;
 
   return (
-    <Card className="group w-full overflow-hidden border-2 border-transparent transition-all hover:border-primary">
+    <Card className="group w-full overflow-hidden border-none rounded-none shadow-none bg-transparent">
       <CardContent className="p-0">
         <div className="relative overflow-hidden aspect-[4/5]">
           <Link href={`/products/${product.id}`}>
@@ -56,15 +57,17 @@ export function ProductCard({ product }: ProductCardProps) {
             )}
           </Link>
         </div>
-        <div className="p-4">
+        <div className="pt-4 px-1">
           <Link href={`/products/${product.id}`}>
-            <h3 className="font-semibold truncate">{product.name}</h3>
+            <h3 className="font-semibold truncate text-base">{product.name}</h3>
           </Link>
-          <p className="text-sm text-muted-foreground">{product.category}</p>
-          <div className="mt-2 flex items-baseline gap-2">
-            <p className="font-bold">₹{product.price.toFixed(2)}</p>
+          <div className="mt-1 flex items-baseline gap-2 flex-wrap">
+            <p className="font-bold text-base">₹{product.price.toFixed(0)}</p>
             <p className="text-sm text-muted-foreground line-through">
-              ₹{compareAtPrice.toFixed(2)}
+              ₹{compareAtPrice.toFixed(0)}
+            </p>
+            <p className="text-sm font-bold text-green-500">
+                ₹{discountAmount.toFixed(0)} OFF
             </p>
           </div>
         </div>
