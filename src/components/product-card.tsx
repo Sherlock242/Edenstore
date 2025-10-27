@@ -33,6 +33,7 @@ export function ProductCard({ product }: ProductCardProps) {
 
   const imageUrl = product.images?.[0]?.url;
   const imageHint = product.images?.[0]?.hint;
+  const compareAtPrice = product.price * 2;
 
   return (
     <Card className="group w-full overflow-hidden border-2 border-transparent transition-all hover:border-primary">
@@ -60,11 +61,14 @@ export function ProductCard({ product }: ProductCardProps) {
             <h3 className="font-semibold truncate">{product.name}</h3>
           </Link>
           <p className="text-sm text-muted-foreground">{product.category}</p>
-          <p className="mt-2 font-bold">₹{product.price.toFixed(2)}</p>
+          <div className="mt-2 flex items-baseline gap-2">
+            <p className="font-bold">₹{product.price.toFixed(2)}</p>
+            <p className="text-sm text-muted-foreground line-through">
+              ₹{compareAtPrice.toFixed(2)}
+            </p>
+          </div>
         </div>
       </CardContent>
     </Card>
   );
 }
-
-    
