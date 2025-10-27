@@ -9,6 +9,7 @@ import { ClientProviders } from '@/components/client-providers';
 import { getSiteName, getSiteLogoUrl, getHeaderDisplayMode, getAnnouncementBarSettings } from './admin/settings/actions';
 import { cookies } from 'next/headers';
 import { AnnouncementBar } from '@/components/layout/announcement-bar';
+import NextTopLoader from 'nextjs-toploader';
 
 const inter = Inter({
   subsets: ['latin'],
@@ -56,6 +57,17 @@ export default async function RootLayout({
       <body
         className={`${inter.variable} ${spaceGrotesk.variable} font-body antialiased`}
       >
+        <NextTopLoader
+          color="hsl(var(--primary))"
+          initialPosition={0.08}
+          crawlSpeed={200}
+          height={3}
+          crawl={true}
+          showSpinner={false}
+          easing="ease"
+          speed={200}
+          shadow="0 0 10px hsl(var(--primary)),0 0 5px hsl(var(--primary))"
+        />
         <ClientProviders>
             <div className="flex min-h-screen flex-col">
                 {announcementSettings.enabled && <AnnouncementBar message={announcementSettings.message} />}
