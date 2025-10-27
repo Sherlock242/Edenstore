@@ -33,7 +33,7 @@ export function ProductCard({ product }: ProductCardProps) {
 
   const imageUrl = product.images?.[0]?.url;
   const imageHint = product.images?.[0]?.hint;
-  const compareAtPrice = product.price * 2;
+  const compareAtPrice = product.price * 1.4;
   const discountAmount = compareAtPrice - product.price;
 
   return (
