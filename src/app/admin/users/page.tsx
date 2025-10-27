@@ -20,6 +20,7 @@ import { createClient } from '@/lib/supabase/client';
 export default function AdminUsersPage() {
   const [users, setUsers] = useState<UserProfileInfo[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const supabase = createClient();
 
   useEffect(() => {
@@ -27,11 +28,13 @@ export default function AdminUsersPage() {
     getAllUsers().then(result => {
       if (result.success && result.users) {
         setUsers(result.users);
+      } else {
+        setError(result.message);
       }
       setIsLoading(false);
     });
 
-    // Set up real-time subscription
+    // Set up real-time subscription for new user sign-ups
     const channel = supabase
       .channel('realtime-users')
       .on(
@@ -39,8 +42,8 @@ export default function AdminUsersPage() {
         { event: 'INSERT', schema: 'public', table: 'users' },
         (payload) => {
           const newUser = payload.new as UserProfileInfo;
-          // Add the new user to the state, keeping the list sorted by creation date
-          setUsers(currentUsers => [newUser, ...currentUsers]);
+          // Add the new user to the top of the list to maintain sort order
+          setUsers(currentUsers => [newUser, ...currentUsers].sort((a,b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()));
         }
       )
       .subscribe();
@@ -59,6 +62,17 @@ export default function AdminUsersPage() {
       </div>
     );
   }
+
+  if (error) {
+     return (
+        <div className="container mx-auto flex min-h-[60vh] max-w-7xl flex-col items-center justify-center gap-4 px-4 py-8 text-center md:py-12">
+            <h1 className="font-headline text-3xl font-bold text-destructive">An Error Occurred</h1>
+            <p className="text-muted-foreground">{error}</p>
+        </div>
+     );
+  }
+
+  const sortedUsers = users.sort((a,b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
 
   return (
     <div className="container mx-auto max-w-7xl px-4 py-8 md:py-12">
@@ -88,14 +102,14 @@ export default function AdminUsersPage() {
                 </TableRow>
                 </TableHeader>
                 <TableBody>
-                {users.length === 0 && (
+                {sortedUsers.length === 0 && (
                     <TableRow>
                         <TableCell colSpan={4} className="h-24 text-center">
                             No users found.
                         </TableCell>
                     </TableRow>
                 )}
-                {users.map((user, index) => (
+                {sortedUsers.map((user, index) => (
                     <TableRow key={user.id}>
                         <TableCell className="font-medium">{index + 1}</TableCell>
                         <TableCell>{user.display_name || "N/A"}</TableCell>

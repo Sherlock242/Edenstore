@@ -10,11 +10,14 @@ import { Loader2, PackageSearch } from 'lucide-react';
 export default function AdminOrdersPage() {
   const [orders, setOrders] = useState<FullOrderDetails[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     getAllOrders().then(result => {
       if (result.success && result.orders) {
         setOrders(result.orders);
+      } else {
+        setError(result.message);
       }
       setIsLoading(false);
     });
@@ -23,6 +26,7 @@ export default function AdminOrdersPage() {
   const handleStatusUpdated = (orderId: string, newStatus: FullOrderDetails['status'], updatedOrder?: FullOrderDetails) => {
     setOrders(prevOrders => prevOrders.map(order => {
       if (order.id === orderId) {
+        // If the full updated order is passed, use it. Otherwise, just update the status.
         return updatedOrder || { ...order, status: newStatus };
       }
       return order;
@@ -36,6 +40,15 @@ export default function AdminOrdersPage() {
         <p className="sr-only">Loading orders...</p>
       </div>
     );
+  }
+
+  if (error) {
+    return (
+        <div className="container mx-auto flex min-h-[60vh] max-w-7xl flex-col items-center justify-center gap-4 px-4 py-8 text-center md:py-12">
+            <h1 className="font-headline text-3xl font-bold text-destructive">An Error Occurred</h1>
+            <p className="text-muted-foreground">{error}</p>
+        </div>
+     );
   }
 
   return (

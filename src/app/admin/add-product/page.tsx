@@ -1,5 +1,6 @@
+
 'use client';
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { AddProductForm } from '@/app/admin/add-product/add-product-form';
@@ -8,10 +9,11 @@ import { type Product } from '@/app/actions';
 import { getProductsClient } from '@/app/server-actions';
 import { Loader2 } from 'lucide-react';
 
-// This is now a client component to manage state, but it fetches initial data on the server.
+// We'll fetch initial data in a server component that wraps this
 export default function AddProductPage() {
   const [activeTab, setActiveTab] = useState('add');
   const [productToEdit, setProductToEdit] = useState<Product | null>(null);
+  // This state is used to trigger a re-fetch in the manage products component
   const [productAddedOrUpdated, setProductAddedOrUpdated] = useState(0);
 
   const handleEditProduct = (product: Product) => {
@@ -22,7 +24,6 @@ export default function AddProductPage() {
   const handleProductAddedOrUpdated = () => {
     setProductToEdit(null);
     setProductAddedOrUpdated(c => c + 1);
-    // Potentially switch tab after update
     setActiveTab('manage');
   }
 
@@ -30,7 +31,6 @@ export default function AddProductPage() {
     <div className="container mx-auto max-w-7xl px-4 py-8 md:py-12">
       <Tabs value={activeTab} onValueChange={(value) => {
           setActiveTab(value);
-          // If user switches away from edit tab, clear the product to edit
           if (value !== 'add') {
               setProductToEdit(null);
           }
@@ -58,7 +58,7 @@ export default function AddProductPage() {
               <CardTitle>Manage Your Products</CardTitle>
             </CardHeader>
             <CardContent>
-                <ManageProductsWrapper 
+                <ManageProductsWrapper
                     onEditProduct={handleEditProduct}
                     productAddedOrUpdated={productAddedOrUpdated}
                 />
@@ -70,8 +70,8 @@ export default function AddProductPage() {
   );
 }
 
-
-// Wrapper component to fetch initial data on the client
+// This wrapper is kept to handle client-side re-fetching when a product is updated.
+// The initial data is passed from the parent server component.
 function ManageProductsWrapper({ onEditProduct, productAddedOrUpdated }: { onEditProduct: (product: Product) => void; productAddedOrUpdated: number; }) {
     const [products, setProducts] = useState<Product[]>([]);
     const [loading, setLoading] = useState(true);
@@ -82,9 +82,9 @@ function ManageProductsWrapper({ onEditProduct, productAddedOrUpdated }: { onEdi
             setProducts(products)
             setLoading(false);
         });
-    }, [productAddedOrUpdated]);
+    }, [productAddedOrUpdated]); // Re-fetches when counter changes
 
-    if (loading) {
+    if (loading && products.length === 0) {
         return <div className="text-center flex items-center justify-center min-h-[200px]"><Loader2 className="h-8 w-8 animate-spin" /></div>
     }
     
