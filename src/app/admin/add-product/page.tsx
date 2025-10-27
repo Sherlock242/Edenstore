@@ -1,13 +1,20 @@
 
 'use client';
 import { useState } from 'react';
+import dynamic from 'next/dynamic';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { AddProductForm } from '@/app/admin/add-product/add-product-form';
-import { ManageProducts } from '@/app/admin/add-product/manage-products';
 import { type Product } from '@/app/actions';
-import { getProductsClient } from '@/app/server-actions';
 import { Loader2 } from 'lucide-react';
+import { Skeleton } from '@/components/ui/skeleton';
+
+// Dynamically import components
+const AddProductForm = dynamic(() => import('@/app/admin/add-product/add-product-form').then(mod => mod.AddProductForm), {
+  loading: () => <AddProductFormSkeleton />,
+});
+const ManageProducts = dynamic(() => import('@/app/admin/add-product/manage-products').then(mod => mod.ManageProducts), {
+  loading: () => <ManageProductsSkeleton />,
+});
 
 // We'll fetch initial data in a server component that wraps this
 export default function AddProductPage() {
@@ -70,23 +77,81 @@ export default function AddProductPage() {
   );
 }
 
-// This wrapper is kept to handle client-side re-fetching when a product is updated.
-// The initial data is passed from the parent server component.
+// Wrapper for the ManageProducts component to handle client-side re-fetching
 function ManageProductsWrapper({ onEditProduct, productAddedOrUpdated }: { onEditProduct: (product: Product) => void; productAddedOrUpdated: number; }) {
-    const [products, setProducts] = useState<Product[]>([]);
-    const [loading, setLoading] = useState(true);
+    const [initialProducts, setInitialProducts] = useState<Product[] | undefined>(undefined);
 
-    useEffect(() => {
-        setLoading(true);
-        getProductsClient().then(products => {
-            setProducts(products)
-            setLoading(false);
+    // This hook fetches the initial product list
+    useState(() => {
+        import('@/app/server-actions').then(actions => {
+            actions.getProductsClient().then(products => {
+                setInitialProducts(products);
+            });
         });
-    }, [productAddedOrUpdated]); // Re-fetches when counter changes
+    });
 
-    if (loading && products.length === 0) {
-        return <div className="text-center flex items-center justify-center min-h-[200px]"><Loader2 className="h-8 w-8 animate-spin" /></div>
+    if (initialProducts === undefined) {
+        return <ManageProductsSkeleton />;
     }
-    
-    return <ManageProducts initialProducts={products} onEditProduct={onEditProduct} productAddedOrUpdated={productAddedOrUpdated} />;
+
+    return (
+        <ManageProducts
+            initialProducts={initialProducts}
+            onEditProduct={onEditProduct}
+            productAddedOrUpdated={productAddedOrUpdated}
+        />
+    );
+}
+
+// Loading Skeleton Components
+function AddProductFormSkeleton() {
+  return (
+    <div className="space-y-8">
+      <div className="space-y-2">
+        <Skeleton className="h-4 w-24" />
+        <Skeleton className="h-10 w-full" />
+      </div>
+      <div className="space-y-2">
+        <Skeleton className="h-4 w-24" />
+        <Skeleton className="h-20 w-full" />
+      </div>
+      <div className="grid grid-cols-2 gap-8">
+        <div className="space-y-2">
+          <Skeleton className="h-4 w-16" />
+          <Skeleton className="h-10 w-full" />
+        </div>
+        <div className="space-y-2">
+          <Skeleton className="h-4 w-16" />
+          <Skeleton className="h-10 w-full" />
+        </div>
+      </div>
+       <div className="space-y-2">
+        <Skeleton className="h-4 w-24" />
+        <Skeleton className="h-10 w-full" />
+      </div>
+      <Skeleton className="h-12 w-32" />
+    </div>
+  )
+}
+
+function ManageProductsSkeleton() {
+  return (
+    <div className="rounded-md border">
+      <div className="w-full">
+        <div className="p-4 border-b">
+          <Skeleton className="h-5 w-full" />
+        </div>
+        <div className="p-4 space-y-4">
+          {[...Array(3)].map((_, i) => (
+            <div key={i} className="flex items-center gap-4">
+              <Skeleton className="h-12 w-12" />
+              <Skeleton className="h-5 flex-grow" />
+              <Skeleton className="h-5 w-24" />
+              <Skeleton className="h-5 w-24" />
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  )
 }
