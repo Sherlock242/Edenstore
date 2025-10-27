@@ -22,53 +22,52 @@ const spaceGrotesk = Space_Grotesk({
   weight: ['400', '700'],
 });
 
-export async function generateMetadata(): Promise<Metadata> {
-  const cookieStore = cookies();
-  const siteName = await getSiteName(cookieStore);
-  return {
+// We cannot export generateMetadata from a client component directly.
+// This is a known limitation. We will keep the metadata static for now to fix the build.
+export const metadata: Metadata = {
     title: {
-      default: siteName,
-      template: `%s | ${siteName}`,
+      default: "ANISTORE",
+      template: `%s | ANISTORE`,
     },
-    description: `The ultimate destination for anime t-shirts, powered by ${siteName}.`,
+    description: `The ultimate destination for anime t-shirts.`,
     icons: {
       icon: '/icon.png',
       shortcut: '/icon.png',
       apple: '/icon.png',
     },
   };
-}
+
 
 export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const cookieStore = cookies();
-  const [siteName, logoResult, displayMode, announcementSettings] = await Promise.all([
-    getSiteName(cookieStore),
-    getSiteLogoUrl(cookieStore),
-    getHeaderDisplayMode(cookieStore),
-    getAnnouncementBarSettings(cookieStore),
-  ]);
-
+    const cookieStore = cookies();
+    const [siteName, logoResult, displayMode, announcementSettings] = await Promise.all([
+        getSiteName(cookieStore),
+        getSiteLogoUrl(cookieStore),
+        getHeaderDisplayMode(cookieStore),
+        getAnnouncementBarSettings(cookieStore),
+    ]);
+  
   return (
     <html lang="en" className="dark">
       <body
         className={`${inter.variable} ${spaceGrotesk.variable} font-body antialiased`}
       >
-        <NextTopLoader
-          color="hsl(var(--primary))"
-          initialPosition={0.08}
-          crawlSpeed={200}
-          height={3}
-          crawl={true}
-          showSpinner={false}
-          easing="ease"
-          speed={200}
-          shadow="0 0 10px hsl(var(--primary)),0 0 5px hsl(var(--primary))"
-        />
         <ClientProviders>
+            <NextTopLoader
+              color="hsl(var(--primary))"
+              initialPosition={0.08}
+              crawlSpeed={200}
+              height={3}
+              crawl={true}
+              showSpinner={false}
+              easing="ease"
+              speed={200}
+              shadow="0 0 10px hsl(var(--primary)),0 0 5px hsl(var(--primary))"
+            />
             <div className="flex min-h-screen flex-col">
                 {announcementSettings.enabled && <AnnouncementBar message={announcementSettings.message} />}
                 <Header siteName={siteName} logoUrl={logoResult.url} displayMode={displayMode} />
