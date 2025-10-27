@@ -57,7 +57,7 @@ export function ProductCard({ product }: ProductCardProps) {
             )}
           </Link>
         </div>
-        <div className="pt-2">
+        <div className="pt-2 px-1">
           <Link href={`/products/${product.id}`}>
             <h3 className="font-semibold truncate text-base">{product.name}</h3>
           </Link>
