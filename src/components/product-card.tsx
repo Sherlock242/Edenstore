@@ -70,7 +70,7 @@ export function ProductCard({ product }: ProductCardProps) {
                 ₹{discountAmount.toFixed(0)} OFF
             </p>
           </div>
-          <p className="text-xs text-muted-foreground mt-1">lowest price in last 30 days</p>
+          <p className="text-xs text-muted-foreground mt-1 whitespace-nowrap">lowest price in last 30 days</p>
         </div>
       </CardContent>
     </Card>
