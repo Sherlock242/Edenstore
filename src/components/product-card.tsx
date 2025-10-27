@@ -65,7 +65,7 @@ export function ProductCard({ product }: ProductCardProps) {
             <p className="text-md text-muted-foreground line-through">
               ₹{compareAtPrice.toFixed(0)}
             </p>
-            <p className="text-md font-bold text-green-500">
+            <p className="text-md font-bold text-green-500 hidden md:inline">
                 ₹{discountAmount.toFixed(0)} OFF
             </p>
           </div>
