@@ -37,7 +37,7 @@ export function ProductCard({ product }: ProductCardProps) {
   const discountAmount = compareAtPrice - product.price;
 
   return (
-    <Card className="group w-full overflow-hidden border-none rounded-none shadow-none bg-transparent">
+    <Card className="group w-full overflow-hidden border rounded-none shadow-none bg-transparent">
       <CardContent className="p-0">
         <div className="relative overflow-hidden aspect-[4/5]">
           <Link href={`/products/${product.id}`}>
@@ -70,6 +70,7 @@ export function ProductCard({ product }: ProductCardProps) {
                 ₹{discountAmount.toFixed(0)} OFF
             </p>
           </div>
+          <p className="text-xs text-muted-foreground mt-1">lowest price in last 30 days</p>
         </div>
       </CardContent>
     </Card>
