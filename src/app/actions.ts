@@ -308,8 +308,8 @@ export async function updateProduct(cookieStore: ReadonlyRequestCookies, data: U
       const oldImagePaths = oldImagesData.map(img => {
         try {
           const url = new URL(img.url);
-          // Extracts "product-images/filename.jpg" from the full URL
-          const pathStartIndex = url.pathname.indexOf(`/${bucketName}/`) + `/${bucketName}/`.length;
+          // Extracts path like "product-images/filename.jpg" from the full URL
+          const pathStartIndex = url.pathname.indexOf(bucketName) + bucketName.length + 1;
           return url.pathname.substring(pathStartIndex);
         } catch (e) {
           console.error("Invalid URL for old image, cannot delete from storage:", img.url);
@@ -420,7 +420,7 @@ export async function deleteProduct(cookieStore: ReadonlyRequestCookies, product
       const imagePaths = productData.product_images.map(img => {
         try {
             const url = new URL(img.url);
-            const pathStartIndex = url.pathname.indexOf(`/${bucketName}/`) + `/${bucketName}/`.length;
+            const pathStartIndex = url.pathname.indexOf(bucketName) + bucketName.length + 1;
             return url.pathname.substring(pathStartIndex);
         } catch(e) { return null; }
       }).filter((p): p is string => p !== null);
@@ -493,3 +493,4 @@ export async function deleteUserAccount(cookieStore: ReadonlyRequestCookies): Pr
     
 
     
+

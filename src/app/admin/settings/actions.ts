@@ -97,10 +97,9 @@ export async function updateHeroImage(cookieStore: ReadonlyRequestCookies, image
     if (oldImageUrl) {
         try {
             const url = new URL(oldImageUrl);
-            // The path is everything in the pathname after the bucket name.
-            // e.g., /storage/v1/object/public/product-images/site-assets/hero-image-123.jpg
-            // The path to remove is 'site-assets/hero-image-123.jpg'
-            const pathStartIndex = url.pathname.indexOf(`/${bucketName}/`) + `/${bucketName}/`.length;
+            // The path is everything after the bucket name in the URL's pathname.
+            // e.g., for ".../product-images/site-assets/hero-image-123.jpg", the path is "site-assets/hero-image-123.jpg"
+            const pathStartIndex = url.pathname.indexOf(bucketName) + bucketName.length + 1;
             const oldImagePath = url.pathname.substring(pathStartIndex);
             
             if (oldImagePath) {
@@ -228,7 +227,7 @@ export async function updateSiteLogo(cookieStore: ReadonlyRequestCookies, image:
     if (oldLogoUrl) {
         try {
             const url = new URL(oldLogoUrl);
-            const pathStartIndex = url.pathname.indexOf(`/${bucketName}/`) + `/${bucketName}/`.length;
+            const pathStartIndex = url.pathname.indexOf(bucketName) + bucketName.length + 1;
             const oldImagePath = url.pathname.substring(pathStartIndex);
             if (oldImagePath) {
               const { error: removeError } = await supabase.storage.from(bucketName).remove([oldImagePath]);
