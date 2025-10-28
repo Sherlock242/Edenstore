@@ -96,10 +96,11 @@ export async function updateHeroImage(cookieStore: ReadonlyRequestCookies, image
         try {
             const url = new URL(oldImageUrl);
             const pathSegments = url.pathname.split('/');
-            const bucketNameIndex = pathSegments.indexOf('product-images');
+            const bucketName = 'product-images';
+            const bucketNameIndex = pathSegments.indexOf(bucketName);
             if(bucketNameIndex !== -1 && bucketNameIndex + 1 < pathSegments.length) {
                 const oldImagePath = pathSegments.slice(bucketNameIndex + 1).join('/');
-                await supabase.storage.from('product-images').remove([oldImagePath]);
+                await supabase.storage.from(bucketName).remove([oldImagePath]);
             }
         } catch (e) {
             console.error("Failed to parse or delete old hero image, but continuing:", e);
@@ -218,10 +219,11 @@ export async function updateSiteLogo(cookieStore: ReadonlyRequestCookies, image:
         try {
             const url = new URL(oldLogoUrl);
             const pathSegments = url.pathname.split('/');
-            const bucketNameIndex = pathSegments.indexOf('product-images');
+            const bucketName = 'product-images';
+            const bucketNameIndex = pathSegments.indexOf(bucketName);
              if(bucketNameIndex !== -1 && bucketNameIndex + 1 < pathSegments.length) {
                 const oldImagePath = pathSegments.slice(bucketNameIndex + 1).join('/');
-                await supabase.storage.from('product-images').remove([oldImagePath]);
+                await supabase.storage.from(bucketName).remove([oldImagePath]);
             }
         } catch (e) {
             console.error("Failed to parse or delete old logo, but continuing:", e);

@@ -279,7 +279,8 @@ export async function updateProduct(cookieStore: ReadonlyRequestCookies, data: U
           const url = new URL(img.url);
           // The path is everything after the bucket name, e.g., /storage/v1/object/public/product-images/product-images/172123.jpg
           const pathSegments = url.pathname.split('/');
-          const bucketNameIndex = pathSegments.indexOf('product-images');
+          const bucketName = 'product-images';
+          const bucketNameIndex = pathSegments.indexOf(bucketName);
           if(bucketNameIndex !== -1 && bucketNameIndex + 1 < pathSegments.length) {
             return pathSegments.slice(bucketNameIndex + 1).join('/');
           }
@@ -418,7 +419,8 @@ export async function deleteProduct(cookieStore: ReadonlyRequestCookies, product
         try {
           const url = new URL(img.url);
           const pathSegments = url.pathname.split('/');
-          const bucketNameIndex = pathSegments.indexOf('product-images');
+          const bucketName = 'product-images';
+          const bucketNameIndex = pathSegments.indexOf(bucketName);
            if(bucketNameIndex !== -1 && bucketNameIndex + 1 < pathSegments.length) {
             return pathSegments.slice(bucketNameIndex + 1).join('/');
           }
