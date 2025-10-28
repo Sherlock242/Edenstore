@@ -100,12 +100,13 @@ export async function updateHeroImage(cookieStore: ReadonlyRequestCookies, image
             // The path is everything in the pathname after the bucket name.
             // e.g., /storage/v1/object/public/product-images/site-assets/hero-image-123.jpg
             // The path to remove is 'site-assets/hero-image-123.jpg'
-            const pathStartIndex = url.pathname.indexOf(bucketName) + bucketName.length + 1;
+            const pathStartIndex = url.pathname.indexOf(`/${bucketName}/`) + `/${bucketName}/`.length;
             const oldImagePath = url.pathname.substring(pathStartIndex);
             
             if (oldImagePath) {
               const { error: removeError } = await supabase.storage.from(bucketName).remove([oldImagePath]);
               if (removeError) {
+                  // Don't fail the whole operation, but log the error.
                   console.error("Failed to delete old hero image, but continuing:", removeError.message);
               }
             }
@@ -227,7 +228,7 @@ export async function updateSiteLogo(cookieStore: ReadonlyRequestCookies, image:
     if (oldLogoUrl) {
         try {
             const url = new URL(oldLogoUrl);
-            const pathStartIndex = url.pathname.indexOf(bucketName) + bucketName.length + 1;
+            const pathStartIndex = url.pathname.indexOf(`/${bucketName}/`) + `/${bucketName}/`.length;
             const oldImagePath = url.pathname.substring(pathStartIndex);
             if (oldImagePath) {
               const { error: removeError } = await supabase.storage.from(bucketName).remove([oldImagePath]);

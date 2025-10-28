@@ -270,11 +270,17 @@ export async function updateProduct(cookieStore: ReadonlyRequestCookies, data: U
 
   // Handle image replacement if new images are provided
   if (images && images.length > 0 && images.some(i => i.file)) {
-    // 1. Get old image URLs from the database.
-    const { data: oldImagesData } = await supabaseAdmin.from('product_images').select('url').eq('product_id', id);
-
+    // 1. Get old image URLs from the database to delete them later.
+    const { data: oldImagesData, error: oldImagesError } = await supabaseAdmin.from('product_images').select('url').eq('product_id', id);
+    if (oldImagesError) {
+      console.error("Could not fetch old product images for deletion:", oldImagesError.message);
+    }
+    
     // 2. Delete old image records from the database first.
-    await supabaseAdmin.from('product_images').delete().eq('product_id', id);
+    const { error: deleteImageRecordError } = await supabaseAdmin.from('product_images').delete().eq('product_id', id);
+    if (deleteImageRecordError) {
+      return { success: false, message: 'Failed to remove old image records.', error: { message: deleteImageRecordError.message } };
+    }
 
     // 3. Upload new images.
     const newUploadedImages = [];
@@ -297,15 +303,16 @@ export async function updateProduct(cookieStore: ReadonlyRequestCookies, data: U
         if (imageInsertError) return { success: false, message: 'Failed to save new product images.', error: { message: imageInsertError.message } };
     }
     
-    // 5. Delete old files from storage
+    // 5. Delete old files from storage (now that DB is updated)
     if (oldImagesData && oldImagesData.length > 0) {
       const oldImagePaths = oldImagesData.map(img => {
         try {
           const url = new URL(img.url);
-          const pathStartIndex = url.pathname.indexOf(bucketName) + bucketName.length + 1;
+          // Extracts "product-images/filename.jpg" from the full URL
+          const pathStartIndex = url.pathname.indexOf(`/${bucketName}/`) + `/${bucketName}/`.length;
           return url.pathname.substring(pathStartIndex);
         } catch (e) {
-          console.error("Invalid URL for old image, cannot delete:", img.url);
+          console.error("Invalid URL for old image, cannot delete from storage:", img.url);
           return null;
         }
       }).filter((p): p is string => p !== null);
@@ -413,7 +420,7 @@ export async function deleteProduct(cookieStore: ReadonlyRequestCookies, product
       const imagePaths = productData.product_images.map(img => {
         try {
             const url = new URL(img.url);
-            const pathStartIndex = url.pathname.indexOf(bucketName) + bucketName.length + 1;
+            const pathStartIndex = url.pathname.indexOf(`/${bucketName}/`) + `/${bucketName}/`.length;
             return url.pathname.substring(pathStartIndex);
         } catch(e) { return null; }
       }).filter((p): p is string => p !== null);
