@@ -273,31 +273,10 @@ export async function updateProduct(cookieStore: ReadonlyRequestCookies, data: U
     // 1. Get old image URLs from the database.
     const { data: oldImagesData } = await supabaseAdmin.from('product_images').select('url').eq('product_id', id);
 
-    // 2. Extract file paths from the URLs and remove old images from storage.
-    if (oldImagesData && oldImagesData.length > 0) {
-      const oldImagePaths = oldImagesData.map(img => {
-        try {
-          const url = new URL(img.url);
-          const oldImagePath = url.pathname.substring(url.pathname.indexOf(`/${bucketName}/`) + `/${bucketName}/`.length);
-          return oldImagePath;
-        } catch (e) {
-          console.error("Invalid URL for old image:", img.url);
-          return null;
-        }
-      }).filter((p): p is string => p !== null);
-
-      if (oldImagePaths.length > 0) {
-        const { error: removeError } = await supabaseAdmin.storage.from(bucketName).remove(oldImagePaths);
-        if (removeError) {
-          console.error("Failed to remove old product images from storage:", removeError.message);
-        }
-      }
-    }
-
-    // 3. Delete old image records from the database.
+    // 2. Delete old image records from the database first.
     await supabaseAdmin.from('product_images').delete().eq('product_id', id);
 
-    // 4. Upload new images.
+    // 3. Upload new images.
     const newUploadedImages = [];
     for (const image of images) {
         if (!image.file) continue;
@@ -312,10 +291,33 @@ export async function updateProduct(cookieStore: ReadonlyRequestCookies, data: U
         newUploadedImages.push({ product_id: id, url: urlData!.publicUrl, hint: image.hint });
     }
 
-    // 5. Insert new image records into the database.
+    // 4. Insert new image records into the database.
     if (newUploadedImages.length > 0) {
         const { error: imageInsertError } = await supabaseAdmin.from('product_images').insert(newUploadedImages);
         if (imageInsertError) return { success: false, message: 'Failed to save new product images.', error: { message: imageInsertError.message } };
+    }
+    
+    // 5. Delete old files from storage
+    if (oldImagesData && oldImagesData.length > 0) {
+      const oldImagePaths = oldImagesData.map(img => {
+        try {
+          const url = new URL(img.url);
+          // Correctly extract the path after the bucket name
+          const pathStartIndex = url.pathname.indexOf(`/${bucketName}/`) + `/${bucketName}/`.length;
+          return url.pathname.substring(pathStartIndex);
+        } catch (e) {
+          console.error("Invalid URL for old image, cannot delete:", img.url);
+          return null;
+        }
+      }).filter((p): p is string => p !== null);
+
+      if (oldImagePaths.length > 0) {
+        const { error: removeError } = await supabaseAdmin.storage.from(bucketName).remove(oldImagePaths);
+        if (removeError) {
+          // Log error but don't fail the whole operation, as DB is already updated.
+          console.error("Failed to remove old product images from storage, but continuing:", removeError.message);
+        }
+      }
     }
   }
   
@@ -412,8 +414,8 @@ export async function deleteProduct(cookieStore: ReadonlyRequestCookies, product
       const imagePaths = productData.product_images.map(img => {
         try {
             const url = new URL(img.url);
-            const oldImagePath = url.pathname.substring(url.pathname.indexOf(`/${bucketName}/`) + `/${bucketName}/`.length);
-            return oldImagePath;
+            const pathStartIndex = url.pathname.indexOf(`/${bucketName}/`) + `/${bucketName}/`.length;
+            return url.pathname.substring(pathStartIndex);
         } catch(e) { return null; }
       }).filter((p): p is string => p !== null);
       
@@ -484,3 +486,4 @@ export async function deleteUserAccount(cookieStore: ReadonlyRequestCookies): Pr
 
     
 
+    

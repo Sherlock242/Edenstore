@@ -98,7 +98,8 @@ export async function updateHeroImage(cookieStore: ReadonlyRequestCookies, image
         try {
             const url = new URL(oldImageUrl);
             // The path is everything after the bucket name in the URL
-            const oldImagePath = url.pathname.substring(url.pathname.indexOf(`/${bucketName}/`) + `/${bucketName}/`.length);
+            const pathStartIndex = url.pathname.indexOf(`/${bucketName}/`) + `/${bucketName}/`.length;
+            const oldImagePath = url.pathname.substring(pathStartIndex);
             if (oldImagePath) {
               await supabase.storage.from(bucketName).remove([oldImagePath]);
             }
@@ -220,7 +221,8 @@ export async function updateSiteLogo(cookieStore: ReadonlyRequestCookies, image:
     if (oldLogoUrl) {
         try {
             const url = new URL(oldLogoUrl);
-            const oldImagePath = url.pathname.substring(url.pathname.indexOf(`/${bucketName}/`) + `/${bucketName}/`.length);
+            const pathStartIndex = url.pathname.indexOf(`/${bucketName}/`) + `/${bucketName}/`.length;
+            const oldImagePath = url.pathname.substring(pathStartIndex);
             if (oldImagePath) {
               await supabase.storage.from(bucketName).remove([oldImagePath]);
             }
@@ -309,5 +311,7 @@ export async function updateAnnouncementBarSettings(cookieStore: ReadonlyRequest
     return { success: true, message: 'Announcement bar settings updated successfully!' };
 }
 
+
+    
 
     
