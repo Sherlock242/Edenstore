@@ -45,6 +45,8 @@ export async function getHeroImageUrl(cookieStore: ReadonlyRequestCookies): Prom
 
 export async function updateHeroImage(cookieStore: ReadonlyRequestCookies, image: File): Promise<ServerResponse> {
     const supabase = createClient(cookieStore);
+    const bucketName = 'product-images';
+
     // 1. Fetch the old image URL to delete it later
     const { data: oldSetting } = await supabase
         .from('site_settings')
@@ -60,7 +62,7 @@ export async function updateHeroImage(cookieStore: ReadonlyRequestCookies, image
     const filePath = `site-assets/${fileName}`;
 
     const { error: uploadError } = await supabase.storage
-        .from('product-images') // Reusing the same bucket as products for simplicity
+        .from(bucketName)
         .upload(filePath, image);
 
     if (uploadError) {
@@ -70,7 +72,7 @@ export async function updateHeroImage(cookieStore: ReadonlyRequestCookies, image
 
     // 3. Get the public URL for the newly uploaded image
     const { data: urlData } = supabase.storage
-        .from('product-images')
+        .from(bucketName)
         .getPublicUrl(filePath);
 
     if (!urlData) {
@@ -87,7 +89,7 @@ export async function updateHeroImage(cookieStore: ReadonlyRequestCookies, image
     if (upsertError) {
         console.error('Error upserting hero image URL:', upsertError);
         // Attempt to clean up the newly uploaded image if the DB operation fails
-        await supabase.storage.from('product-images').remove([filePath]);
+        await supabase.storage.from(bucketName).remove([filePath]);
         return { success: false, message: 'Failed to save new hero image setting.', error: { message: upsertError.message } };
     }
 
@@ -95,12 +97,10 @@ export async function updateHeroImage(cookieStore: ReadonlyRequestCookies, image
     if (oldImageUrl) {
         try {
             const url = new URL(oldImageUrl);
-            const pathSegments = url.pathname.split('/');
-            const bucketName = 'product-images';
-            const bucketNameIndex = pathSegments.indexOf(bucketName);
-            if(bucketNameIndex !== -1 && bucketNameIndex + 1 < pathSegments.length) {
-                const oldImagePath = pathSegments.slice(bucketNameIndex + 1).join('/');
-                await supabase.storage.from(bucketName).remove([oldImagePath]);
+            // The path is everything after the bucket name in the URL
+            const oldImagePath = url.pathname.substring(url.pathname.indexOf(`/${bucketName}/`) + `/${bucketName}/`.length);
+            if (oldImagePath) {
+              await supabase.storage.from(bucketName).remove([oldImagePath]);
             }
         } catch (e) {
             console.error("Failed to parse or delete old hero image, but continuing:", e);
@@ -171,6 +171,8 @@ export async function getSiteLogoUrl(cookieStore: ReadonlyRequestCookies): Promi
 
 export async function updateSiteLogo(cookieStore: ReadonlyRequestCookies, image: File): Promise<ServerResponse> {
     const supabase = createClient(cookieStore);
+    const bucketName = 'product-images';
+
     // 1. Fetch the old image URL to delete it later
     const { data: oldSetting } = await supabase
         .from('site_settings')
@@ -186,7 +188,7 @@ export async function updateSiteLogo(cookieStore: ReadonlyRequestCookies, image:
     const filePath = `site-assets/${fileName}`;
 
     const { error: uploadError } = await supabase.storage
-        .from('product-images')
+        .from(bucketName)
         .upload(filePath, image);
 
     if (uploadError) {
@@ -195,7 +197,7 @@ export async function updateSiteLogo(cookieStore: ReadonlyRequestCookies, image:
 
     // 3. Get the public URL
     const { data: urlData } = supabase.storage
-        .from('product-images')
+        .from(bucketName)
         .getPublicUrl(filePath);
 
     if (!urlData) {
@@ -210,7 +212,7 @@ export async function updateSiteLogo(cookieStore: ReadonlyRequestCookies, image:
         .upsert({ key: SITE_LOGO_KEY, value: newLogoUrl });
 
     if (upsertError) {
-        await supabase.storage.from('product-images').remove([filePath]);
+        await supabase.storage.from(bucketName).remove([filePath]);
         return { success: false, message: 'Failed to save new logo setting.', error: { message: upsertError.message } };
     }
 
@@ -218,12 +220,9 @@ export async function updateSiteLogo(cookieStore: ReadonlyRequestCookies, image:
     if (oldLogoUrl) {
         try {
             const url = new URL(oldLogoUrl);
-            const pathSegments = url.pathname.split('/');
-            const bucketName = 'product-images';
-            const bucketNameIndex = pathSegments.indexOf(bucketName);
-             if(bucketNameIndex !== -1 && bucketNameIndex + 1 < pathSegments.length) {
-                const oldImagePath = pathSegments.slice(bucketNameIndex + 1).join('/');
-                await supabase.storage.from(bucketName).remove([oldImagePath]);
+            const oldImagePath = url.pathname.substring(url.pathname.indexOf(`/${bucketName}/`) + `/${bucketName}/`.length);
+            if (oldImagePath) {
+              await supabase.storage.from(bucketName).remove([oldImagePath]);
             }
         } catch (e) {
             console.error("Failed to parse or delete old logo, but continuing:", e);
