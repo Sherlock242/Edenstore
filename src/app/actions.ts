@@ -269,15 +269,41 @@ export async function updateProduct(cookieStore: ReadonlyRequestCookies, data: U
 
   // Handle image replacement if new images are provided
   if (images && images.length > 0 && images.some(i => i.file)) {
-    const { data: oldImages } = await supabaseAdmin.from('product_images').select('url').eq('product_id', id);
+    // 1. Get old image URLs from the database.
+    const { data: oldImagesData } = await supabaseAdmin.from('product_images').select('url').eq('product_id', id);
 
-    if (oldImages && oldImages.length > 0) {
-        const oldImagePaths = oldImages.map(img => new URL(img.url).pathname.split('/product-images/')[1]).filter(Boolean);
-        if(oldImagePaths.length > 0) await supabaseAdmin.storage.from('product-images').remove(oldImagePaths);
+    // 2. Extract file paths from the URLs.
+    if (oldImagesData && oldImagesData.length > 0) {
+      const oldImagePaths = oldImagesData.map(img => {
+        try {
+          const url = new URL(img.url);
+          // The path is everything after the bucket name, e.g., /storage/v1/object/public/product-images/product-images/172123.jpg
+          const pathSegments = url.pathname.split('/');
+          const bucketNameIndex = pathSegments.indexOf('product-images');
+          if(bucketNameIndex !== -1 && bucketNameIndex + 1 < pathSegments.length) {
+            return pathSegments.slice(bucketNameIndex + 1).join('/');
+          }
+          return null;
+        } catch (e) {
+          console.error("Invalid URL for old image:", img.url);
+          return null;
+        }
+      }).filter((p): p is string => p !== null);
+
+      // 3. Remove old images from storage.
+      if (oldImagePaths.length > 0) {
+        const { error: removeError } = await supabaseAdmin.storage.from('product-images').remove(oldImagePaths);
+        if (removeError) {
+          console.error("Failed to remove old product images from storage:", removeError.message);
+          // We can decide to continue even if deletion fails to not block the update.
+        }
+      }
     }
 
+    // 4. Delete old image records from the database.
     await supabaseAdmin.from('product_images').delete().eq('product_id', id);
 
+    // 5. Upload new images.
     const newUploadedImages = [];
     for (const image of images) {
         if (!image.file) continue;
@@ -292,6 +318,7 @@ export async function updateProduct(cookieStore: ReadonlyRequestCookies, data: U
         newUploadedImages.push({ product_id: id, url: urlData!.publicUrl, hint: image.hint });
     }
 
+    // 6. Insert new image records into the database.
     if (newUploadedImages.length > 0) {
         const { error: imageInsertError } = await supabaseAdmin.from('product_images').insert(newUploadedImages);
         if (imageInsertError) return { success: false, message: 'Failed to save new product images.', error: { message: imageInsertError.message } };
@@ -387,8 +414,22 @@ export async function deleteProduct(cookieStore: ReadonlyRequestCookies, product
   await supabaseAdmin.from('product_variants').delete().eq('product_id', productId);
   
   if (productData.product_images && productData.product_images.length > 0) {
-      const imagePaths = productData.product_images.map(img => new URL(img.url).pathname.split('/product-images/')[1]).filter(Boolean);
-      if(imagePaths.length > 0) await supabaseAdmin.storage.from('product-images').remove(imagePaths);
+      const imagePaths = productData.product_images.map(img => {
+        try {
+          const url = new URL(img.url);
+          const pathSegments = url.pathname.split('/');
+          const bucketNameIndex = pathSegments.indexOf('product-images');
+           if(bucketNameIndex !== -1 && bucketNameIndex + 1 < pathSegments.length) {
+            return pathSegments.slice(bucketNameIndex + 1).join('/');
+          }
+          return null;
+        } catch(e) { return null; }
+      }).filter((p): p is string => p !== null);
+      
+      if(imagePaths.length > 0) {
+          const { error: removeError } = await supabaseAdmin.storage.from('product-images').remove(imagePaths);
+          if (removeError) console.error("Failed to remove product images from storage:", removeError.message);
+      }
   }
   
   await supabaseAdmin.from('product_images').delete().eq('product_id', productId);
@@ -445,6 +486,8 @@ export async function deleteUserAccount(cookieStore: ReadonlyRequestCookies): Pr
 
     return { success: true, message: 'Account deleted successfully.' };
 }
+
+    
 
     
 

@@ -94,12 +94,15 @@ export async function updateHeroImage(cookieStore: ReadonlyRequestCookies, image
     // 5. Delete the old image from storage, if it existed
     if (oldImageUrl) {
         try {
-            const oldImagePath = new URL(oldImageUrl).pathname.split('/product-images/').pop();
-            if (oldImagePath) {
-                await supabase.storage.from('product-images').remove([`site-assets/${oldImagePath.split('/').pop()}`]);
+            const url = new URL(oldImageUrl);
+            const pathSegments = url.pathname.split('/');
+            const bucketNameIndex = pathSegments.indexOf('product-images');
+            if(bucketNameIndex !== -1 && bucketNameIndex + 1 < pathSegments.length) {
+                const oldImagePath = pathSegments.slice(bucketNameIndex + 1).join('/');
+                await supabase.storage.from('product-images').remove([oldImagePath]);
             }
         } catch (e) {
-            console.error("Failed to delete old hero image, but continuing:", e)
+            console.error("Failed to parse or delete old hero image, but continuing:", e);
         }
     }
 
@@ -213,12 +216,15 @@ export async function updateSiteLogo(cookieStore: ReadonlyRequestCookies, image:
     // 5. Delete the old image
     if (oldLogoUrl) {
         try {
-            const oldImagePath = new URL(oldLogoUrl).pathname.split('/product-images/').pop();
-            if (oldImagePath) {
-                await supabase.storage.from('product-images').remove([`site-assets/${oldImagePath.split('/').pop()}`]);
+            const url = new URL(oldLogoUrl);
+            const pathSegments = url.pathname.split('/');
+            const bucketNameIndex = pathSegments.indexOf('product-images');
+             if(bucketNameIndex !== -1 && bucketNameIndex + 1 < pathSegments.length) {
+                const oldImagePath = pathSegments.slice(bucketNameIndex + 1).join('/');
+                await supabase.storage.from('product-images').remove([oldImagePath]);
             }
         } catch (e) {
-            console.error("Failed to delete old logo, but continuing:", e)
+            console.error("Failed to parse or delete old logo, but continuing:", e);
         }
     }
 
@@ -301,3 +307,6 @@ export async function updateAnnouncementBarSettings(cookieStore: ReadonlyRequest
 
     return { success: true, message: 'Announcement bar settings updated successfully!' };
 }
+
+
+    
