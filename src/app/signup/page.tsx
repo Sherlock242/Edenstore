@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
+import { SubmitButton } from '../login/submit-button';
 
 export default function SignupPage({ searchParams }: { searchParams: { message: string } }) {
 
@@ -74,9 +75,13 @@ export default function SignupPage({ searchParams }: { searchParams: { message: 
                     <Input id="confirmPassword" name="confirmPassword" type="password" placeholder="••••••••" required />
                 </div>
             </div>
-            <Button formAction={signUp} className="w-full">
-                Create Account
-            </Button>
+             <SubmitButton
+              formAction={signUp}
+              className="w-full"
+              pendingText="Creating Account..."
+            >
+              Create Account
+            </SubmitButton>
             {searchParams?.message && (
                 <p className="mt-4 p-4 bg-foreground/10 text-foreground text-center">
                     {searchParams.message}

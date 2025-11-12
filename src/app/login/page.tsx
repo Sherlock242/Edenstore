@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
+import { SubmitButton } from './submit-button';
 
 export default function LoginPage({ searchParams }: { searchParams: { message: string } }) {
 
@@ -30,30 +31,6 @@ export default function LoginPage({ searchParams }: { searchParams: { message: s
     return redirect('/')
   }
 
-  const signUp = async (formData: FormData) => {
-    'use server'
-
-    const origin = headers().get('origin')
-    const email = formData.get('email') as string
-    const password = formData.get('password') as string
-    const cookieStore = cookies();
-    const supabase = createClient(cookieStore);
-
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        emailRedirectTo: `${origin}/auth/callback`,
-      },
-    })
-
-    if (error) {
-      return redirect('/login?message=Could not authenticate user')
-    }
-
-    return redirect('/login?message=Check email to continue sign in process')
-  }
-
   return (
     <div className="container mx-auto flex min-h-[80vh] items-center justify-center px-4 py-8 md:py-12">
       <Card className="w-full max-w-md">
@@ -73,9 +50,13 @@ export default function LoginPage({ searchParams }: { searchParams: { message: s
                 <Input id="password" name="password" type="password" placeholder="••••••••" required />
               </div>
             </div>
-            <Button type="submit" className="w-full">
+            <SubmitButton
+              formAction={signIn}
+              className="w-full"
+              pendingText="Signing In..."
+            >
               Sign In
-            </Button>
+            </SubmitButton>
             {searchParams?.message && (
               <p className="mt-4 p-4 bg-foreground/10 text-foreground text-center">
                 {searchParams.message}
