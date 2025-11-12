@@ -5,9 +5,18 @@ import { useWishlist } from "@/contexts/wishlist-context";
 import { ProductCard } from "@/components/product-card";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
+import { Loader2 } from "lucide-react";
 
 export default function WishlistPage() {
   const { state } = useWishlist();
+
+  if (state.loading) {
+      return (
+        <div className="container mx-auto flex min-h-[60vh] max-w-7xl items-center justify-center px-4 py-8 text-center md:py-12">
+            <Loader2 className="h-12 w-12 animate-spin text-muted-foreground" />
+        </div>
+      )
+  }
 
   return (
     <div className="container mx-auto max-w-7xl px-4 py-8 md:py-12">
@@ -15,7 +24,7 @@ export default function WishlistPage() {
         Your Wishlist
       </h1>
       {state.items.length > 0 ? (
-        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+        <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4 md:gap-6">
           {state.items.map((product) => (
             <ProductCard key={product.id} product={product} />
           ))}
