@@ -90,10 +90,8 @@ export function WishlistProvider({ children }: { children: ReactNode }) {
     return state.items.some(item => item.id === productId);
   };
   
-  const clientState = isMounted ? state : initialState;
-  
   const value = {
-    state: clientState,
+    state: isMounted ? state : initialState,
     dispatch,
     isInWishlist: (productId: string) => isMounted ? isInWishlist(productId) : false,
   };
