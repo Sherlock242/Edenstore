@@ -10,6 +10,7 @@ import { getSiteName, getSiteLogoUrl, getHeaderDisplayMode, getAnnouncementBarSe
 import { cookies } from 'next/headers';
 import { AnnouncementBar } from '@/components/layout/announcement-bar';
 import NextTopLoader from 'nextjs-toploader';
+import { LoadingProvider } from '@/contexts/loading-context';
 
 const inter = Inter({
   subsets: ['latin'],
@@ -56,28 +57,30 @@ export default async function RootLayout({
       <body
         className={`${inter.variable} ${spaceGrotesk.variable} font-body antialiased`}
       >
-        <ClientProviders>
-            <NextTopLoader
-              color="hsl(var(--primary))"
-              initialPosition={0.08}
-              crawlSpeed={200}
-              height={3}
-              crawl={true}
-              showSpinner={false}
-              easing="ease"
-              speed={200}
-              shadow="0 0 10px hsl(var(--primary)),0 0 5px hsl(var(--primary))"
-            />
-            <div className="flex min-h-screen flex-col">
-                {announcementSettings.enabled && <AnnouncementBar message={announcementSettings.message} />}
-                <Header siteName={siteName} logoUrl={logoResult.url} displayMode={displayMode} />
-                <main className="flex-grow">
-                {children}
-                </main>
-                <Footer siteName={siteName} />
-            </div>
-            <Toaster />
-        </ClientProviders>
+        <LoadingProvider>
+          <ClientProviders>
+              <NextTopLoader
+                color="hsl(var(--primary))"
+                initialPosition={0.08}
+                crawlSpeed={200}
+                height={3}
+                crawl={true}
+                showSpinner={false}
+                easing="ease"
+                speed={200}
+                shadow="0 0 10px hsl(var(--primary)),0 0 5px hsl(var(--primary))"
+              />
+              <div className="flex min-h-screen flex-col">
+                  {announcementSettings.enabled && <AnnouncementBar message={announcementSettings.message} />}
+                  <Header siteName={siteName} logoUrl={logoResult.url} displayMode={displayMode} />
+                  <main className="flex-grow">
+                  {children}
+                  </main>
+                  <Footer siteName={siteName} />
+              </div>
+              <Toaster />
+          </ClientProviders>
+        </LoadingProvider>
       </body>
     </html>
   );
