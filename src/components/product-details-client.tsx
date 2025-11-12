@@ -144,7 +144,7 @@ export function ProductDetailsClient({ product }: { product: Product }) {
                 htmlFor={`size-${sizeInfo.size}`}
                 className={cn(
                   "flex h-10 cursor-pointer items-center justify-center rounded-md border-2 border-border p-2 px-4 transition-colors hover:bg-accent hover:text-accent-foreground",
-                  selectedSize === sizeInfo.size && "border-primary bg-primary/10 text-primary",
+                  selectedSize === sizeInfo.size && "border-primary bg-primary/10 text-primary-foreground",
                   isSizeDisabled && "cursor-not-allowed bg-muted/50 text-muted-foreground line-through hover:bg-muted/50"
                 )}
               >
@@ -172,7 +172,7 @@ export function ProductDetailsClient({ product }: { product: Product }) {
                   htmlFor={`color-${variant.color}`}
                   className={cn(
                     "flex h-auto min-h-10 cursor-pointer flex-col items-center justify-center rounded-md border-2 border-border p-2 px-4 transition-colors hover:bg-accent hover:text-accent-foreground",
-                    selectedColor === variant.color && "border-primary bg-primary/10 text-primary",
+                    selectedColor === variant.color && "border-primary bg-primary/10 text-primary-foreground",
                     isColorDisabled && "cursor-not-allowed bg-muted/50 text-muted-foreground line-through hover:bg-muted/50"
                   )}
                 >
@@ -180,7 +180,7 @@ export function ProductDetailsClient({ product }: { product: Product }) {
                   <span className="font-medium">{variant.color}</span>
                    <span className={cn("text-xs", 
                       !isColorDisabled && "text-muted-foreground",
-                      selectedColor === variant.color && "text-primary"
+                      selectedColor === variant.color && "text-primary-foreground"
                   )}>
                     {variant.quantity > 0 ? `${variant.quantity} left` : 'Sold Out'}
                   </span>
@@ -192,7 +192,7 @@ export function ProductDetailsClient({ product }: { product: Product }) {
       )}
 
       <div className="flex gap-4">
-        <Button size="lg" className="flex-grow bg-accent text-accent-foreground hover:bg-accent/90" onClick={handleAddToCart} disabled={isOutOfStock}>
+        <Button size="lg" className="flex-grow bg-primary text-primary-foreground hover:bg-primary/90" onClick={handleAddToCart} disabled={isOutOfStock}>
           {isOutOfStock ? "Out of Stock" : <><ShoppingCart className="mr-2 h-5 w-5" /> Add to Cart</>}
         </Button>
         <Button size="icon" variant="outline" className="h-12 w-12" onClick={handleShare}>
