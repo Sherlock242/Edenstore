@@ -19,7 +19,7 @@ import {
 } from '@/app/cart/actions';
 import { useToast } from '@/hooks/use-toast';
 import { createClient } from '@/lib/supabase/client';
-import NProgress from 'nextjs-toploader';
+
 
 export type CartItem = {
   product: Product;
@@ -153,8 +153,6 @@ export function CartProvider({ children }: { children: ReactNode }) {
       return;
     }
 
-    NProgress.start();
-
     const quantity = item.quantity || 1;
     
     const existingItem = state.items.find(
@@ -176,7 +174,6 @@ export function CartProvider({ children }: { children: ReactNode }) {
     } else {
       toast({ variant: 'destructive', title: 'Error', description: result.message });
     }
-    NProgress.done();
   };
 
   const updateQuantity = async (productId: string, size: string, color: string, quantity: number) => {
@@ -216,7 +213,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
   };
   
   const value = {
-    state: isMounted ? state : initialState,
+    state: isMounted ? state : { ...initialState, loading: false },
     dispatch,
     addToCart,
     updateQuantity,
