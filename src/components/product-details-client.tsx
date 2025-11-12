@@ -1,4 +1,5 @@
 
+
 "use client";
 import { useState, useEffect, useMemo } from "react";
 import type { Product } from "@/app/actions";
@@ -143,8 +144,8 @@ export function ProductDetailsClient({ product }: { product: Product }) {
                 key={sizeInfo.size}
                 htmlFor={`size-${sizeInfo.size}`}
                 className={cn(
-                  "flex h-10 cursor-pointer items-center justify-center rounded-md border-2 border-border p-2 px-4 transition-colors hover:bg-accent hover:text-accent-foreground",
-                  selectedSize === sizeInfo.size && "border-primary bg-primary/10 text-primary-foreground",
+                  "flex h-10 cursor-pointer items-center justify-center rounded-md border-2 border-border p-2 px-4 text-foreground transition-colors hover:bg-accent hover:text-accent-foreground",
+                  selectedSize === sizeInfo.size && "border-primary bg-primary/10 text-primary",
                   isSizeDisabled && "cursor-not-allowed bg-muted/50 text-muted-foreground line-through hover:bg-muted/50"
                 )}
               >
@@ -171,8 +172,8 @@ export function ProductDetailsClient({ product }: { product: Product }) {
                   key={variant.color}
                   htmlFor={`color-${variant.color}`}
                   className={cn(
-                    "flex h-auto min-h-10 cursor-pointer flex-col items-center justify-center rounded-md border-2 border-border p-2 px-4 transition-colors hover:bg-accent hover:text-accent-foreground",
-                    selectedColor === variant.color && "border-primary bg-primary/10 text-primary-foreground",
+                    "flex h-auto min-h-10 cursor-pointer flex-col items-center justify-center rounded-md border-2 border-border p-2 px-4 text-foreground transition-colors hover:bg-accent hover:text-accent-foreground",
+                    selectedColor === variant.color && "border-primary bg-primary/10 text-primary",
                     isColorDisabled && "cursor-not-allowed bg-muted/50 text-muted-foreground line-through hover:bg-muted/50"
                   )}
                 >
@@ -180,7 +181,7 @@ export function ProductDetailsClient({ product }: { product: Product }) {
                   <span className="font-medium">{variant.color}</span>
                    <span className={cn("text-xs", 
                       !isColorDisabled && "text-muted-foreground",
-                      selectedColor === variant.color && "text-primary-foreground"
+                      selectedColor === variant.color && "text-primary"
                   )}>
                     {variant.quantity > 0 ? `${variant.quantity} left` : 'Sold Out'}
                   </span>
