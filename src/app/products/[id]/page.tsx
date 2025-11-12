@@ -77,22 +77,3 @@ export default async function ProductPage({ params }: { params: { id: string } }
     </div>
   );
 }
-
-export async function generateStaticParams() {
-    // This function runs at build time, so we need a client that doesn't depend on user cookies.
-    // We create a generic client here to fetch public data.
-    const supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-    );
-
-    const { data: products } = await supabase.from('products').select('id');
-    
-    if (!products) {
-        return [];
-    }
-
-    return products.map((product) => ({
-      id: product.id.toString(),
-    }));
-}

@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useTransition, useEffect } from 'react';
@@ -10,7 +9,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { Star, Send, Edit, Trash2 } from 'lucide-react';
+import { Star, Send, Edit, Trash2, LogIn } from 'lucide-react';
 import { addReview, updateReview, deleteReview, type Review } from '@/app/reviews/actions';
 import { reviewSchema } from '@/lib/zod-schemas';
 import { useToast } from '@/hooks/use-toast';
@@ -28,6 +27,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { cn } from '@/lib/utils';
+import Link from 'next/link';
 
 type ProductReviewsProps = {
     productId: string;
@@ -215,13 +215,24 @@ export function ProductReviews({ productId, initialReviews, initialAverageRating
                                     </form>
                                 </Form>
                             </>
-                         ) : (
-                            user && userReview && !reviewToEdit && (
+                         ) : user ? (
+                             userReview && !reviewToEdit && (
                                  <div className="p-4 rounded-lg bg-muted/50 text-center">
                                      <p className="font-semibold">You've already reviewed this product.</p>
                                      <p className="text-sm text-muted-foreground">You can edit or delete your review from the list.</p>
                                  </div>
-                            )
+                             )
+                         ) : (
+                            <div className="flex flex-col items-center justify-center gap-2 rounded-lg border border-dashed p-8 text-center h-full">
+                                <h3 className="text-lg font-semibold">Want to share your opinion?</h3>
+                                <p className="text-sm text-muted-foreground">Sign in to leave a review and help others.</p>
+                                <Button asChild>
+                                    <Link href="/login">
+                                        <LogIn className="mr-2 h-4 w-4" />
+                                        Log in to Leave a Review
+                                    </Link>
+                                </Button>
+                            </div>
                          )}
                     </div>
 
