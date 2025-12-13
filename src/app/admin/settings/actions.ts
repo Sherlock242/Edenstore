@@ -169,8 +169,7 @@ export async function getSiteLogoUrl(cookieStore: ReadonlyRequestCookies): Promi
         .eq('key', SITE_LOGO_KEY)
         .single();
     
-    if (error && error.code !== 'PGRST116') {
-        console.error('Error fetching site logo URL:', error);
+    if (error && error.code !== 'PGRST116') { // PGRST116 = 'exact one row not found'
         return { success: false, message: 'Could not fetch site logo setting.' };
     }
 
@@ -325,4 +324,5 @@ export async function updateAnnouncementBarSettings(cookieStore: ReadonlyRequest
     
 
     
+
 
