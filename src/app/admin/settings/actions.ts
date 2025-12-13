@@ -36,7 +36,6 @@ export async function getHeroImageUrl(cookieStore: ReadonlyRequestCookies): Prom
         .single();
     
     if (error && error.code !== 'PGRST116') { // PGRST116 = 'exact one row not found'
-        console.error('Error fetching hero image URL:', error);
         return { success: false, message: 'Could not fetch hero image setting.' };
     }
 
