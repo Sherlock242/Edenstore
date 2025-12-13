@@ -288,7 +288,6 @@ export async function getAnnouncementBarSettings(cookieStore: ReadonlyRequestCoo
         .in('key', [ANNOUNCEMENT_ENABLED_KEY, ANNOUNCEMENT_MESSAGE_KEY]);
 
     if (error) {
-        console.error('Error fetching announcement settings:', error);
     }
 
     const settings = new Map(data?.map(item => [item.key, item.value]));
