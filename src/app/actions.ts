@@ -49,7 +49,6 @@ export const getProducts = async (cookieStore: ReadonlyRequestCookies): Promise<
       .order('created_at', { ascending: false });
 
     if (error) {
-        console.error('Error fetching products:', error);
         return [];
     }
 
@@ -102,7 +101,6 @@ export const getProductsForSearch = async (cookieStore: ReadonlyRequestCookies):
       .order('created_at', { ascending: false });
 
     if (error) {
-        console.error('Error fetching products for search:', error);
         return [];
     }
     
@@ -494,3 +492,6 @@ export async function deleteUserAccount(cookieStore: ReadonlyRequestCookies): Pr
 
     
 
+
+
+    
