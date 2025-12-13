@@ -133,7 +133,8 @@ export async function getSiteName(cookieStore: ReadonlyRequestCookies): Promise<
         .single();
     
     if (error && error.code !== 'PGRST116') {
-        console.error('Error fetching site name:', error);
+        // This log was causing noise when the setting didn't exist.
+        // The fallback handles this case gracefully.
     }
 
     return data?.value || 'ANISTORE'; // Return default if not found
@@ -324,3 +325,4 @@ export async function updateAnnouncementBarSettings(cookieStore: ReadonlyRequest
     
 
     
+
