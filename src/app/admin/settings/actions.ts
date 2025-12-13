@@ -258,7 +258,6 @@ export async function getHeaderDisplayMode(cookieStore: ReadonlyRequestCookies):
         .single();
     
     if (error && error.code !== 'PGRST116') {
-        console.error('Error fetching header display mode:', error);
     }
 
     return (data?.value as HeaderDisplayMode) || 'title'; // Default to 'title'
@@ -326,3 +325,6 @@ export async function updateAnnouncementBarSettings(cookieStore: ReadonlyRequest
     
 
 
+
+
+    
