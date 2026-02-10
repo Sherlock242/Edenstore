@@ -18,7 +18,6 @@ import {
 } from "@/app/wishlist/actions";
 import { useToast } from "@/hooks/use-toast";
 import { createClient } from "@/lib/supabase/client";
-import { useLoading } from "./loading-context";
 
 type WishlistState = {
   items: Product[];
@@ -78,7 +77,6 @@ export function WishlistProvider({ children }: { children: ReactNode }) {
   const { toast } = useToast();
   const [supabase] = useState(() => createClient());
   const [isMounted, setIsMounted] = useState(false);
-  const { startLoading, stopLoading } = useLoading();
 
   useEffect(() => {
     setIsMounted(true);
@@ -122,11 +120,9 @@ export function WishlistProvider({ children }: { children: ReactNode }) {
   };
   
   const handleAddItem = async (product: Product) => {
-    startLoading();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
       toast({ variant: 'destructive', title: 'Please log in', description: 'You need to be logged in to add items to your wishlist.' });
-      stopLoading();
       return;
     }
     // Optimistic update
@@ -139,13 +135,11 @@ export function WishlistProvider({ children }: { children: ReactNode }) {
       dispatch({ type: 'REMOVE_ITEM', payload: { productId: product.id } });
       toast({ variant: 'destructive', title: 'Error', description: result.message });
     }
-    stopLoading();
   };
   
   const handleRemoveItem = async (productId: string) => {
-    startLoading();
     const itemToRemove = state.items.find(i => i.id === productId);
-    if (!itemToRemove) { stopLoading(); return; }
+    if (!itemToRemove) { return; }
 
     // Optimistic update
     dispatch({ type: "REMOVE_ITEM", payload: { productId } });
@@ -157,7 +151,6 @@ export function WishlistProvider({ children }: { children: ReactNode }) {
       dispatch({ type: 'ADD_ITEM', payload: itemToRemove });
       toast({ variant: 'destructive', title: 'Error', description: result.message });
     }
-    stopLoading();
   };
 
   const value = {

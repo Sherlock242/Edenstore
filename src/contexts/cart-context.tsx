@@ -19,7 +19,6 @@ import {
 } from '@/app/cart/actions';
 import { useToast } from '@/hooks/use-toast';
 import { createClient } from '@/lib/supabase/client';
-import { useLoading } from './loading-context';
 
 
 export type CartItem = {
@@ -109,7 +108,6 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const { toast } = useToast();
   const [supabase] = useState(() => createClient());
   const [isMounted, setIsMounted] = useState(false);
-  const { startLoading, stopLoading } = useLoading();
 
    useEffect(() => {
     setIsMounted(true);
@@ -149,11 +147,9 @@ export function CartProvider({ children }: { children: ReactNode }) {
   }, [isMounted, loadCart, supabase]);
 
   const addToCart = async (item: Omit<CartItem, 'quantity'> & { quantity?: number }) => {
-    startLoading();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
       toast({ variant: 'destructive', title: 'Error', description: 'You must be logged in to add items to your cart.' });
-      stopLoading();
       return;
     }
 
@@ -178,13 +174,11 @@ export function CartProvider({ children }: { children: ReactNode }) {
     } else {
       toast({ variant: 'destructive', title: 'Error', description: result.message });
     }
-    stopLoading();
   };
 
   const updateQuantity = async (productId: string, size: string, color: string, quantity: number) => {
-     startLoading();
      const { data: { user } } = await supabase.auth.getUser();
-     if (!user) { stopLoading(); return; }
+     if (!user) return;
      
      if (quantity > 0) {
         // Optimistically update UI
@@ -198,13 +192,11 @@ export function CartProvider({ children }: { children: ReactNode }) {
      } else {
         await removeFromCart(productId, size, color);
      }
-     stopLoading();
   };
 
   const removeFromCart = async (productId: string, size: string, color: string) => {
-     startLoading();
      const { data: { user } } = await supabase.auth.getUser();
-     if (!user) { stopLoading(); return; }
+     if (!user) return;
      // Optimistically update UI
      const itemToRemove = state.items.find(i => i.product.id === productId && i.size === size && i.color === color);
      dispatch({ type: 'REMOVE_ITEM', payload: { productId, size, color } });
@@ -218,7 +210,6 @@ export function CartProvider({ children }: { children: ReactNode }) {
             dispatch({ type: 'ADD_OR_UPDATE_ITEM', payload: itemToRemove });
         }
      }
-     stopLoading();
   };
   
   const value = {
