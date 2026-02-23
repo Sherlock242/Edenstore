@@ -69,7 +69,7 @@ export function SearchSheet() {
     return (
         <Sheet open={isSearchOpen} onOpenChange={setIsSearchOpen}>
             <SheetTrigger asChild>
-                <Button variant="ghost" size="icon" className="hover:bg-transparent">
+                <Button variant="ghost" size="icon" className="hover:bg-muted hover:text-foreground">
                     <Search className="h-6 w-6" />
                     <span className="sr-only">Search</span>
                 </Button>

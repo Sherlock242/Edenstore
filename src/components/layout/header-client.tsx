@@ -100,7 +100,7 @@ export function HeaderClient({ user, userProfile, isadmin, siteName, logoUrl, di
                 variant="ghost"
                 size="icon"
                 aria-label="Toggle navigation menu"
-                className="hover:bg-transparent"
+                className="hover:bg-muted hover:text-foreground"
               >
                 <Menu className="h-10 w-10" />
               </Button>
