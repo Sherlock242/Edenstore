@@ -1,4 +1,3 @@
-
 "use client";
 
 import type { Product } from "@/app/actions";
@@ -17,7 +16,7 @@ import {
   removeWishlistItem,
 } from "@/app/wishlist/actions";
 import { useToast } from "@/hooks/use-toast";
-import { createClient } from "@/lib/supabase/client";
+import { useUser } from "@/hooks/use-user.tsx";
 
 type WishlistState = {
   items: Product[];
@@ -76,7 +75,7 @@ const WishlistContext = createContext<WishlistContextType | undefined>(
 export function WishlistProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(wishlistReducer, initialState);
   const { toast } = useToast();
-  const [supabase] = useState(() => createClient());
+  const { user, loading: userLoading } = useUser();
   const [isMounted, setIsMounted] = useState(false);
 
   useEffect(() => {
@@ -84,7 +83,6 @@ export function WishlistProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const loadWishlist = useCallback(async () => {
-    const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
       dispatch({ type: "SET_ITEMS", payload: [] });
       return;
@@ -96,28 +94,16 @@ export function WishlistProvider({ children }: { children: ReactNode }) {
     } else {
       dispatch({ type: "SET_ITEMS", payload: [] });
     }
-  }, [supabase]);
+  }, [user]);
 
   useEffect(() => {
-    if (!isMounted) return;
-    
-    loadWishlist();
-
-    const { data: authListener } = supabase.auth.onAuthStateChange((event) => {
-        if (['SIGNED_IN', 'SIGNED_OUT', 'USER_DELETED'].includes(event)) {
-          loadWishlist();
-        }
-      }
-    );
-
-    return () => {
-      authListener?.subscription.unsubscribe();
-    };
-  }, [isMounted, loadWishlist, supabase]);
+    if (isMounted && !userLoading) {
+      loadWishlist();
+    }
+  }, [isMounted, userLoading, user, loadWishlist]);
 
 
   const addToWishlist = async (product: Product) => {
-    const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
       toast({ variant: 'destructive', title: 'Please log in', description: 'You need to be logged in to add items to your wishlist.' });
       return;
@@ -139,7 +125,7 @@ export function WishlistProvider({ children }: { children: ReactNode }) {
   
   const removeFromWishlist = async (productId: string) => {
     const itemToRemove = state.items.find(i => i.id === productId);
-    if (!itemToRemove) { return; }
+    if (!itemToRemove || !user) { return; }
 
     // Optimistic update
     dispatch({ type: "REMOVE_ITEM", payload: { productId } });

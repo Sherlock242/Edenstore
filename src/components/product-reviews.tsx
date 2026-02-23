@@ -15,7 +15,7 @@ import { reviewSchema } from '@/lib/zod-schemas';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 import { AverageRating } from './average-rating';
-import { useUser } from '@/hooks/use-user';
+import { useUser } from '@/hooks/use-user.tsx';
 import {
   AlertDialog,
   AlertDialogAction,
