@@ -1,4 +1,3 @@
-
 'use client';
 
 import Image from 'next/image';
@@ -40,7 +39,7 @@ export function OrdersList({ orders }: OrdersListProps) {
                 <CardHeader className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                   <div className="space-y-1">
                     <CardTitle className="text-xl">Order #{order.razorpay_order_id.replace('order_', '').replace('cod_','')}</CardTitle>
-                    <CardDescription>
+                    <CardDescription suppressHydrationWarning>
                       Placed on {format(new Date(order.created_at), 'MMMM dd, yyyy')}
                     </CardDescription>
                   </div>
@@ -106,7 +105,7 @@ export function OrdersList({ orders }: OrdersListProps) {
                                                 <div className="flex-grow">
                                                     <p className="font-semibold">{activity.activity}</p>
                                                     <p className="text-sm text-muted-foreground">{activity.location}</p>
-                                                    <p className="text-xs text-muted-foreground">{format(new Date(activity.date), 'MMM dd, yyyy, h:mm a')}</p>
+                                                    <p className="text-xs text-muted-foreground" suppressHydrationWarning>{format(new Date(activity.date), 'MMM dd, yyyy, h:mm a')}</p>
                                                 </div>
                                             </div>
                                         ))}
