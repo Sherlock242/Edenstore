@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect, useCallback } from "react";
@@ -70,7 +69,7 @@ export function SearchSheet() {
     return (
         <Sheet open={isSearchOpen} onOpenChange={setIsSearchOpen}>
             <SheetTrigger asChild>
-                <Button variant="ghost" size="icon">
+                <Button variant="ghost" size="icon" className="hover:bg-transparent">
                     <Search className="h-6 w-6" />
                     <span className="sr-only">Search</span>
                 </Button>

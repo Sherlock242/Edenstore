@@ -1,4 +1,3 @@
-
 "use client";
 import {
   Sheet,
@@ -52,7 +51,7 @@ export function CartSheet() {
   return (
     <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
         <SheetTrigger asChild>
-        <Button variant="ghost" size="icon" className="relative">
+        <Button variant="ghost" size="icon" className="relative hover:bg-transparent">
             <ShoppingBag className="h-6 w-6" />
             {cartItemCount > 0 && (
             <span className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-xs text-primary-foreground">
