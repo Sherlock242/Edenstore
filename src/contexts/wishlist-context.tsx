@@ -64,7 +64,8 @@ function wishlistReducer(
 
 type WishlistContextType = {
   state: WishlistState;
-  dispatch: React.Dispatch<WishlistAction>;
+  addToWishlist: (product: Product) => Promise<void>;
+  removeFromWishlist: (productId: string) => Promise<void>;
   isInWishlist: (productId: string) => boolean;
 };
 
@@ -115,11 +116,7 @@ export function WishlistProvider({ children }: { children: ReactNode }) {
   }, [isMounted, loadWishlist, supabase]);
 
 
-  const isInWishlist = (productId: string) => {
-    return state.items.some((item) => item.id === productId);
-  };
-  
-  const handleAddItem = async (product: Product) => {
+  const addToWishlist = async (product: Product) => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
       toast({ variant: 'destructive', title: 'Please log in', description: 'You need to be logged in to add items to your wishlist.' });
@@ -129,7 +126,10 @@ export function WishlistProvider({ children }: { children: ReactNode }) {
     dispatch({ type: "ADD_ITEM", payload: product });
     const result = await addWishlistItem(product.id);
     if (result.success) {
-      // The toast is now handled in the component
+      toast({
+        title: "Added to Wishlist!",
+        description: `${product.name} has been added to your wishlist.`,
+      });
     } else {
       // Revert on failure
       dispatch({ type: 'REMOVE_ITEM', payload: { productId: product.id } });
@@ -137,7 +137,7 @@ export function WishlistProvider({ children }: { children: ReactNode }) {
     }
   };
   
-  const handleRemoveItem = async (productId: string) => {
+  const removeFromWishlist = async (productId: string) => {
     const itemToRemove = state.items.find(i => i.id === productId);
     if (!itemToRemove) { return; }
 
@@ -145,7 +145,10 @@ export function WishlistProvider({ children }: { children: ReactNode }) {
     dispatch({ type: "REMOVE_ITEM", payload: { productId } });
     const result = await removeWishlistItem(productId);
     if (result.success) {
-      // The toast is now handled in the component
+      toast({
+        title: "Removed from Wishlist",
+        description: `${itemToRemove.name} has been removed from your wishlist.`,
+      });
     } else {
       // Revert on failure
       dispatch({ type: 'ADD_ITEM', payload: itemToRemove });
@@ -153,20 +156,14 @@ export function WishlistProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const isInWishlist = (productId: string) => {
+    return state.items.some((item) => item.id === productId);
+  };
+  
   const value = {
     state: isMounted ? state : initialState,
-    dispatch: (action: WishlistAction) => {
-        switch(action.type) {
-            case 'ADD_ITEM':
-                handleAddItem(action.payload);
-                break;
-            case 'REMOVE_ITEM':
-                handleRemoveItem(action.payload.productId);
-                break;
-            default:
-                dispatch(action);
-        }
-    },
+    addToWishlist,
+    removeFromWishlist,
     isInWishlist: (productId: string) => isMounted && isInWishlist(productId),
   };
 

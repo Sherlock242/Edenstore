@@ -17,7 +17,7 @@ export function ProductDetailsClient({ product }: { product: Product }) {
   const [selectedColor, setSelectedColor] = useState<string | undefined>(undefined);
 
   const { addToCart } = useCart();
-  const { dispatch: wishlistDispatch, isInWishlist } = useWishlist();
+  const { addToWishlist, removeFromWishlist, isInWishlist } = useWishlist();
   const { toast } = useToast();
   const inWishlist = isInWishlist(product.id);
 
@@ -90,17 +90,9 @@ export function ProductDetailsClient({ product }: { product: Product }) {
 
   const handleWishlistToggle = () => {
     if (inWishlist) {
-      wishlistDispatch({ type: 'REMOVE_ITEM', payload: { productId: product.id } });
-       toast({
-        title: "Removed from Wishlist",
-        description: `${product.name} has been removed from your wishlist.`,
-      });
+      removeFromWishlist(product.id);
     } else {
-      wishlistDispatch({ type: 'ADD_ITEM', payload: product });
-       toast({
-        title: "Added to Wishlist!",
-        description: `${product.name} has been added to your wishlist.`,
-      });
+      addToWishlist(product);
     }
   };
 
