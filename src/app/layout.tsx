@@ -58,7 +58,7 @@ export default async function RootLayout({
       >
         <ClientProviders>
             <NextTopLoader
-              color="hsl(var(--foreground))"
+              color="hsl(var(--muted-foreground))"
               initialPosition={0.08}
               crawlSpeed={200}
               height={3}
