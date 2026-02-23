@@ -1,5 +1,4 @@
 
-import Link from "next/link";
 import { Github, Twitter, Instagram } from "lucide-react";
 
 export function Footer({ siteName }: { siteName: string }) {
@@ -15,15 +14,15 @@ export function Footer({ siteName }: { siteName: string }) {
           © {new Date().getFullYear()} {siteName}. All rights reserved.
         </p>
         <div className="flex items-center space-x-4">
-          <Link href="#" aria-label="Twitter">
+          <a href="#" aria-label="Twitter">
             <Twitter className="h-5 w-5 text-muted-foreground transition-colors hover:text-foreground" />
-          </Link>
-          <Link href="#" aria-label="GitHub">
+          </a>
+          <a href="#" aria-label="GitHub">
             <Github className="h-5 w-5 text-muted-foreground transition-colors hover:text-foreground" />
-          </Link>
-          <Link href="https://www.instagram.com/santosh.r.k__?igsh=dDA4eXY0Z2l5bXZj" aria-label="Instagram">
+          </a>
+          <a href="https://www.instagram.com/santosh.r.k__?igsh=dDA4eXY0Z2l5bXZj" aria-label="Instagram" target="_blank" rel="noopener noreferrer">
             <Instagram className="h-5 w-5 text-muted-foreground transition-colors hover:text-foreground" />
-          </Link>
+          </a>
         </div>
       </div>
     </footer>
