@@ -30,7 +30,7 @@ export async function getAllOrders(): Promise<{ success: boolean; orders?: FullO
         .from('orders')
         .select(`
             id, created_at, status, razorpay_order_id, shipping_address, user_id, shipment_id, shiprocket_order_id, payment_method, awb_code, total_amount, discount_amount, coupon_code,
-            order_items ( product_id, quantity, size, color, price_at_purchase )
+            order_items!inner( product_id, quantity, size, color, price_at_purchase )
         `)
         .order('created_at', { ascending: false });
 
