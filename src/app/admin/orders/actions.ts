@@ -2,11 +2,9 @@
 
 'use server';
 
-import { createClient } from '@/lib/supabase/server';
 import type { OrderDetails } from '@/app/track/actions';
 import type { Product, ProductSize } from '@/app/actions';
 import { pushOrderToShiprocket } from '@/lib/shiprocket-client';
-import { cookies } from 'next/headers';
 import { createClient as createAdminClient } from '@supabase/supabase-js';
 
 export type UserProfileInfo = {
@@ -22,10 +20,13 @@ export type FullOrderDetails = OrderDetails & {
 };
 
 export async function getAllOrders(): Promise<{ success: boolean; orders?: FullOrderDetails[]; message: string }> {
-    const cookieStore = cookies();
-    const supabase = createClient(cookieStore);
+    const supabaseAdmin = createAdminClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.SUPABASE_SERVICE_ROLE_KEY!,
+        { auth: { persistSession: false } }
+    );
     // 1. Fetch all orders with their items
-    const { data: ordersData, error: ordersError } = await supabase
+    const { data: ordersData, error: ordersError } = await supabaseAdmin
         .from('orders')
         .select(`
             id, created_at, status, razorpay_order_id, shipping_address, user_id, shipment_id, shiprocket_order_id, payment_method, awb_code, total_amount, discount_amount, coupon_code,
@@ -43,7 +44,7 @@ export async function getAllOrders(): Promise<{ success: boolean; orders?: FullO
     const userIds = [...new Set(ordersData.map(order => order.user_id))];
 
     // 3. Fetch product details
-    const { data: productsData, error: productsError } = await supabase
+    const { data: productsData, error: productsError } = await supabaseAdmin
         .from('products')
         .select(`
             id, name, description, price, category, popularity, release_date, weight,
@@ -55,7 +56,7 @@ export async function getAllOrders(): Promise<{ success: boolean; orders?: FullO
     if (productsError) return { success: false, message: 'Could not fetch product details.' };
 
     // 4. Fetch user details
-    const { data: usersData, error: usersError } = await supabase
+    const { data: usersData, error: usersError } = await supabaseAdmin
         .from('users')
         .select('id, display_name, email')
         .in('id', userIds);
@@ -176,5 +177,3 @@ export async function sendOrderToShiprocket(order: FullOrderDetails): Promise<{ 
         shiprocketOrderId: order_id 
     };
 }
-
-    

@@ -1,8 +1,7 @@
 
 'use server';
 
-import { createClient } from '@/lib/supabase/server';
-import { cookies } from 'next/headers';
+import { createClient as createAdminClient } from '@supabase/supabase-js';
 
 export type UserProfileInfo = {
     id: string;
@@ -12,9 +11,12 @@ export type UserProfileInfo = {
 }
 
 export async function getAllUsers(): Promise<{ success: boolean; users?: UserProfileInfo[]; message: string }> {
-    const cookieStore = cookies();
-    const supabase = createClient(cookieStore);
-    const { data: usersData, error: usersError } = await supabase
+    const supabaseAdmin = createAdminClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.SUPABASE_SERVICE_ROLE_KEY!,
+        { auth: { persistSession: false } }
+    );
+    const { data: usersData, error: usersError } = await supabaseAdmin
         .from('users')
         .select('id, display_name, email, created_at')
         .order('created_at', { ascending: true });
