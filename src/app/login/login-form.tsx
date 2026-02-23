@@ -1,7 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
-import { useFormState } from 'react-dom';
+import { useEffect, useActionState } from 'react';
 import Link from 'next/link';
 
 import { Input } from '@/components/ui/input';
@@ -12,7 +11,7 @@ import { signIn } from './actions';
 
 export function LoginForm({ searchParams }: { searchParams: { message: string } }) {
   const initialState = { success: false, message: searchParams?.message || '' };
-  const [state, formAction] = useFormState(signIn, initialState);
+  const [state, formAction] = useActionState(signIn, initialState);
 
   useEffect(() => {
     if (state?.success) {
