@@ -117,6 +117,118 @@ export const getProductsForSearch = async (cookieStore: ReadonlyRequestCookies):
     }));
 }
 
+export const getProductById = async (cookieStore: ReadonlyRequestCookies, productId: string): Promise<Product | null> => {
+    const supabase = createClient(cookieStore);
+    const { data: p, error } = await supabase
+      .from('products')
+      .select(`
+        id,
+        name,
+        description,
+        price,
+        category,
+        popularity,
+        release_date,
+        weight,
+        product_images ( id, url, hint ),
+        product_variants ( size, color, quantity )
+      `)
+      .eq('id', productId)
+      .single();
+
+    if (error || !p) {
+        return null;
+    }
+
+    const sizesMap = new Map<string, ProductVariant[]>();
+    
+    p.product_variants.forEach((variant: any) => {
+        if (!sizesMap.has(variant.size)) {
+            sizesMap.set(variant.size, []);
+        }
+        sizesMap.get(variant.size)!.push({
+            color: variant.color,
+            quantity: variant.quantity,
+        });
+    });
+    
+    const sizes: ProductSize[] = Array.from(sizesMap.entries()).map(([size, variants]) => ({
+        size,
+        variants,
+    }));
+
+    return {
+        id: p.id.toString(),
+        name: p.name,
+        description: p.description,
+        price: p.price,
+        category: p.category,
+        popularity: p.popularity,
+        releaseDate: p.release_date,
+        weight: p.weight || 0.5,
+        images: p.product_images.map((img: any) => ({ id: img.id.toString(), url: img.url, hint: img.hint })),
+        sizes: sizes,
+    }
+};
+
+export const getRelatedProducts = async (cookieStore: ReadonlyRequestCookies, category: string, excludeId: string): Promise<Product[]> => {
+    const supabase = createClient(cookieStore);
+    const { data: productsData, error } = await supabase
+      .from('products')
+      .select(`
+        id,
+        name,
+        description,
+        price,
+        category,
+        popularity,
+        release_date,
+        weight,
+        product_images ( id, url, hint ),
+        product_variants ( size, color, quantity )
+      `)
+      .eq('category', category)
+      .neq('id', excludeId)
+      .limit(4);
+
+    if (error) {
+        return [];
+    }
+
+    // Use the same transformation logic as getProducts
+    return productsData.map((p: any) => {
+        const sizesMap = new Map<string, ProductVariant[]>();
+        
+        p.product_variants.forEach((variant: any) => {
+            if (!sizesMap.has(variant.size)) {
+                sizesMap.set(variant.size, []);
+            }
+            sizesMap.get(variant.size)!.push({
+                color: variant.color,
+                quantity: variant.quantity,
+            });
+        });
+        
+        const sizes: ProductSize[] = Array.from(sizesMap.entries()).map(([size, variants]) => ({
+            size,
+            variants,
+        }));
+
+        return {
+            id: p.id.toString(),
+            name: p.name,
+            description: p.description,
+            price: p.price,
+            category: p.category,
+            popularity: p.popularity,
+            releaseDate: p.release_date,
+            weight: p.weight || 0.5,
+            images: p.product_images.map((img: any) => ({ id: img.id.toString(), url: img.url, hint: img.hint })),
+            sizes: sizes,
+        }
+    });
+}
+
 
 export type ProductFormValues = {
   name: string;

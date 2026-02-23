@@ -1,13 +1,11 @@
 
 
-import { getProducts, type Product } from "@/app/actions";
+import { getProductById, getRelatedProducts, type Product } from "@/app/actions";
 import { notFound } from "next/navigation";
 import { ProductDetailsClient } from "@/components/product-details-client";
 import { ProductCard } from "@/components/product-card";
 import { ProductImageCarousel } from "@/components/product-image-carousel";
 import { cookies } from "next/headers";
-import { createClient as createServerClient } from '@/lib/supabase/server';
-import { createClient } from "@supabase/supabase-js";
 import { getReviewsForProduct } from "@/app/reviews/actions";
 import { ProductReviews } from "@/components/product-reviews";
 import { Suspense } from "react";
@@ -18,21 +16,19 @@ export const dynamic = 'force-dynamic';
 
 export default async function ProductPage({ params }: { params: { id: string } }) {
   const cookieStore = cookies();
-  // Fetch product and reviews in parallel
-  const [allProducts, reviewsResult] = await Promise.all([
-    getProducts(cookieStore),
-    getReviewsForProduct(params.id)
-  ]);
   
-  const product = allProducts.find((p) => p.id === params.id);
+  // Fetch primary product data first.
+  const product = await getProductById(cookieStore, params.id);
 
   if (!product) {
     notFound();
   }
-
-  const relatedProducts = allProducts
-    .filter((p) => p.category === product.category && p.id !== product.id)
-    .slice(0, 4);
+  
+  // In parallel, fetch reviews and related products.
+  const [reviewsResult, relatedProducts] = await Promise.all([
+    getReviewsForProduct(params.id),
+    getRelatedProducts(cookieStore, product.category, product.id)
+  ]);
 
   const { reviews = [], averageRating = 0, totalReviews = 0 } = reviewsResult.success ? reviewsResult : {};
 
