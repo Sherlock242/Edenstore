@@ -28,6 +28,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
+import { Skeleton } from '@/components/ui/skeleton';
 
 type ProductReviewsProps = {
     productId: string;
@@ -38,7 +39,7 @@ type ProductReviewsProps = {
 
 export function ProductReviews({ productId, initialReviews, initialAverageRating, initialTotalReviews }: ProductReviewsProps) {
     const { toast } = useToast();
-    const { user } = useUser();
+    const { user, loading: userLoading } = useUser();
     const [isPending, startTransition] = useTransition();
     const [reviews, setReviews] = useState(initialReviews);
     const [averageRating, setAverageRating] = useState(initialAverageRating);
@@ -49,7 +50,7 @@ export function ProductReviews({ productId, initialReviews, initialAverageRating
     const [isDeleteAlertOpen, setIsDeleteAlertOpen] = useState(false);
 
     const userReview = reviews.find(r => r.user_id === user?.id);
-    const canLeaveReview = user && !userReview && !reviewToEdit;
+    const isFormVisible = user && (!userReview || reviewToEdit);
 
     const form = useForm<z.infer<typeof reviewSchema>>({
         resolver: zodResolver(reviewSchema),
@@ -152,8 +153,6 @@ export function ProductReviews({ productId, initialReviews, initialAverageRating
         });
     }
     
-    const isFormVisible = user && (!userReview || reviewToEdit);
-    
     return (
         <Card>
             <CardHeader>
@@ -165,7 +164,20 @@ export function ProductReviews({ productId, initialReviews, initialAverageRating
             <CardContent>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12">
                     <div className="space-y-4">
-                         {isFormVisible ? (
+                         {userLoading ? (
+                            <div className="space-y-6">
+                                <h3 className="font-semibold text-lg">Leave a review</h3>
+                                <div className="space-y-2">
+                                    <Skeleton className="h-5 w-1/3" />
+                                    <Skeleton className="h-7 w-1/2" />
+                                </div>
+                                <div className="space-y-2">
+                                    <Skeleton className="h-5 w-1/3" />
+                                    <Skeleton className="h-20 w-full" />
+                                </div>
+                                <Skeleton className="h-10 w-32" />
+                            </div>
+                         ) : isFormVisible ? (
                             <>
                                 <h3 className="font-semibold text-lg">{reviewToEdit ? "Edit Your Review" : "Leave a review"}</h3>
                                 <Form {...form}>
