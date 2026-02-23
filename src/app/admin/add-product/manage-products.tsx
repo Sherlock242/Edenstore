@@ -1,4 +1,3 @@
-
 // src/app/admin/add-product/manage-products.tsx
 'use client';
 import { useEffect, useState, useTransition } from 'react';
@@ -44,11 +43,15 @@ export function ManageProducts({ onEditProduct, productAddedOrUpdated, initialPr
 
   useEffect(() => {
     // This effect re-fetches products when the `productAddedOrUpdated` counter changes.
-    // It ensures the list is up-to-date after an add or edit operation.
-    getProductsClient().then(setProducts);
+    // We check if the counter is greater than 0 to avoid an unnecessary fetch on initial mount,
+    // since we now get the initial data from the server.
+    if (productAddedOrUpdated > 0) {
+      getProductsClient().then(setProducts);
+    }
   }, [productAddedOrUpdated]);
 
   useEffect(() => {
+    // This ensures that if the initial prop changes for any reason, the state is updated.
     setProducts(initialProducts);
   }, [initialProducts]);
 
@@ -179,5 +182,3 @@ export function ManageProducts({ onEditProduct, productAddedOrUpdated, initialPr
     </div>
   );
 }
-
-    
