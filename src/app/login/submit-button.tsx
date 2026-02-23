@@ -11,14 +11,12 @@ type Props = ComponentProps<'button'> & {
 }
 
 export function SubmitButton({ children, pendingText, ...props }: Props) {
-  const { pending, action } = useFormStatus()
-
-  const isPending = pending && action === props.formAction
+  const { pending } = useFormStatus()
 
   return (
     <Button {...props} type="submit" aria-disabled={pending}>
-       {isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-      {isPending ? pendingText : children}
+       {pending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+      {pending ? pendingText : children}
     </Button>
   )
 }
