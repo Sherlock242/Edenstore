@@ -5,6 +5,7 @@
 import type { Product, ProductSize } from '@/app/actions';
 import { createClient } from '@/lib/supabase/server';
 import { cookies } from 'next/headers';
+import { createClient as createAdminClient } from '@supabase/supabase-js';
 
 // Define a more specific OrderItem type for this context if needed
 export type OrderItemDetails = {
@@ -51,8 +52,13 @@ export async function getOrderDetailsByRazorpayId(razorpayOrderId: string): Prom
     // 2. Collect product IDs from the order items
     const productIds = orderData.order_items.map(item => item.product_id);
 
-    // 3. Fetch product details
-    const { data: productsData, error: productsError } = await supabase
+    // 3. Fetch product details using the admin client
+    const supabaseAdmin = createAdminClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.SUPABASE_SERVICE_ROLE_KEY!,
+        { auth: { persistSession: false } }
+    );
+    const { data: productsData, error: productsError } = await supabaseAdmin
         .from('products')
         .select(`
             id, name, description, price, category, popularity, release_date, weight,
@@ -112,5 +118,7 @@ export async function getOrderDetailsByRazorpayId(razorpayOrderId: string): Prom
 
     return { success: true, order: finalOrder, message: 'Order details fetched successfully.' };
 }
+
+    
 
     

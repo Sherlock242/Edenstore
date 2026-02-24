@@ -1,10 +1,11 @@
 
-'use server';
+"use server";
 
 import { createClient } from '@/lib/supabase/server';
 import type { Product, ProductSize } from '@/app/actions';
 import { cookies } from 'next/headers';
 import { trackShipmentById } from '@/lib/shiprocket-client';
+import { createClient as createAdminClient } from '@supabase/supabase-js';
 
 
 export type OrderItem = {
@@ -59,8 +60,13 @@ export async function getUserOrders(): Promise<{ success: boolean; orders?: Orde
         ordersData.flatMap(order => order.order_items.map(item => item.product_id))
     )];
 
-    // 3. Fetch details for all required products in a single query
-    const { data: productsData, error: productsError } = await supabase
+    // 3. Fetch details for all required products in a single query using the admin client
+    const supabaseAdmin = createAdminClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.SUPABASE_SERVICE_ROLE_KEY!,
+        { auth: { persistSession: false } }
+    );
+    const { data: productsData, error: productsError } = await supabaseAdmin
         .from('products')
         .select(`
             id, name, description, price, category, popularity, release_date, weight,
@@ -134,5 +140,7 @@ export async function getUserOrders(): Promise<{ success: boolean; orders?: Orde
 
     return { success: true, orders, message: 'Orders fetched successfully.' };
 }
+
+    
 
     

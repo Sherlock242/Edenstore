@@ -31,7 +31,11 @@ export type Product = {
 
 // This function now needs to be passed the cookieStore from a Server Component
 export const getProducts = async (cookieStore: ReadonlyRequestCookies): Promise<Product[]> => {
-    const supabase = createClient(cookieStore);
+    const supabase = createAdminClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.SUPABASE_SERVICE_ROLE_KEY!,
+        { auth: { persistSession: false } }
+    );
     const { data: productsData, error } = await supabase
       .from('products')
       .select(`
@@ -118,7 +122,11 @@ export const getProductsForSearch = async (cookieStore: ReadonlyRequestCookies):
 }
 
 export const getProductById = async (cookieStore: ReadonlyRequestCookies, productId: string): Promise<Product | null> => {
-    const supabase = createClient(cookieStore);
+    const supabase = createAdminClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.SUPABASE_SERVICE_ROLE_KEY!,
+        { auth: { persistSession: false } }
+    );
     const { data: p, error } = await supabase
       .from('products')
       .select(`
@@ -172,7 +180,11 @@ export const getProductById = async (cookieStore: ReadonlyRequestCookies, produc
 };
 
 export const getRelatedProducts = async (cookieStore: ReadonlyRequestCookies, category: string, excludeId: string): Promise<Product[]> => {
-    const supabase = createClient(cookieStore);
+    const supabase = createAdminClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.SUPABASE_SERVICE_ROLE_KEY!,
+        { auth: { persistSession: false } }
+    );
     const { data: productsData, error } = await supabase
       .from('products')
       .select(`
@@ -605,5 +617,7 @@ export async function deleteUserAccount(cookieStore: ReadonlyRequestCookies): Pr
     
 
 
+
+    
 
     
