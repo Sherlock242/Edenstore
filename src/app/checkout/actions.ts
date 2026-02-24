@@ -121,6 +121,9 @@ export async function fetchShippingRatesAction(pincode: string): Promise<{succes
         weight: totalWeight > 0 ? totalWeight : 0.1, // Ensure weight is not zero
         cod: 0,
         declared_value: subTotal,
+        length: 10,
+        breadth: 10,
+        height: 5,
     });
 
     return result;

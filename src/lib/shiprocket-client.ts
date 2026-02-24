@@ -1,4 +1,3 @@
-
 'use server';
 
 import type { FullOrderDetails } from '@/app/admin/orders/actions';
@@ -194,11 +193,11 @@ export async function pushOrderToShiprocket(order: FullOrderDetails): Promise<{ 
     }
 }
 
-export async function getShippingRates(params: { pickup_postcode: string, delivery_postcode: string, weight: number, cod: 0 | 1, declared_value: number }): Promise<{ success: boolean; message: string; rate?: number }> {
+export async function getShippingRates(params: { pickup_postcode: string, delivery_postcode: string, weight: number, cod: 0 | 1, declared_value: number, length: number, breadth: number, height: number }): Promise<{ success: boolean; message: string; rate?: number }> {
     const token = await getShiprocketToken();
     if (!token) return { success: false, message: "Could not authenticate with Shiprocket." };
 
-    const { pickup_postcode, delivery_postcode, weight, cod, declared_value } = params;
+    const { pickup_postcode, delivery_postcode, weight, cod, declared_value, length, breadth, height } = params;
 
     const url = new URL(`${SHIPROCKET_API_URL}/courier/serviceability`);
     url.searchParams.append('pickup_postcode', pickup_postcode);
@@ -207,6 +206,9 @@ export async function getShippingRates(params: { pickup_postcode: string, delive
     url.searchParams.append('cod', cod.toString());
     url.searchParams.append('declared_value', declared_value.toString());
     url.searchParams.append('is_return', '0');
+    url.searchParams.append('length', length.toString());
+    url.searchParams.append('breadth', breadth.toString());
+    url.searchParams.append('height', height.toString());
 
     try {
         const response = await fetch(url.toString(), {
