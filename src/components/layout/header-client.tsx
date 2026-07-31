@@ -100,7 +100,7 @@ export function HeaderClient({ user, userProfile, isadmin, siteName, logoUrl, di
                 variant="ghost"
                 size="icon"
                 aria-label="Toggle navigation menu"
-                className="hover:bg-muted hover:text-foreground"
+                className="hover:bg-muted hover:text-foreground/70 text-foreground/70"
               >
                 <Menu className="h-10 w-10" />
               </Button>
@@ -136,7 +136,7 @@ export function HeaderClient({ user, userProfile, isadmin, siteName, logoUrl, di
                 
                 {isadmin && (
                   <div className="hidden items-center md:flex">
-                      <Button variant="ghost" size="sm" asChild>
+                      <Button variant="ghost" size="sm" asChild className="hover:bg-muted hover:text-foreground/60">
                           <Link href="/admin" className="flex items-center gap-1 text-foreground/60">
                               <Shield className="h-4 w-4" />
                               Admin
@@ -147,7 +147,7 @@ export function HeaderClient({ user, userProfile, isadmin, siteName, logoUrl, di
                 {user ? (
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" className="relative hidden h-8 w-8 rounded-full md:flex">
+                            <Button variant="ghost" className="relative hidden h-8 w-8 rounded-full md:flex hover:bg-muted">
                                 <Avatar className="h-8 w-8">
                                     <AvatarImage src={getGravatarUrl(user.email)} alt={userProfile?.display_name || user.email || 'User'} />
                                     <AvatarFallback>{getAvatarFallback(userProfile?.display_name || user.email)}</AvatarFallback>
@@ -193,7 +193,7 @@ export function HeaderClient({ user, userProfile, isadmin, siteName, logoUrl, di
                         </DropdownMenuContent>
                     </DropdownMenu>
                 ) : (
-                    <Button variant="ghost" asChild className="hidden md:flex">
+                    <Button variant="ghost" asChild className="hidden md:flex hover:bg-muted hover:text-foreground">
                         <Link href="/login">Login</Link>
                     </Button>
                 )}

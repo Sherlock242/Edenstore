@@ -1,4 +1,3 @@
-
 'use client';
 import { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -114,7 +113,7 @@ export default function AdminUsersPage() {
                         <TableCell className="font-medium">{index + 1}</TableCell>
                         <TableCell>{user.display_name || "N/A"}</TableCell>
                         <TableCell>{user.email}</TableCell>
-                        <TableCell>{format(new Date(user.created_at), 'MMM dd, yyyy')}</TableCell>
+                        <TableCell suppressHydrationWarning>{format(new Date(user.created_at), 'MMM dd, yyyy')}</TableCell>
                     </TableRow>
                 ))}
                 </TableBody>

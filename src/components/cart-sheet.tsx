@@ -51,7 +51,7 @@ export function CartSheet() {
   return (
     <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
         <SheetTrigger asChild>
-        <Button variant="ghost" size="icon" className="relative hover:bg-muted hover:text-foreground">
+        <Button variant="ghost" size="icon" className="relative hover:bg-muted hover:text-foreground/70 text-foreground/70">
             <ShoppingBag className="h-6 w-6" />
             {cartItemCount > 0 && (
             <span className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-xs text-primary-foreground">
@@ -108,7 +108,7 @@ export function CartSheet() {
                                     className="h-7 w-7"
                                     onClick={() => handleQuantityChange(item.product.id, item.size, item.color, item.quantity - 1)}
                                     >
-                                    <Minus className="h-4 w-4" />
+                                    < Minus className="h-4 w-4" />
                                     </Button>
                                     <Input
                                     type="number"
