@@ -33,12 +33,7 @@ const sizeSchema = z.object({
 });
 
 const imageSchema = z.object({
-  file: z.custom<File>(v => v instanceof File, 'Image file is required.')
-    .refine(file => file.size <= 5000000, `Max file size is 5MB.`)
-    .refine(
-      file => file.type ? ['image/jpeg', 'image/png', 'image/webp'].includes(file.type) : true,
-      'Only .jpg, .png, and .webp formats are supported.'
-    ).optional(),
+  file: z.custom<File>(v => v instanceof File).optional(),
   hint: z.string().min(1, 'Hint is required.'),
   preview: z.string().optional()
 });
@@ -69,11 +64,11 @@ export function AddProductForm({ productToEdit, onProductAddedOrUpdated }: AddPr
       id: '',
       name: '',
       description: '',
-      price: 0,
+      price: undefined,
       category: '',
-      weight: 0,
-      sizes: [],
-      images: [],
+      weight: undefined,
+      sizes: [{ size: '', colors: [{ color: '', quantity: undefined as any }] }],
+      images: [{ hint: '' }],
     },
   });
 
@@ -112,10 +107,10 @@ export function AddProductForm({ productToEdit, onProductAddedOrUpdated }: AddPr
             id: '',
             name: '',
             description: '',
-            price: 0,
+            price: undefined,
             category: '',
-            weight: 0,
-            sizes: [{ size: '', colors: [{ color: '', quantity: 0 }] }],
+            weight: undefined,
+            sizes: [{ size: '', colors: [{ color: '', quantity: undefined as any }] }],
             images: [{ hint: '' }],
           });
       }
@@ -123,28 +118,42 @@ export function AddProductForm({ productToEdit, onProductAddedOrUpdated }: AddPr
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     const imagesWithFiles = values.images.filter(img => img.file instanceof File);
+    
     if (isEditMode) {
       const updateValues: UpdateProductFormValues = {
         ...values,
         id: productToEdit.id,
+        // Only include images if new files were actually uploaded
         images: imagesWithFiles.length > 0 ? imagesWithFiles.map(img => ({ file: img.file!, hint: img.hint })) : undefined,
       };
+      
       const result = await updateProductAction(updateValues);
-      toast({ title: result.success ? 'Success!' : 'Error', description: result.message, variant: result.success ? 'default' : 'destructive'});
-       if(result.success) onProductAddedOrUpdated();
+      toast({ 
+        title: result.success ? 'Success!' : 'Error', 
+        description: result.message, 
+        variant: result.success ? 'default' : 'destructive'
+      });
+      if(result.success) onProductAddedOrUpdated();
 
     } else {
-      const imagesToUpload = values.images.filter(img => img.file instanceof File).map(img => ({ file: img.file!, hint: img.hint }));
+      const imagesToUpload = imagesWithFiles.map(img => ({ file: img.file!, hint: img.hint }));
+      
       if (imagesToUpload.length === 0) {
         form.setError('images', { message: 'At least one new image file is required to create a product.' });
         return;
       }
+      
       const addValues: ProductFormValues = {
         ...values,
         images: imagesToUpload
       };
+      
       const result = await addProductAction(addValues);
-      toast({ title: result.success ? 'Success!' : 'Error', description: result.message, variant: result.success ? 'default' : 'destructive'});
+      toast({ 
+        title: result.success ? 'Success!' : 'Error', 
+        description: result.message, 
+        variant: result.success ? 'default' : 'destructive'
+      });
       if (result.success) {
         form.reset();
         onProductAddedOrUpdated();
@@ -191,7 +200,14 @@ export function AddProductForm({ productToEdit, onProductAddedOrUpdated }: AddPr
                 <FormItem>
                 <FormLabel>Price</FormLabel>
                 <FormControl>
-                    <Input type="number" step="0.01" placeholder="29.99" {...field} onChange={e => field.onChange(e.target.valueAsNumber || 0)} />
+                    <Input 
+                        type="number" 
+                        step="0.01" 
+                        placeholder="29.99" 
+                        {...field} 
+                        value={field.value ?? ''}
+                        onChange={e => field.onChange(e.target.value === '' ? undefined : e.target.valueAsNumber)} 
+                    />
                 </FormControl>
                 <FormMessage />
                 </FormItem>
@@ -204,7 +220,14 @@ export function AddProductForm({ productToEdit, onProductAddedOrUpdated }: AddPr
                 <FormItem>
                 <FormLabel>Weight (kg)</FormLabel>
                 <FormControl>
-                    <Input type="number" step="0.1" placeholder="0.5" {...field} onChange={e => field.onChange(e.target.valueAsNumber || 0)} />
+                    <Input 
+                        type="number" 
+                        step="0.1" 
+                        placeholder="0.5" 
+                        {...field} 
+                        value={field.value ?? ''}
+                        onChange={e => field.onChange(e.target.value === '' ? undefined : e.target.valueAsNumber)} 
+                    />
                 </FormControl>
                 <FormMessage />
                 </FormItem>
@@ -257,7 +280,7 @@ export function AddProductForm({ productToEdit, onProductAddedOrUpdated }: AddPr
                         <ColorFields parentIndex={sizeIndex} control={form.control} />
                     </div>
                 ))}
-                <Button type="button" variant="outline" size="sm" onClick={() => appendSize({ size: "", colors: [{color: '', quantity: 0 }] })}>
+                <Button type="button" variant="outline" size="sm" onClick={() => appendSize({ size: "", colors: [{color: '', quantity: undefined as any }] })}>
                     Add Another Size
                 </Button>
                  {form.formState.errors.sizes && <p className="text-sm font-medium text-destructive">{form.formState.errors.sizes.root?.message}</p>}
@@ -295,7 +318,7 @@ export function AddProductForm({ productToEdit, onProductAddedOrUpdated }: AddPr
                                             </div>
                                         )}
                                         <Input
-                                            id={`image-upload-${index}`} type="file" className="hidden" accept="image/png, image/jpeg, image/webp"
+                                            id={`image-upload-${index}`} type="file" className="hidden"
                                             {...fileInputProps}
                                             ref={fileInputRef}
                                             onChange={event => {
@@ -386,7 +409,7 @@ function ColorFields({ parentIndex, control }: { parentIndex: number, control: a
                                       placeholder="Qty"
                                       {...field}
                                       value={field.value ?? ''}
-                                      onChange={e => field.onChange(e.target.value === '' ? 0 : e.target.valueAsNumber)}
+                                      onChange={e => field.onChange(e.target.value === '' ? undefined : e.target.valueAsNumber)}
                                     />
                                 </FormControl>
                                 <FormMessage />
@@ -398,7 +421,7 @@ function ColorFields({ parentIndex, control }: { parentIndex: number, control: a
                     </Button>
                 </div>
             ))}
-            <Button type="button" variant="outline" size="sm" onClick={() => append({ color: '', quantity: 0 })}>
+            <Button type="button" variant="outline" size="sm" onClick={() => append({ color: '', quantity: undefined as any })}>
                 Add Color for this Size
             </Button>
         </div>
