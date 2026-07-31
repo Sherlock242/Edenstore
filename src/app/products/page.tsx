@@ -1,4 +1,3 @@
-
 import { getProducts } from '@/app/actions';
 import { ProductCard } from '@/components/product-card';
 import { cookies } from 'next/headers';
@@ -24,7 +23,7 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
     <div className="container mx-auto max-w-7xl px-4 py-8 md:py-12">
       <div className="mb-8 text-center">
         <h1 className="font-headline text-3xl font-bold tracking-tighter md:text-4xl">
-          {searchQuery ? `Results for "${searchParams.q}"` : "All T-Shirts"}
+          {searchQuery ? `Results for "${searchParams.q}"` : "All Shirts"}
         </h1>
         <p className="mt-2 text-muted-foreground">
           {searchQuery ? `${filteredProducts.length} products found.` : 'Browse our full collection of exclusive anime-inspired apparel.'}

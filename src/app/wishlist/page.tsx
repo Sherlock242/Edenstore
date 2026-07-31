@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useWishlist } from "@/contexts/wishlist-context";
@@ -32,7 +31,7 @@ export default function WishlistPage() {
       ) : (
          <div className="flex min-h-[40vh] flex-col items-center justify-center gap-4 rounded-lg border border-dashed bg-card p-8 text-center">
           <h2 className="text-xl font-semibold">Your wishlist is empty.</h2>
-          <p className="text-muted-foreground">Browse our collection and save your favorite tees for later.</p>
+          <p className="text-muted-foreground">Browse our collection and save your favorite shirts for later.</p>
           <Button asChild className="bg-accent text-accent-foreground hover:bg-accent/90">
             <Link href="/products">Discover Products</Link>
           </Button>

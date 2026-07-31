@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useCart } from '@/contexts/cart-context';
@@ -198,7 +197,7 @@ export default function CheckoutPage() {
         amount: order.amount,
         currency: order.currency,
         name: siteName,
-        description: 'T-Shirt Purchase',
+        description: 'Shirt Purchase',
         order_id: order.id,
         handler: async function (response: any) {
              const verificationResult = await verifyPaymentAndCreateOrder({
@@ -220,6 +219,12 @@ export default function CheckoutPage() {
                  toast({ variant: 'destructive', title: 'Order Failed', description: verificationResult.message });
             }
         },
+        modal: {
+            ondismiss: function() {
+                setIsProcessing(false);
+                toast({ title: "Payment Cancelled", description: "You closed the payment window." });
+            }
+        },
         prefill: {
             name: `${firstName} ${lastName}`,
             email: email,
@@ -231,10 +236,9 @@ export default function CheckoutPage() {
     const rzp = new (window as any).Razorpay(options);
     rzp.on('payment.failed', function (response: any) {
         toast({ variant: 'destructive', title: 'Payment Failed', description: response.error.description });
+        setIsProcessing(false);
     });
     rzp.open();
-    
-    setIsProcessing(false);
   };
 
   if (state.items.length === 0 && !isProcessing) {

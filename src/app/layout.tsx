@@ -1,4 +1,3 @@
-
 import type { Metadata } from 'next';
 import { Inter, Space_Grotesk } from 'next/font/google';
 import './globals.css';
@@ -29,7 +28,7 @@ export const metadata: Metadata = {
       default: "ANISTORE",
       template: `%s | ANISTORE`,
     },
-    description: `The ultimate destination for anime t-shirts.`,
+    description: `The ultimate destination for anime shirts.`,
     icons: {
       icon: '/icon.png',
       shortcut: '/icon.png',

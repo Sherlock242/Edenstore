@@ -1,4 +1,3 @@
-
 'use client';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -36,7 +35,7 @@ type MobileMenuSheetProps = {
 };
 
 const navLinks = [
-  { href: '/products', label: 'T-Shirts' },
+  { href: '/products', label: 'Shirts' },
 ];
 
 const getAvatarFallback = (nameOrEmail: string | null | undefined) => {

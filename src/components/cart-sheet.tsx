@@ -156,7 +156,7 @@ export function CartSheet() {
             ) : (
                 <div className="flex flex-grow flex-col items-center justify-center gap-4 text-center">
                     <h3 className="font-semibold text-lg">Your cart is empty</h3>
-                    <p className="text-muted-foreground">Add some awesome anime tees to get started!</p>
+                    <p className="text-muted-foreground">Add some awesome anime shirts to get started!</p>
                     <Button asChild className="bg-accent text-accent-foreground hover:bg-accent/90" onClick={() => setIsSheetOpen(false)}>
                         <Link href="/">Start Shopping</Link>
                     </Button>

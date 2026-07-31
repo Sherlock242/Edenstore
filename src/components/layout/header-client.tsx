@@ -34,7 +34,7 @@ import { useState } from 'react';
 import type { HeaderDisplayMode } from '@/app/admin/settings/actions';
 
 const navLinks = [
-  { href: '/products', label: 'T-Shirts' },
+  { href: '/products', label: 'Shirts' },
 ];
 
 const getAvatarFallback = (email: string | null | undefined) => {

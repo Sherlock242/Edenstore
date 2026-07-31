@@ -1,5 +1,3 @@
-
-
 "use client";
 import { useState, useEffect, useMemo } from "react";
 import type { Product } from "@/app/actions";
@@ -101,7 +99,7 @@ export function ProductDetailsClient({ product }: { product: Product }) {
       try {
         await navigator.share({
           title: product.name,
-          text: `Check out this awesome t-shirt: ${product.name}`,
+          text: `Check out this awesome shirt: ${product.name}`,
           url: window.location.href,
         });
         toast({ title: "Shared successfully!" });
@@ -198,5 +196,3 @@ export function ProductDetailsClient({ product }: { product: Product }) {
     </div>
   );
 }
-
-    
