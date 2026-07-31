@@ -33,7 +33,7 @@ const sizeSchema = z.object({
 });
 
 const imageSchema = z.object({
-  file: z.custom<File>(v => v instanceof File).optional(),
+  file: z.any().optional(),
   hint: z.string().min(1, 'Hint is required.'),
   preview: z.string().optional()
 });
@@ -99,7 +99,8 @@ export function AddProductForm({ productToEdit, onProductAddedOrUpdated }: AddPr
               sizes: sizesWithColors.length > 0 ? sizesWithColors : [{ size: '', colors: [{ color: '', quantity: 0 }] }],
               images: productToEdit.images.map(img => ({
                 hint: img.hint,
-                preview: img.url
+                preview: img.url,
+                file: undefined // Reset file so it's not "Invalid input"
               })),
           });
       } else {
@@ -160,8 +161,6 @@ export function AddProductForm({ productToEdit, onProductAddedOrUpdated }: AddPr
       }
     }
   }
-
-  const { register } = form;
 
   return (
     <Form {...form}>
@@ -296,14 +295,13 @@ export function AddProductForm({ productToEdit, onProductAddedOrUpdated }: AddPr
             <div className="space-y-6 mt-4">
                 {imageFields.map((field, index) => {
                     const imageValue = form.watch(`images.${index}`);
-                    const { ref: fileInputRef, ...fileInputProps } = register(`images.${index}.file`);
                     return (
                         <div key={field.id} className="p-4 border rounded-md space-y-4 relative">
                            <Button type="button" variant="destructive" size="icon" className="absolute -top-3 -right-3 h-7 w-7" onClick={() => removeImage(index)}><X className="h-4 w-4" /></Button>
                             <FormField
                                 control={form.control}
                                 name={`images.${index}.file`}
-                                render={({ field: { onChange, ...fieldProps } }) => (
+                                render={({ field: { value, onChange, ...fieldProps } }) => (
                                 <FormItem>
                                     <FormLabel>Image File</FormLabel>
                                     <FormControl>
@@ -317,10 +315,8 @@ export function AddProductForm({ productToEdit, onProductAddedOrUpdated }: AddPr
                                             <p className="text-xs text-muted-foreground">Click or drag to upload</p>
                                             </div>
                                         )}
-                                        <Input
+                                        <input
                                             id={`image-upload-${index}`} type="file" className="hidden"
-                                            {...fileInputProps}
-                                            ref={fileInputRef}
                                             onChange={event => {
                                                 const file = event.target.files?.[0];
                                                 if (file) {
@@ -337,7 +333,7 @@ export function AddProductForm({ productToEdit, onProductAddedOrUpdated }: AddPr
                                     </div>
                                     </FormControl>
                                     {isEditMode && imageValue.preview && !imageValue.file && (
-                                        <FormDescription>This is the current image. To replace images, upload one or more new files.</FormDescription>
+                                        <FormDescription>Current image preserved. Upload a new file to replace it.</FormDescription>
                                     )}
                                     <FormMessage />
                                 </FormItem>
