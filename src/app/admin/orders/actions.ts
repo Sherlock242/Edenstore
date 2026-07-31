@@ -1,5 +1,3 @@
-
-
 'use server';
 
 import type { OrderDetails } from '@/app/track/actions';
@@ -216,4 +214,28 @@ export async function sendOrderToShiprocket(order: FullOrderDetails): Promise<{ 
         shipmentId: shipment_id, 
         shiprocketOrderId: order_id 
     };
+}
+
+export async function deleteOrder(orderId: string): Promise<{ success: boolean; message: string }> {
+    const supabaseAdmin = createAdminClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.SUPABASE_SERVICE_ROLE_KEY!,
+        { auth: { persistSession: false } }
+    );
+    
+    // 1. Delete order items first (to be explicit, though cascade should handle it)
+    await supabaseAdmin.from('order_items').delete().eq('order_id', orderId);
+
+    // 2. Delete the order record
+    const { error } = await supabaseAdmin
+        .from('orders')
+        .delete()
+        .eq('id', orderId);
+
+    if (error) {
+        console.error('Error deleting order:', error);
+        return { success: false, message: 'Failed to delete order from database.' };
+    }
+
+    return { success: true, message: 'Order deleted successfully.' };
 }

@@ -1,4 +1,3 @@
-
 'use client';
 import { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -33,6 +32,10 @@ export default function AdminOrdersPage() {
     }));
   };
 
+  const handleOrderDeleted = (orderId: string) => {
+    setOrders(prevOrders => prevOrders.filter(order => order.id !== orderId));
+  };
+
   if (isLoading) {
     return (
       <div className="container mx-auto flex min-h-[60vh] max-w-7xl items-center justify-center px-4 py-8 text-center md:py-12">
@@ -60,7 +63,11 @@ export default function AdminOrdersPage() {
         </CardHeader>
         <CardContent>
           {orders.length > 0 ? (
-            <ViewOrders orders={orders} onStatusUpdated={handleStatusUpdated} />
+            <ViewOrders 
+              orders={orders} 
+              onStatusUpdated={handleStatusUpdated} 
+              onOrderDeleted={handleOrderDeleted}
+            />
           ) : (
              <div className="flex min-h-[40vh] flex-col items-center justify-center gap-4 rounded-lg border border-dashed bg-card p-8 text-center">
                 <PackageSearch className="h-16 w-16 text-muted-foreground" />
